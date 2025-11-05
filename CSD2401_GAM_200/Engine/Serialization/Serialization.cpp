@@ -193,8 +193,26 @@ void Serialization::SaveScene(const std::string &scenePath)
 	}
 }
 
-void Serialization::LoadScene(const std::string &scenePath)
+void Serialization::LoadScene(const std::string& scenePath)
 {
+
+	auto& resourceMgr = ResourceManager::Instance();
+	AudioEngine* audio = resourceMgr.GetAudioEngine();
+
+	if (audio)
+	{
+		// Stop ALL sounds
+		audio->stopAllSound();
+		std::cout << "Stopped all exisiting sound" << std::endl;
+	}
+
+	// Unload all audio resources
+	resourceMgr.UnloadAllAudio();
+	std::cout << "unloaded all sound" << std::endl;
+
+	// Destroy all GameObjects
+	GameObjectFactory::Instance().DestroyAllGameObjects();
+
 	std::string path = SceneFilePath + scenePath + ".json";
 	if (!fs::exists(path))
 	{
@@ -214,21 +232,43 @@ void Serialization::LoadScene(const std::string &scenePath)
 	{
 		in >> j;
 	}
-	catch (const std::exception &e)
+	catch (const std::exception& e)
 	{
 		std::cerr << "[LoadScene] Parse error: " << e.what() << "\n";
 		return;
 	}
 
+	if (j.contains("SceneSettings"))
+	{
+		const auto& settings = j["SceneSettings"];
+		if (settings.contains("backgroundMusic"))
+		{
+			const auto& bgm = settings["backgroundMusic"];
+			std::string name = bgm.value("name", "bgm");
+			std::string audioPath = bgm.value("path", "");
+			bool looping = bgm.value("looping", true);
+			float volume = bgm.value("volume", 0.8f);
+			std::string channel = bgm.value("channel", "bgm");
+
+			if (!audioPath.empty() && audio)
+			{
+				resourceMgr.LoadAudio(name, audioPath, looping);
+				audio->playSound(name, channel);
+				audio->setVolume(channel, volume);
+				std::cout << "[LoadScene] Loaded and playing BGM: " << name << std::endl;
+			}
+		}
+	}
+
+	// Load new GameObjects
 	if (j.contains("GameObjects"))
 	{
-		for (const auto &obj : j["GameObjects"])
+		for (const auto& obj : j["GameObjects"])
 			Serialization::DeserializeGameObject(obj);
 
-		std::cout << "[LoadScene] Scene loaded successfully: " << path << "\n";
+		std::cout << "[LoadScene] Scene GameObjects loaded successfully." << std::endl;
 	}
 }
-
 void Serialization::RemovePrefab(std::string const &prefabName)
 {
 	for (auto const &prefab : std::filesystem::directory_iterator(PrefabFilePath))

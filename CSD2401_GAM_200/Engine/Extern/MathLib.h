@@ -171,4 +171,7 @@ vec4 operator*(mat4 const& m, vec4 const& v);
 inline vec3::vec3(vec4 const& v) : x(v.x), y(v.y), z(v.z) {}
 inline vec4::vec4(vec3 const& v, float pw) : x(v.x), y(v.y), z(v.z), w(pw) {}
 
+bool SquareToMouseCheck(float, float, float, float);
+bool CircleToCircelCheck(float, float, float, float);
+
 #endif // MATH_LIB

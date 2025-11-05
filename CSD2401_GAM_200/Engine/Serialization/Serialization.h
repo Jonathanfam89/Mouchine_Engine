@@ -19,7 +19,8 @@ Technology is prohibited.
 #include "RenderComponent.h"
 #include "factory.h"
 #include "ComponentSerialization.h"
-
+#include "ResourceManager.h" 
+#include "audio.h"           
 using json = nlohmann::json;
 const std::string PrefabFilePath { "../Assets/Prefabs/" };
 const std::string SceneFilePath{ "../Assets/Scenes/" };

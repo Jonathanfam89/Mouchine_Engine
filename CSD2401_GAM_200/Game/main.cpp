@@ -53,22 +53,23 @@ int main()
         AudioEngine audio;
 
         API::Init_Engine(engine, audio);
-        
-        Serialization::LoadScene("Prefab_TestScene");
+       /* API::CreateImage("Title", RenderComponent::ShapeType::Square, 0, 0, 1920, 1080, "../Assets/MenuBackground.png");
+        API::CreateImage("PlayButton", RenderComponent::ShapeType::Square, 0,50, 300, 160, "../Assets/Menu_Play.png");
+        API::CreateImage("SettingsButton", RenderComponent::ShapeType::Square,0, -75, 300, 60, "../Assets/Menu_Settings.png");
+        API::CreateImage("QuitButton", RenderComponent::ShapeType::Square, 0, -125, 300, 60, "../Assets/Menu_Quit.png");*/
 
-        GameObject* textObj = GameObjectFactory::Instance().CreateGameObject("ScoreText");
-        textObj->AddComponent<TransformComponent>(100.0f, 100.0f);  // Position on screen
-        auto* text = textObj->AddComponent<TextComponent>(
-            "./Assets/FrederickatheGreat-Regular.ttf",
-            48,  // Font size
-            "Score: 0",
-            vec4(1.0f, 1.0f, 1.0f, 1.0f),
-            true
-        );
-        text->SetScale(1.0f);
+        Serialization::LoadScene("MainMenu");
 
-        // Later, update the text:
-        text->SetText("Score: 100");
+        //GameObject* textObj1 = GameObjectFactory::Instance().CreateGameObject("Tite");
+        //textObj1->AddComponent<TransformComponent>(-250.f, 400.0f);  // Position on screen
+        //textObj1->AddComponent<RenderComponent>();
+        //auto* text1 = textObj1->AddComponent<TextComponent>(
+        //    "./Assets/FrederickatheGreat-Regular.ttf",
+        //    48,  // Font size
+        //    "Moustachve Been The Wind",
+        //    vec4(0.0f, 0.0f, 0.0f, 1.0f),
+        //    false
+        //);
 
         GameObject* mainCamera = GameObjectFactory::Instance().CreateGameObject("MainCamera");
         auto* cam = mainCamera->AddComponent<CameraComponent>();
@@ -76,8 +77,6 @@ int main()
         GameObject* player = GameObjectFactory::Instance().FindGameObject("Hero");
         if (player) {
             cam->SetMode(CameraComponent::CameraMode::FOLLOW_TARGET);
-            //WHEN CAMERA MODE IS FIXED
-            //cam->SetPosition(0.f, 0.f);
             cam->SetFollowTarget(player);
             cam->SetFollowOffset(vec2(0.f, 0.f));
             cam->SetSmoothing(true, 2.f);
