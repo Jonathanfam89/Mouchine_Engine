@@ -78,7 +78,6 @@ namespace API {
     void SetStatic(const std::string&,bool);
     void SetJumpVal(const std::string&, float);
     void SetGravBool(const std::string&,bool); //set whether it have a Gravity
-    void SetGravVal(const std::string&, float, float);//Setting the gravity amount
 
 #pragma endregion
 
