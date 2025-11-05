@@ -203,6 +203,7 @@ void Serialization::LoadScene(const std::string& scenePath)
 	{
 		// Stop ALL sounds
 		audio->stopAllSound();
+		audio->updateAudio();
 		std::cout << "Stopped all exisiting sound" << std::endl;
 	}
 
@@ -237,11 +238,13 @@ void Serialization::LoadScene(const std::string& scenePath)
 		std::cerr << "[LoadScene] Parse error: " << e.what() << "\n";
 		return;
 	}
-
+	std::cout << "[LoadScene] Loading scene settings..." << std::endl;
 	if (j.contains("SceneSettings"))
 	{
+		
 		const auto& settings = j["SceneSettings"];
-		if (settings.contains("backgroundMusic"))
+
+		if (settings.contains("backgroundMusic") && audio)
 		{
 			const auto& bgm = settings["backgroundMusic"];
 			std::string name = bgm.value("name", "bgm");
@@ -250,12 +253,22 @@ void Serialization::LoadScene(const std::string& scenePath)
 			float volume = bgm.value("volume", 0.8f);
 			std::string channel = bgm.value("channel", "bgm");
 
-			if (!audioPath.empty() && audio)
+			if (!audioPath.empty())
 			{
-				resourceMgr.LoadAudio(name, audioPath, looping);
-				audio->playSound(name, channel);
-				audio->setVolume(channel, volume);
-				std::cout << "[LoadScene] Loaded and playing BGM: " << name << std::endl;
+				std::cout << "[LoadScene] Loading BGM: " << name << " from " << audioPath << std::endl;
+
+				// Load the new audio
+				if (resourceMgr.LoadAudio(name, audioPath, looping))
+				{
+					std::cout << "[LoadScene] Playing BGM on channel: " << channel << std::endl;
+					audio->playSound(name, channel);
+					audio->setVolume(channel, volume);
+					std::cout << "[LoadScene] BGM started successfully" << std::endl;
+				}
+				else
+				{
+					std::cerr << "[LoadScene] Failed to load BGM: " << audioPath << std::endl;
+				}
 			}
 		}
 	}

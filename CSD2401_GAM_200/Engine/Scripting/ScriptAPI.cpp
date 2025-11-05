@@ -26,21 +26,6 @@ namespace API {
         auto& resourceMgr = ResourceManager::Instance();
         resourceMgr.SetAudioEngine(&audio);
 
-        // load textures
-       // resourceMgr.LoadTexture("Hero", "./Assets/Mouch_idle.png");
-        //resourceMgr.LoadTexture("bgImage", "./Assets/wallpaper_transparent.png");
-
-        // load audio files
-        //resourceMgr.LoadAudio("bgm", "./Assets/audio/level_1.wav", true); // looping
-        //resourceMgr.LoadAudio("jump_sfx", "./Assets/audio/jump.wav", false); // when jumping only
-
-        // print loaded resources
-        //resourceMgr.PrintLoadedResources();
-
-        // register the sound with audio engine
-        //std::cout << "\n--- Starting Background Music ---" << std::endl;
-        //audio.playSound("bgm", "bgm_channel");
-        //audio.setVolume("bgm_channel", 0.5f);
     }
 
     void StartEngineLoop(CoreEngine& engine)

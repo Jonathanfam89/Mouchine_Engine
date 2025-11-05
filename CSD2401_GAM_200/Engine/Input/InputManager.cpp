@@ -19,6 +19,9 @@ Technology is prohibited.
 #include "Serialization.h"
 
 bool InputManager::KeyStateImgui = true;
+double InputManager::MouseWorldX = 0.0;
+double InputManager::MouseWorldY = 0.0;
+bool InputManager::MouseLeftClicked = false;
 
 /**
  * @brief Constructs an InputManager with specified parameters.
@@ -68,6 +71,12 @@ std::string InputManager::GetName()
  */
 void InputManager::Update(float dt)
 {
+    static bool wasLeftMousePressed = false;
+    bool isLeftMousePressed = (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS);
+    MouseLeftClicked = (!wasLeftMousePressed && isLeftMousePressed);
+    wasLeftMousePressed = isLeftMousePressed; 
+
+
     static bool keyPressed = false;
     LevelEditor* levelEditor = CORE->GetLevelEditor();
     if (levelEditor && levelEditor->GetEditorMode() != EditorMode::Play && levelEditor->GetEditorMode() != EditorMode::Stop)
@@ -315,17 +324,20 @@ void InputManager::Update(float dt)
         // The Integrate() method will update velocity based on forces
 
         // Mouse
-        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-        {
-            std::cout << "Left Mouse Press, X:" << mouseX << " Y:" << mouseY << std::endl;
-        }
-        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
-        {
-            std::cout << "Right Mouse Press" << mouseX << " Y:" << mouseY << std::endl;
-        }
+        //if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+        //{
+        //    std::cout << "Left Mouse Press, X:" << mouseX << " Y:" << mouseY << std::endl;
+        //}
+        //if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+        //{
+        //    std::cout << "Right Mouse Press" << mouseX << " Y:" << mouseY << std::endl;
+        //}
 
         double xpos, ypos;
         glfwGetCursorPos(window, &xpos, &ypos);
         mouseX = xpos;
         mouseY = ypos;
+
+        MouseWorldX = mouseX - (width / 2.0);
+        MouseWorldY = (height / 2.0) - mouseY;
     }

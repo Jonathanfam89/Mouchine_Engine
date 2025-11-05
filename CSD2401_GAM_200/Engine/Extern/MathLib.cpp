@@ -255,3 +255,23 @@ vec4 operator*(mat4 const& m, vec4 const& v)
     return r;
 }
 
+bool IsAreaClicked(float area_center_x, float area_center_y, float area_width, float area_height, float click_x, float click_y)
+{
+
+    float top_left_x = area_center_x - area_width / 2;
+    float top_left_y = area_center_y - area_height / 2;
+    float bottom_right_x = area_center_x + area_width / 2;
+    float bottom_right_y = area_center_y + area_height / 2;
+
+
+    if (click_x >= top_left_x && click_x <= bottom_right_x &&
+        click_y >= top_left_y && click_y <= bottom_right_y) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
+
+

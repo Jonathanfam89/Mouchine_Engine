@@ -638,10 +638,14 @@ bool LevelEditor::SaveLevelJSON(const std::string &filepath)
     }
 }
 
-bool LevelEditor::LoadLevelJSON(const std::string &filepath)
+bool LevelEditor::LoadLevelJSON(const std::string& filepath)
 {
     try
     {
+        std::cout << "\n========================================" << std::endl;
+        std::cout << "LOADING LEVEL: " << filepath << std::endl;
+        std::cout << "========================================\n" << std::endl;
+
         std::ifstream inFile(filepath);
         if (!inFile.is_open())
         {
@@ -653,10 +657,27 @@ bool LevelEditor::LoadLevelJSON(const std::string &filepath)
         inFile >> root;
         inFile.close();
 
-        // clear current level
+        // === Stop and cleanup audio ===
+        auto& resourceMgr = ResourceManager::Instance();
+        AudioEngine* audio = resourceMgr.GetAudioEngine();
+
+        if (audio)
+        {
+            std::cout << "[LoadLevel] Stopping all sounds..." << std::endl;
+            audio->stopAllSound();
+            audio->updateAudio();
+            std::cout << "[LoadLevel] All sounds stopped" << std::endl;
+        }
+
+        // Unload all audio resources
+        std::cout << "[LoadLevel] Unloading audio resources..." << std::endl;
+        resourceMgr.UnloadAllAudio();
+
+        // ===  Clear current level ===
         factory.Clear();
         selectedGameObjectID = 0;
 
+        // ===  Extract filename ===
         size_t lastSlash = filepath.find_last_of("/\\");
         size_t lastDot = filepath.find_last_of(".");
         std::string filenameOnly = filepath;
@@ -669,10 +690,50 @@ bool LevelEditor::LoadLevelJSON(const std::string &filepath)
 
         currentFilename = filenameOnly;
 
-        // load all game objects
+        // === Load Scene Settings ===
+        if (root.contains("SceneSettings"))
+        {
+            std::cout << "[LoadLevel] Loading scene settings..." << std::endl;
+            const auto& settings = root["SceneSettings"];
+
+            if (settings.contains("backgroundMusic") && audio)
+            {
+                const auto& bgm = settings["backgroundMusic"];
+                std::string name = bgm.value("name", "bgm");
+                std::string audioPath = bgm.value("path", "");
+                bool looping = bgm.value("looping", true);
+                float volume = bgm.value("volume", 0.8f);
+                std::string channel = bgm.value("channel", "bgm");
+
+                if (!audioPath.empty())
+                {
+                    std::cout << "[LoadLevel] Loading BGM: " << name << " from " << audioPath << std::endl;
+
+                    // Load the new audio
+                    if (resourceMgr.LoadAudio(name, audioPath, looping))
+                    {
+                        std::cout << "[LoadLevel] Playing BGM on channel: " << channel << std::endl;
+                        audio->playSound(name, channel);
+                        audio->setVolume(channel, volume);
+                        std::cout << "[LoadLevel] BGM started successfully" << std::endl;
+                    }
+                    else
+                    {
+                        std::cerr << "[LoadLevel] Failed to load BGM: " << audioPath << std::endl;
+                    }
+                }
+            }
+        }
+        else
+        {
+            std::cout << "[LoadLevel] No SceneSettings found in JSON" << std::endl;
+        }
+
+        
         if (root.contains("GameObjects") && root["GameObjects"].is_array())
         {
-            for (const auto &objData : root["GameObjects"])
+            std::cout << "[LoadLevel] Loading game objects..." << std::endl;
+            for (const auto& objData : root["GameObjects"])
             {
                 Serialization::DeserializeGameObject(objData);
             }
@@ -680,16 +741,17 @@ bool LevelEditor::LoadLevelJSON(const std::string &filepath)
 
         std::cout << "Level loaded from: " << filepath << std::endl;
         std::cout << "Loaded " << factory.GetAllGameObjects().size() << " game objects" << std::endl;
+        std::cout << "========================================\n" << std::endl;
+
         hasValidSaveState = false;
         return true;
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
         std::cerr << "Error loading level: " << e.what() << std::endl;
         return false;
     }
 }
-
 /**
  * @brief Get all scene files from the prefabs directory
  */
