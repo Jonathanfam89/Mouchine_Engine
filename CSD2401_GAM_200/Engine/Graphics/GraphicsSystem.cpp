@@ -185,7 +185,7 @@ void GraphicsSystem::Initialize()
         std::cerr << "Failed to initialize GLEW\n";
         return;
     }
-    LoadDefaultCursor("../Assets/hand.png");
+    LoadDefaultCursor("../Assets/Mouse.png");
     clickCursor = glfwCreateStandardCursor(GLFW_CROSSHAIR_CURSOR);
 
     // Initialize cursors with null checks
