@@ -40,7 +40,7 @@ LevelEditor::LevelEditor()
     showSaveDialog(false),
     showLoadDialog(false),
     currentFilename(""),
-    editorMode(EditorMode::Stop),
+    editorMode(EditorMode::Play),
     hasUnsavedChanges(false),
     hasValidSaveState(false),
     cameraX(0.0f), cameraY(0.0f), cameraZoom(1.0f),

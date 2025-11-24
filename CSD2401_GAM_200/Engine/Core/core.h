@@ -277,7 +277,7 @@ public:
      * @brief Requests a scene to be loaded on the next frame.
      * @param sceneName The name of the scene file to load.
      */
-    void RequestSceneLoad(const std::string &sceneName, bool autoPlay = false)
+    void RequestSceneLoad(const std::string &sceneName, bool autoPlay = true)
     {
         m_pendingScene = sceneName;
         m_hasPendingLoad = true;

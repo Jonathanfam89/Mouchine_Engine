@@ -84,7 +84,7 @@ void CoreEngine::InitSystems()
     graphicsSystem = AddSystem<GraphicsSystem>(WindWidth, WindHeight);
 
     // 2. ImGui (needs graphics window)
-    imguiSystem = AddSystem<ImGuiSystem>(graphicsSystem->getWindow());
+    //imguiSystem = AddSystem<ImGuiSystem>(graphicsSystem->getWindow());
 
     // 3. Input Manager - MUST BE EARLY to capture input before physics updates
     inputManager = AddSystem<InputManager>(graphicsSystem->getWindow(), audioEngine);
@@ -106,7 +106,7 @@ void CoreEngine::InitSystems()
     cameraSystem = AddSystem<CameraSystem>();
 
     // 8. Level Editor - for editing levels
-    levelEditor = AddSystem<LevelEditor>();
+    //levelEditor = AddSystem<LevelEditor>();
 
     // Connect CollisionSystem to PhysicsSystem
     collisionSystem->SetPhysicsSystem(physicsSystem);
@@ -120,7 +120,7 @@ void CoreEngine::InitSystems()
     eventSystemRunner = AddSystem<EventSystemRunner>();
 
     // Connect GraphicsSystem to LevelEditor for editor camera
-    graphicsSystem->SetLevelEditor(levelEditor);
+    //graphicsSystem->SetLevelEditor(levelEditor);
 
     // Subscribe systems to specific message types
     messageBus.Subscribe<PlaySoundMessage>(audioEngine);
@@ -182,21 +182,21 @@ void CoreEngine::GameLoop()
             std::cout << "[CoreEngine] Scene to load: " << m_pendingScene << std::endl;
             std::cout << "[CoreEngine] Auto-play flag: " << (m_autoPlayAfterLoad ? "TRUE" : "FALSE") << std::endl;
 
-            LevelEditor *level = GetLevelEditor();
-            level->LoadLevel(m_pendingScene);
-            std::cout << "[CoreEngine] Scene loaded successfully" << std::endl;
+            //LevelEditor *level = GetLevelEditor();
+            //level->LoadLevel(m_pendingScene);
+            //std::cout << "[CoreEngine] Scene loaded successfully" << std::endl;
 
             // ===== AUTO-ENTER PLAY MODE IF REQUESTED =====
-            if (m_autoPlayAfterLoad)
-            {
-                std::cout << "[CoreEngine] Auto-play flag is TRUE - entering play mode\n";
-                level->EnterPlayMode();
-                std::cout << "[CoreEngine] Play mode entered\n";
-            }
-            else
-            {
-                std::cout << "[CoreEngine] Auto-play flag is FALSE - NOT entering play mode\n";
-            }
+            //if (m_autoPlayAfterLoad)
+            //{
+            //    std::cout << "[CoreEngine] Auto-play flag is TRUE - entering play mode\n";
+            //    level->EnterPlayMode();
+            //    std::cout << "[CoreEngine] Play mode entered\n";
+            //}
+            //else
+            //{
+            //    std::cout << "[CoreEngine] Auto-play flag is FALSE - NOT entering play mode\n";
+            //}
 
             m_pendingScene = "";
             m_hasPendingLoad = false;
@@ -274,8 +274,8 @@ void CoreEngine::GameLoop()
                 g_totalLoopTime += ms;
             }
 
-            bool isPlaying = (levelEditor && levelEditor->GetEditorMode() == EditorMode::Play);
-            bool shouldRunPhysics = ((isPlaying && !stepMode) || stepOnce) && !m_gamePause;
+            //bool isPlaying = (levelEditor && levelEditor->GetEditorMode() == EditorMode::Play);
+            bool shouldRunPhysics = ((!stepMode) || stepOnce) && !m_gamePause;
             // Only run physics if NOT in step mode/paused, OR if stepping once
             if (shouldRunPhysics)
             {
