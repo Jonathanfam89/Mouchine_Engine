@@ -89,10 +89,15 @@ public:
      */
     Type GetType() const { return type; }
 
+    void SetSize(float w, float h);
+
+ /*   void SetRotation(float r);*/
+
 private:
     Type type;
     float width;
     float height;
     float radius;
+    //float rotation;
     CollisionLayer layer;
 };

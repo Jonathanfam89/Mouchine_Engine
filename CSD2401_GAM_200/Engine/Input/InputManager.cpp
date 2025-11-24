@@ -369,6 +369,83 @@ void InputManager::Update(float dt)
             }
         }
     }
+
+    // ===== DASH SYSTEM =====
+    static bool hasUsedAirDash = false;
+    static bool dashKeyPressed = false;
+    static bool wasDashing = false;
+
+    // Dash input (LEFT SHIFT key)
+    bool dashKeyDown = (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
+
+    if (dashKeyDown && !dashKeyPressed)
+    {
+        dashKeyPressed = true;
+
+        // Check conditions
+        bool isDashing = physics->GetForcesManager().HasForceType(ForceType::Dash);
+        bool isGrounded = physics->IsGrounded();
+
+        // Can dash if: not already dashing AND (grounded OR has air dash available)
+        if (!isDashing && (isGrounded || !hasUsedAirDash))
+        {
+            // Determine dash direction using moveDirectionX if available, otherwise use velocityX
+            float dashDirection = 1.0f;  // Default right
+
+            if (std::abs(moveDirectionX) > 0.01f) {
+                // Use current movement direction
+                dashDirection = moveDirectionX;
+            }
+            else if (vx < -0.1f) {
+                // Fallback to velocity direction if not pressing movement keys
+                dashDirection = -1.0f;
+            }
+            else if (vx > 0.1f) {
+                dashDirection = 1.0f;
+            }
+            // If both are zero, dash right by default
+
+            // Add dash force
+            physics->ApplyDashImpulse(dashDirection);
+
+            // Disable gravity during dash
+            physics->SetGravity(false);
+
+            // Mark air dash as used if in air
+            if (!isGrounded) {
+                hasUsedAirDash = true;
+                std::cout << "[Dash] Air dash used!" << std::endl;
+            }
+
+            std::cout << "[Dash] Started! Direction: " << (dashDirection > 0 ? "Right" : "Left") << std::endl;
+        }
+        else if (isDashing) {
+            std::cout << "[Dash] Already dashing!" << std::endl;
+        }
+        else if (!isGrounded && hasUsedAirDash) {
+            std::cout << "[Dash] Air dash already used!" << std::endl;
+        }
+    }
+    else if (!dashKeyDown) {
+        dashKeyPressed = false;
+    }
+
+    // Check if dash just ended and restore gravity
+    bool isDashing = physics->GetForcesManager().HasForceType(ForceType::Dash);
+    if (wasDashing && !isDashing) {
+        // Dash just ended - restore gravity
+        physics->SetGravity(true);
+        std::cout << "[Dash] Ended, gravity restored" << std::endl;
+    }
+    wasDashing = isDashing;
+
+    // Restore air dash when grounded
+    if (physics->IsGrounded() && hasUsedAirDash) {
+        hasUsedAirDash = false;
+        std::cout << "[Dash] Air dash restored (grounded)" << std::endl;
+    }
+    // ===== END DASH SYSTEM =====
+
     auto* anim = player->GetComponent<Spritesheet>();
         if (transform && anim)
         {

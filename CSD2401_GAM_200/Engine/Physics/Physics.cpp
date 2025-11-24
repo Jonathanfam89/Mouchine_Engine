@@ -105,18 +105,18 @@ void PhysicsComponent::Integrate(float dt)
     forcesManager.ValidateAge(dt);
 
     // Calculate total acceleration from all forces
-    auto [accelX, accelY] = forcesManager.CalculateTotalAcceleration(mass, velocityX, velocityY);
+    vec2 velocity = { velocityX, velocityY };
+    vec2 accel = forcesManager.CalculateTotalAcceleration(mass, velocity);
 
     // Add constant gravity acceleration if enabled
     if (useGravity)
     {
-        const float gravityY = -381.0f;
-        accelY += gravityY;
+        accel.y += ForceConstants::GRAVITY_ACCELERATION;
     }
 
     // Integrate velocity: v = v0 + a*dt
-    velocityX += accelX * dt;
-    velocityY += accelY * dt;
+    velocityX += accel.x * dt;
+    velocityY += accel.y * dt;
 
     // Integrate position: p = p0 + v*dt
     TransformComponent* transform = owner->GetComponent<TransformComponent>();

@@ -28,6 +28,7 @@ Technology is prohibited.
 #include "logic.h"
 #include "LevelEditor.h"
 #include "ImGuizmo.h"
+#include "TilemapEditor.h"  // NEW: Tilemap Editor
 
 // FILE SYSTEM
 namespace fs = std::filesystem;
@@ -191,6 +192,8 @@ public:
 
     void Viewport_ManageGizmos();
 
+    void Viewport_RenderGizmoToolbar();
+
     void Viewport_HighlightGO();
 
     void RenderEventComponent(GameObject* obj);
@@ -348,3 +351,5 @@ void CreateHintText(std::string const& displayText);
 void M2_RenderStressTest();
 
 void AudioAssetsPanel_Render();
+
+void TileMap_Render(float dt);

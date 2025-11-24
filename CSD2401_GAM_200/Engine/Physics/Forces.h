@@ -14,6 +14,7 @@ Technology is prohibited.
 #pragma once
 #include <memory>
 #include <cmath>
+#include "MathLib.h"  // For vec2
 
 // Forward declaration
 struct Force;
@@ -27,7 +28,9 @@ enum class ForceType {
     MoveLeft,
     Wind,
     Boost,
-    Friction
+    Friction,
+    Knockback,
+    Dash
 };
 
 /**
@@ -35,11 +38,10 @@ enum class ForceType {
  */
 namespace ForceConstants {
     // Gravity
-    /*constexpr float GRAVITY_MAGNITUDE = 500.0f;*/
-
+    constexpr float GRAVITY_ACCELERATION = -381.0f;
     // Jump
     constexpr float JUMP_FORCE = 1000.0f;
-    constexpr float JUMP_DURATION = 0.4f;  // Very short impulse for realistic jump arc
+    constexpr float JUMP_DURATION = 0.4f;
 
     // Movement
     constexpr float MOVE_FORCE = 200.0f;
@@ -47,12 +49,21 @@ namespace ForceConstants {
     // Drag
     constexpr float DRAG_COEFFICIENT = 30.0f;
 
-    // Friction (ground friction)
-    constexpr float FRICTION_COEFFICIENT = 5.0f;
+    // Friction (ground friction) - force magnitude opposing velocity
+    constexpr float FRICTION_COEFFICIENT = 5.0f;  // Force coefficient (will be divided by mass)
+
+    // Knockback (applied when hit by enemy)
+    constexpr float KNOCKBACK_FORCE = 800.0f;      // Constant knockback force
+    constexpr float KNOCKBACK_DURATION = 0.2f;     // Brief knockback time
+
+    // Dash (horizontal dash ability)
+    constexpr float DASH_FORCE = 1800.0f;          // Impulse force for dash
+    constexpr float DASH_DURATION = 0.3f;         // How long dash lasts
 }
 
 /**
  * @brief Base class for all force types
+ * Uses vec2 for cleaner vector math
  */
 struct Force {
     bool isActive;
@@ -62,48 +73,44 @@ struct Force {
     Force() : isActive(true), lifetime(-1.0f), age(0.0f) {}
     virtual ~Force() = default;
 
-    virtual void CalculateAcceleration(float mass, float velocityX, float velocityY,
-        float& accelX, float& accelY) = 0;
+    /**
+     * @brief Calculate acceleration from force
+     * @param mass Object's mass
+     * @param velocity Current velocity vector
+     * @return Acceleration vector
+     */
+    virtual vec2 CalculateAcceleration(float mass, const vec2& velocity) = 0;
 };
 
 /**
  * @brief Linear directional force with unit direction and magnitude
  */
 struct LinearDirectionalForce : public Force {
-    float unitDirectionX;
-    float unitDirectionY;
+    vec2 direction;     // Unit direction vector
     float magnitude;
     ForceType type;
 
-    LinearDirectionalForce(float dirX, float dirY, float mag, float life, ForceType forceType)
-        : magnitude(mag), type(forceType) {
-        float length = std::sqrt(dirX * dirX + dirY * dirY);
-        if (length > 0.0001f) {
-            unitDirectionX = dirX / length;
-            unitDirectionY = dirY / length;
-        }
-        else {
-            unitDirectionX = 0.0f;
-            unitDirectionY = 0.0f;
-        }
+    LinearDirectionalForce(float dirX, float dirY, float mag, float life, ForceType t)
+        : direction{ dirX, dirY }, magnitude(mag), type(t) {
         lifetime = life;
+
+        // Normalize direction
+        float len = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+        if (len > 0.0001f) {
+            direction.x /= len;
+            direction.y /= len;
+        }
     }
 
-    void CalculateAcceleration(float mass, float velocityX, float velocityY,
-        float& accelX, float& accelY) override {
+    vec2 CalculateAcceleration(float mass, const vec2& velocity) override {
+        (void)velocity;  // Unused - directional forces don't depend on velocity
+
         if (!isActive) {
-            (void)velocityX;  // Unused
-            (void)velocityY;  // Unused
-            accelX = 0.0f;
-            accelY = 0.0f;
-            return;
+            return { 0.0f, 0.0f };
         }
 
-        float forceX = unitDirectionX * magnitude;
-        float forceY = unitDirectionY * magnitude;
-
-        accelX = forceX / mass;
-        accelY = forceY / mass;
+        vec2 force = { direction.x * magnitude, direction.y * magnitude };
+        return { force.x / mass, force.y / mass };
     }
 };
 
@@ -117,50 +124,39 @@ struct DragForce : public Force {
         lifetime = -1.0f;
     }
 
-    void CalculateAcceleration(float mass, float velocityX, float velocityY,
-        float& accelX, float& accelY) override {
+    vec2 CalculateAcceleration(float mass, const vec2& velocity) override {
         if (!isActive) {
-            accelX = 0.0f;
-            accelY = 0.0f;
-            return;
+            return { 0.0f, 0.0f };
         }
 
-        float dragForceX = -dragCoefficient * velocityX;
-        float dragForceY = -dragCoefficient * velocityY;
-
-        accelX = dragForceX / mass;
-        accelY = dragForceY / mass;
+        vec2 dragForce = { -dragCoefficient * velocity.x, -dragCoefficient * velocity.y };
+        return { dragForce.x / mass, dragForce.y / mass };
     }
 };
+
 /**
  * @brief Friction force (only horizontal, only when grounded)
  */
 struct FrictionForce : public Force {
     float frictionCoefficient;
-    bool* isGrounded;  // Pointer to grounded state
-    ForceType type;    // Type identifier
+    bool* isGrounded;
+    ForceType type;
 
     FrictionForce(float friction, bool* groundedPtr)
         : frictionCoefficient(friction), isGrounded(groundedPtr), type(ForceType::Friction) {
-        lifetime = -1.0f;  // Infinite
+        lifetime = -1.0f;
     }
 
-    void CalculateAcceleration(float mass, float velocityX, float velocityY,
-        float& accelX, float& accelY) override {
+    vec2 CalculateAcceleration(float mass, const vec2& velocity) override {
         if (!isActive || !isGrounded || !(*isGrounded)) {
-            (void)velocityY;
-            accelX = 0.0f;
-            accelY = 0.0f;
-            return;
+            return { 0.0f, 0.0f };
         }
 
         // Friction only opposes horizontal motion when grounded
-        float frictionForceX = -frictionCoefficient * velocityX;
+        // Calculate friction force: F_friction = -coefficient * velocity
+        vec2 frictionForce = { -frictionCoefficient * velocity.x, 0.0f };
 
-        accelX = frictionForceX / mass;
-        accelY = 0.0f;  // No vertical friction
+        // Convert force to acceleration: a = F / m
+        return { frictionForce.x / mass, frictionForce.y / mass };
     }
 };
-
-//In the future I should make one Drag struct that has a Friction type force!!! instead of
-//two different structs.

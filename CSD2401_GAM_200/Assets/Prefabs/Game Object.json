@@ -1,0 +1,165 @@
+{
+    "GameObjects": [
+        {
+            "name": "Game Object",
+            "active": true,
+            "parent": null,
+            "siblingIndex": 7,
+            "TransformComponent": {
+                "pos": [
+                    -364.5,
+                    0.0
+                ],
+                "scale": [
+                    50.0,
+                    50.0
+                ],
+                "rotation": 0.0
+            },
+            "RenderComponent": {
+                "shapeType": "Square",
+                "texturePath": "",
+                "color": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0
+                ]
+            },
+            "ColliderComponent": {
+                "shape": "Square",
+                "layer": "Default"
+            },
+            "children": [
+                {
+                    "name": "Game Object",
+                    "active": true,
+                    "parent": "Game Object",
+                    "siblingIndex": 0,
+                    "TransformComponent": {
+                        "pos": [
+                            -404.0,
+                            -45.71429443359375
+                        ],
+                        "scale": [
+                            50.0,
+                            50.0
+                        ],
+                        "rotation": 0.0
+                    },
+                    "RenderComponent": {
+                        "shapeType": "Square",
+                        "texturePath": "",
+                        "color": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            1.0
+                        ]
+                    },
+                    "ColliderComponent": {
+                        "shape": "Square",
+                        "layer": "Default"
+                    },
+                    "children": []
+                },
+                {
+                    "name": "Game Object",
+                    "active": true,
+                    "parent": "Game Object",
+                    "siblingIndex": 1,
+                    "TransformComponent": {
+                        "pos": [
+                            -321.0714416503906,
+                            -47.142860412597656
+                        ],
+                        "scale": [
+                            50.0,
+                            50.0
+                        ],
+                        "rotation": 0.0
+                    },
+                    "RenderComponent": {
+                        "shapeType": "Square",
+                        "texturePath": "",
+                        "color": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            1.0
+                        ]
+                    },
+                    "ColliderComponent": {
+                        "shape": "Square",
+                        "layer": "Default"
+                    },
+                    "children": []
+                },
+                {
+                    "name": "Game Object(1)",
+                    "active": true,
+                    "parent": "Game Object",
+                    "siblingIndex": 2,
+                    "TransformComponent": {
+                        "pos": [
+                            -451.642822265625,
+                            -92.14286804199219
+                        ],
+                        "scale": [
+                            50.0,
+                            50.0
+                        ],
+                        "rotation": 0.0
+                    },
+                    "RenderComponent": {
+                        "shapeType": "Square",
+                        "texturePath": "",
+                        "color": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            1.0
+                        ]
+                    },
+                    "ColliderComponent": {
+                        "shape": "Square",
+                        "layer": "Default"
+                    },
+                    "children": []
+                },
+                {
+                    "name": "Game Object(2)",
+                    "active": true,
+                    "parent": "Game Object",
+                    "siblingIndex": 3,
+                    "TransformComponent": {
+                        "pos": [
+                            -273.7856750488281,
+                            -97.85714721679688
+                        ],
+                        "scale": [
+                            50.0,
+                            50.0
+                        ],
+                        "rotation": 0.0
+                    },
+                    "RenderComponent": {
+                        "shapeType": "Square",
+                        "texturePath": "",
+                        "color": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            1.0
+                        ]
+                    },
+                    "ColliderComponent": {
+                        "shape": "Square",
+                        "layer": "Default"
+                    },
+                    "children": []
+                }
+            ]
+        }
+    ]
+}

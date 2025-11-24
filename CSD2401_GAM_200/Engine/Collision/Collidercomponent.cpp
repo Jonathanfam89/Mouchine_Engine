@@ -49,6 +49,17 @@ Circle ColliderComponent::GetCircle() const {
     return { pos, radius };
 }
 
+void ColliderComponent::SetSize(float w, float h) {
+    width = w;
+    height = h;
+    radius = w * 0.5f;
+}
+
+//void ColliderComponent::SetRotation(float r)
+//{
+//    rotation = r;
+//}
+
 /**
  * @brief Creates a deep copy of this collider component
  */

@@ -1,0 +1,33 @@
+{
+    "GameObjects": [
+        {
+            "ColliderComponent": {
+                "layer": "Default",
+                "shape": "Square"
+            },
+            "RenderComponent": {
+                "color": [
+                    1.0,
+                    0.0,
+                    0.970588207244873,
+                    1.0
+                ],
+                "shapeType": "Circle",
+                "texturePath": ""
+            },
+            "TransformComponent": {
+                "pos": [
+                    0.0,
+                    -41.400001525878906
+                ],
+                "rotation": 0.0,
+                "scale": [
+                    50.0,
+                    165.89999389648438
+                ]
+            },
+            "active": true,
+            "name": "dih"
+        }
+    ]
+}

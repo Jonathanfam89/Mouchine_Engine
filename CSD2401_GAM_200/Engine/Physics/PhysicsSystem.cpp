@@ -55,13 +55,13 @@ void PhysicsSystem::Initialize()
  */
 void PhysicsSystem::Update(float deltaTime)
 {
-    auto &factory = GameObjectFactory::Instance();
-    const auto &gameObjects = factory.GetAllGameObjects();
+    auto& factory = GameObjectFactory::Instance();
+    const auto& gameObjects = factory.GetAllGameObjects();
 
     // Integrate physics for all objects
-    for (const auto &obj : gameObjects)
+    for (const auto& obj : gameObjects)
     {
-        auto *physics = obj->GetComponent<PhysicsComponent>();
+        auto* physics = obj->GetComponent<PhysicsComponent>();
         if (physics && physics->IsEnabled())
         {
             physics->Integrate(deltaTime);
@@ -69,9 +69,9 @@ void PhysicsSystem::Update(float deltaTime)
     }
 
     // Clear grounded state for ALL objects before resolving collisions
-    for (const auto &obj : gameObjects)
+    for (const auto& obj : gameObjects)
     {
-        auto *physics = obj->GetComponent<PhysicsComponent>();
+        auto* physics = obj->GetComponent<PhysicsComponent>();
         if (physics && !physics->IsStatic())
         {
             physics->SetGrounded(false);
@@ -79,10 +79,10 @@ void PhysicsSystem::Update(float deltaTime)
     }
 
     // Resolve pending collisions
-    for (const auto &collision : pendingCollisions)
+    for (const auto& collision : pendingCollisions)
     {
-        auto *col1 = collision.col1;
-        auto *col2 = collision.col2;
+        auto* col1 = collision.col1;
+        auto* col2 = collision.col2;
 
         if (col1->GetType() == ColliderComponent::Type::Circle &&
             col2->GetType() == ColliderComponent::Type::Circle)
@@ -90,7 +90,7 @@ void PhysicsSystem::Update(float deltaTime)
             ResolveCircleCircle(collision.obj1, collision.obj2, col1, col2);
         }
         else if (col1->GetType() == ColliderComponent::Type::Square &&
-                 col2->GetType() == ColliderComponent::Type::Square)
+            col2->GetType() == ColliderComponent::Type::Square)
         {
             ResolveSquareSquare(collision.obj1, collision.obj2, col1, col2);
         }
@@ -106,21 +106,21 @@ void PhysicsSystem::Update(float deltaTime)
 /**
  * @brief Stores collision for later resolution in physics update
  */
-void PhysicsSystem::ReportCollision(GameObject *obj1, GameObject *obj2,
-                                    ColliderComponent *col1, ColliderComponent *col2)
+void PhysicsSystem::ReportCollision(GameObject* obj1, GameObject* obj2,
+    ColliderComponent* col1, ColliderComponent* col2)
 {
-    pendingCollisions.push_back({obj1, obj2, col1, col2});
+    pendingCollisions.push_back({ obj1, obj2, col1, col2 });
 }
 
 /**
  * @brief Resolves elastic collision between two circles
  * Handles separation and momentum transfer
  */
-void PhysicsSystem::ResolveCircleCircle(GameObject *obj1, GameObject *obj2,
-                                        ColliderComponent *col1, ColliderComponent *col2)
+void PhysicsSystem::ResolveCircleCircle(GameObject* obj1, GameObject* obj2,
+    ColliderComponent* col1, ColliderComponent* col2)
 {
-    auto *physics1 = obj1->GetComponent<PhysicsComponent>();
-    auto *physics2 = obj2->GetComponent<PhysicsComponent>();
+    auto* physics1 = obj1->GetComponent<PhysicsComponent>();
+    auto* physics2 = obj2->GetComponent<PhysicsComponent>();
 
     if (!physics1 || !physics2)
         return;
@@ -144,8 +144,8 @@ void PhysicsSystem::ResolveCircleCircle(GameObject *obj1, GameObject *obj2,
         dy = 0.1f;
 
         // Separate them immediately
-        auto *transform1 = obj1->GetComponent<TransformComponent>();
-        auto *transform2 = obj2->GetComponent<TransformComponent>();
+        auto* transform1 = obj1->GetComponent<TransformComponent>();
+        auto* transform2 = obj2->GetComponent<TransformComponent>();
         if (transform1 && transform2)
         {
             if (!physics1->IsStatic())
@@ -169,8 +169,8 @@ void PhysicsSystem::ResolveCircleCircle(GameObject *obj1, GameObject *obj2,
 
     if (overlap > 0)
     {
-        auto *transform1 = obj1->GetComponent<TransformComponent>();
-        auto *transform2 = obj2->GetComponent<TransformComponent>();
+        auto* transform1 = obj1->GetComponent<TransformComponent>();
+        auto* transform2 = obj2->GetComponent<TransformComponent>();
 
         if (transform1 && transform2)
         {
@@ -236,11 +236,11 @@ void PhysicsSystem::ResolveCircleCircle(GameObject *obj1, GameObject *obj2,
  * @brief Resolves collision between two AABBs
  * Separates on shortest axis and handles grounding
  */
-void PhysicsSystem::ResolveSquareSquare(GameObject *obj1, GameObject *obj2,
-                                        ColliderComponent *col1, ColliderComponent *col2)
+void PhysicsSystem::ResolveSquareSquare(GameObject* obj1, GameObject* obj2,
+    ColliderComponent* col1, ColliderComponent* col2)
 {
-    auto *physics1 = obj1->GetComponent<PhysicsComponent>();
-    auto *physics2 = obj2->GetComponent<PhysicsComponent>();
+    auto* physics1 = obj1->GetComponent<PhysicsComponent>();
+    auto* physics2 = obj2->GetComponent<PhysicsComponent>();
 
     if (!physics1 || !physics2)
         return;
@@ -258,8 +258,8 @@ void PhysicsSystem::ResolveSquareSquare(GameObject *obj1, GameObject *obj2,
         // Resolve on X axis
         float direction = (aabb1.min.x + aabb1.max.x) < (aabb2.min.x + aabb2.max.x) ? -1.0f : 1.0f;
 
-        auto *transform1 = obj1->GetComponent<TransformComponent>();
-        auto *transform2 = obj2->GetComponent<TransformComponent>();
+        auto* transform1 = obj1->GetComponent<TransformComponent>();
+        auto* transform2 = obj2->GetComponent<TransformComponent>();
 
         if (!physics1->IsStatic() && transform1)
         {
@@ -277,8 +277,8 @@ void PhysicsSystem::ResolveSquareSquare(GameObject *obj1, GameObject *obj2,
         // Resolve on Y axis
         float direction = (aabb1.min.y + aabb1.max.y) < (aabb2.min.y + aabb2.max.y) ? -1.0f : 1.0f;
 
-        auto *transform1 = obj1->GetComponent<TransformComponent>();
-        auto *transform2 = obj2->GetComponent<TransformComponent>();
+        auto* transform1 = obj1->GetComponent<TransformComponent>();
+        auto* transform2 = obj2->GetComponent<TransformComponent>();
 
         if (!physics1->IsStatic() && transform1)
         {
@@ -306,17 +306,18 @@ void PhysicsSystem::ResolveSquareSquare(GameObject *obj1, GameObject *obj2,
 /**
  * @brief Resolves collision between circle and square
  * Handles separation and bounce physics
+ * Applies knockback to player (square) when hit by enemy (circle)
  */
-void PhysicsSystem::ResolveMixed(GameObject *obj1, GameObject *obj2,
-                                 ColliderComponent *col1, ColliderComponent *col2)
+void PhysicsSystem::ResolveMixed(GameObject* obj1, GameObject* obj2,
+    ColliderComponent* col1, ColliderComponent* col2)
 {
-    ColliderComponent *squareCol = (col1->GetType() == ColliderComponent::Type::Square) ? col1 : col2;
-    ColliderComponent *circleCol = (col1->GetType() == ColliderComponent::Type::Circle) ? col1 : col2;
-    GameObject *squareObj = (col1->GetType() == ColliderComponent::Type::Square) ? obj1 : obj2;
-    GameObject *circleObj = (col1->GetType() == ColliderComponent::Type::Circle) ? obj1 : obj2;
+    ColliderComponent* squareCol = (col1->GetType() == ColliderComponent::Type::Square) ? col1 : col2;
+    ColliderComponent* circleCol = (col1->GetType() == ColliderComponent::Type::Circle) ? col1 : col2;
+    GameObject* squareObj = (col1->GetType() == ColliderComponent::Type::Square) ? obj1 : obj2;
+    GameObject* circleObj = (col1->GetType() == ColliderComponent::Type::Circle) ? obj1 : obj2;
 
-    auto *squarePhysics = squareObj->GetComponent<PhysicsComponent>();
-    auto *circlePhysics = circleObj->GetComponent<PhysicsComponent>();
+    auto* squarePhysics = squareObj->GetComponent<PhysicsComponent>();
+    auto* circlePhysics = circleObj->GetComponent<PhysicsComponent>();
 
     if (!squarePhysics || !circlePhysics)
         return;
@@ -341,23 +342,93 @@ void PhysicsSystem::ResolveMixed(GameObject *obj1, GameObject *obj2,
 
     if (penetration > 0)
     {
-        auto *squareTransform = squareObj->GetComponent<TransformComponent>();
-        auto *circleTransform = circleObj->GetComponent<TransformComponent>();
+        auto* squareTransform = squareObj->GetComponent<TransformComponent>();
+        auto* circleTransform = circleObj->GetComponent<TransformComponent>();
 
         float cvx, cvy;
         circlePhysics->GetVelocity(cvx, cvy);
+
+        // Check if this is a player-enemy collision
+        bool isPlayerSquare = (squareCol->GetLayer() == CollisionLayer::Player);
+        bool isEnemyCircle = (circleCol->GetLayer() == CollisionLayer::Enemy);
 
         // Separate
         if (!squarePhysics->IsStatic() && squareTransform)
         {
             squareTransform->Move(-nx * penetration * 0.5f, -ny * penetration * 0.5f);
-            squarePhysics->SetVelocity(0, 0);
+
+            // Handle player-enemy collision
+            if (isPlayerSquare && isEnemyCircle)
+            {
+                // Check if player is landing on top of the enemy
+                // ny < 0 means collision normal points downward (player is above circle)
+                bool isLandingOnTop = (ny < -0.5f);  // Normal pointing significantly downward
+
+                if (isLandingOnTop)
+                {
+                    // Player is on top of enemy - treat as grounded
+                    squarePhysics->SetGrounded(true);
+
+                    // Stop downward velocity to prevent phasing through
+                    float svx, svy;
+                    squarePhysics->GetVelocity(svx, svy);
+                    if (svy < 0) {  // If moving downward
+                        squarePhysics->SetVelocity(svx, 0);  // Stop vertical movement
+                    }
+
+                    std::cout << "[Grounded] Player standing on enemy!" << std::endl;
+                }
+                else
+                {
+                    // Player hit from side or below - apply elastic collision knockback
+                    // Use same physics as circle-circle collision
+
+                    float svx, svy;
+                    squarePhysics->GetVelocity(svx, svy);
+
+                    // Calculate relative velocity
+                    float relVelX = svx - cvx;
+                    float relVelY = svy - cvy;
+                    float velAlongNormal = relVelX * (-nx) + relVelY * (-ny);  // Using -n because we want player's perspective
+
+                    // Calculate elastic collision impulse (same as circle-circle)
+                    float restitution = 0.8f;  // High bounce
+                    float mass1 = squarePhysics->GetMass();
+                    float mass2 = circlePhysics->GetMass();
+
+                    if (mass1 < 0.01f) mass1 = 0.01f;
+                    if (mass2 < 0.01f) mass2 = 0.01f;
+
+                    float impulse = -(1 + restitution) * velAlongNormal;
+                    impulse /= (1.0f / mass1 + 1.0f / mass2);
+
+                    // Calculate impulse direction (away from circle)
+                    float impulseX = impulse * (-nx);  // Opposite of collision normal
+                    float impulseY = impulse * (-ny);
+
+                    // Apply impulse as velocity change
+                    svx += impulseX / mass1;
+                    svy += impulseY / mass1;
+                    squarePhysics->SetVelocity(svx, svy);
+
+                    // Also apply constant knockback force for sustained push
+                    squarePhysics->GetForcesManager().ApplyKnockback(-nx, -ny);
+
+                    std::cout << "[Knockback] Player hit by enemy! Impulse: ("
+                        << impulseX << ", " << impulseY << ")" << std::endl;
+                }
+            }
+            else
+            {
+                // For non-player collisions, zero velocity as before
+                squarePhysics->SetVelocity(0, 0);
+            }
         }
         if (!circlePhysics->IsStatic() && circleTransform)
         {
             circleTransform->Move(nx * penetration, ny * penetration);
 
-            // Apply bounce
+            // Apply bounce to circle
             float restitution = 0.9f;
             float dot = cvx * nx + cvy * ny;
 
@@ -379,17 +450,17 @@ void PhysicsSystem::ResolveMixed(GameObject *obj1, GameObject *obj2,
 /**
  * @brief Queues collision pairs for physics resolution.
  */
-void PhysicsSystem::HandleMessage(const CollisionMessage &msg)
+void PhysicsSystem::HandleMessage(const CollisionMessage& msg)
 {
     // msg.objectA and msg.objectB are GameObject pointers
-    GameObject *objA = static_cast<GameObject *>(msg.objectA);
-    GameObject *objB = static_cast<GameObject *>(msg.objectB);
+    GameObject* objA = static_cast<GameObject*>(msg.objectA);
+    GameObject* objB = static_cast<GameObject*>(msg.objectB);
 
     if (!objA || !objB)
         return;
 
-    auto *colA = objA->GetComponent<ColliderComponent>();
-    auto *colB = objB->GetComponent<ColliderComponent>();
+    auto* colA = objA->GetComponent<ColliderComponent>();
+    auto* colB = objB->GetComponent<ColliderComponent>();
     if (!colA || !colB)
         return;
 

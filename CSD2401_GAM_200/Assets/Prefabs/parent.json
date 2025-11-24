@@ -1,0 +1,101 @@
+{
+    "GameObjects": [
+        {
+            "name": "parent",
+            "active": true,
+            "parent": null,
+            "siblingIndex": 9,
+            "TransformComponent": {
+                "pos": [
+                    -415.0,
+                    51.0
+                ],
+                "scale": [
+                    50.0,
+                    50.0
+                ],
+                "rotation": 0.0
+            },
+            "RenderComponent": {
+                "shapeType": "Square",
+                "texturePath": "",
+                "color": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0
+                ]
+            },
+            "ColliderComponent": {
+                "shape": "Square",
+                "layer": "Default"
+            },
+            "children": [
+                {
+                    "name": "child1",
+                    "active": true,
+                    "parent": "parent",
+                    "siblingIndex": 0,
+                    "TransformComponent": {
+                        "pos": [
+                            -482.5,
+                            0.0
+                        ],
+                        "scale": [
+                            50.0,
+                            50.0
+                        ],
+                        "rotation": 0.0
+                    },
+                    "RenderComponent": {
+                        "shapeType": "Square",
+                        "texturePath": "",
+                        "color": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            1.0
+                        ]
+                    },
+                    "ColliderComponent": {
+                        "shape": "Square",
+                        "layer": "Default"
+                    },
+                    "children": []
+                },
+                {
+                    "name": "child2",
+                    "active": true,
+                    "parent": "parent",
+                    "siblingIndex": 1,
+                    "TransformComponent": {
+                        "pos": [
+                            -351.5,
+                            0.0
+                        ],
+                        "scale": [
+                            50.0,
+                            50.0
+                        ],
+                        "rotation": 0.0
+                    },
+                    "RenderComponent": {
+                        "shapeType": "Square",
+                        "texturePath": "",
+                        "color": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            1.0
+                        ]
+                    },
+                    "ColliderComponent": {
+                        "shape": "Square",
+                        "layer": "Default"
+                    },
+                    "children": []
+                }
+            ]
+        }
+    ]
+}

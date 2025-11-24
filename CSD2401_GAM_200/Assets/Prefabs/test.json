@@ -1,0 +1,69 @@
+{
+    "GameObjects": [
+        {
+            "name": "test",
+            "active": true,
+            "parent": "GreenSquare",
+            "siblingIndex": 0,
+            "TransformComponent": {
+                "pos": [
+                    -1036.33935546875,
+                    80.785888671875
+                ],
+                "scale": [
+                    55.500038146972656,
+                    130.79141235351563
+                ],
+                "rotation": -2.41924786567688
+            },
+            "RenderComponent": {
+                "shapeType": "Circle",
+                "texturePath": "",
+                "color": [
+                    1.0,
+                    0.0,
+                    0.970588207244873,
+                    1.0
+                ]
+            },
+            "ColliderComponent": {
+                "shape": "Square",
+                "layer": "Default"
+            },
+            "children": [
+                {
+                    "name": "dih",
+                    "active": true,
+                    "parent": "test",
+                    "siblingIndex": 0,
+                    "TransformComponent": {
+                        "pos": [
+                            -814.672607421875,
+                            154.11929321289063
+                        ],
+                        "scale": [
+                            55.500038146972656,
+                            130.79141235351563
+                        ],
+                        "rotation": -2.41924786567688
+                    },
+                    "RenderComponent": {
+                        "shapeType": "Circle",
+                        "texturePath": "",
+                        "color": [
+                            1.0,
+                            0.0,
+                            0.970588207244873,
+                            1.0
+                        ]
+                    },
+                    "ColliderComponent": {
+                        "shape": "Square",
+                        "layer": "Default"
+                    },
+                    "children": []
+                }
+            ]
+        }
+    ]
+}

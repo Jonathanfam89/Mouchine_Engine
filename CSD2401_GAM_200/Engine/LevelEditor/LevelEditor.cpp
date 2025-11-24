@@ -154,7 +154,8 @@ void LevelEditor::Update(float /*dt*/)
  */
 void LevelEditor::RenderPlayControls()
 {
-    ImGui::Begin("Editor Controls");
+    //ImGui::SetNextWindowSize(ImVec2(250, 200), ImGuiCond_Once);
+    ImGui::Begin("Editor Controls", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
     ImGui::SetCursorPosX(ImGui::GetContentRegionAvail().x / 2.f);
     ImGui::BeginGroup();
     

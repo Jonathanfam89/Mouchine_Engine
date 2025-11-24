@@ -104,6 +104,25 @@ public:
     }
 
     /**
+     * @brief Apply knockback force in a specific direction
+     * @param dirX X direction (will be normalized)
+     * @param dirY Y direction (will be normalized)
+     * @param forceMagnitude Knockback force magnitude (default uses constant)
+     */
+    void ApplyKnockback(float dirX, float dirY, float forceMagnitude = ForceConstants::KNOCKBACK_FORCE) {
+        // Remove any existing knockback forces first
+        RemoveForcesByType(ForceType::Knockback);
+
+        // Add new knockback force
+        forces.push_back(std::make_unique<LinearDirectionalForce>(
+            dirX, dirY,
+            forceMagnitude,
+            ForceConstants::KNOCKBACK_DURATION,
+            ForceType::Knockback
+        ));
+    }
+
+    /**
      * @brief Remove a force by index
      * @param index Index of force to remove
      */
@@ -160,18 +179,16 @@ public:
      * @param velocityY Current velocity Y
      * @return Pair of (accelX, accelY)
      */
-    std::pair<float, float> CalculateTotalAcceleration(float mass, float velocityX, float velocityY) {
-        float totalAccelX = 0.0f;
-        float totalAccelY = 0.0f;
+    vec2 CalculateTotalAcceleration(float mass, const vec2& velocity) {
+        vec2 totalAccel = { 0.0f, 0.0f };
 
         for (const auto& force : forces) {
-            float accelX, accelY;
-            force->CalculateAcceleration(mass, velocityX, velocityY, accelX, accelY);
-            totalAccelX += accelX;
-            totalAccelY += accelY;
+            vec2 accel = force->CalculateAcceleration(mass, velocity);
+            totalAccel.x += accel.x;
+            totalAccel.y += accel.y;
         }
 
-        return { totalAccelX, totalAccelY };
+        return totalAccel;
     }
 
     /**
@@ -202,11 +219,17 @@ public:
         forces.erase(
             std::remove_if(forces.begin(), forces.end(),
                 [type](const std::unique_ptr<Force>& force) {
+                    // Check if it's a LinearDirectionalForce
                     auto* linearForce = dynamic_cast<LinearDirectionalForce*>(force.get());
-                    if (linearForce && linearForce->type == type) return true;
+                    if (linearForce && linearForce->type == type) {
+                        return true;
+                    }
 
+                    // Check if it's a FrictionForce
                     auto* frictionForce = dynamic_cast<FrictionForce*>(force.get());
-                    if (frictionForce && frictionForce->type == type) return true;
+                    if (frictionForce && frictionForce->type == type) {
+                        return true;
+                    }
 
                     return false;
                 }),
@@ -221,11 +244,17 @@ public:
      */
     int FindForceByType(ForceType type) const {
         for (size_t i = 0; i < forces.size(); ++i) {
+            // Check if it's a LinearDirectionalForce
             auto* linearForce = dynamic_cast<LinearDirectionalForce*>(forces[i].get());
-            if (linearForce && linearForce->type == type) return static_cast<int>(i);
+            if (linearForce && linearForce->type == type) {
+                return static_cast<int>(i);
+            }
 
+            // Check if it's a FrictionForce
             auto* frictionForce = dynamic_cast<FrictionForce*>(forces[i].get());
-            if (frictionForce && frictionForce->type == type) return static_cast<int>(i);
+            if (frictionForce && frictionForce->type == type) {
+                return static_cast<int>(i);
+            }
         }
         return -1;
     }
@@ -335,6 +364,32 @@ public:
      * @param useGrav Whether to apply gravity
      */
     void SetGravity(bool useGrav) { useGravity = useGrav; }
+
+    /**
+     * @brief Applies a dash impulse (instant velocity change)
+     * @param directionX Direction to dash (-1 for left, 1 for right)
+     */
+    void ApplyDashImpulse(float directionX) {
+        // Remove any existing dash tracking force
+        forcesManager.RemoveForcesByType(ForceType::Dash);
+        forcesManager.RemoveForcesByType(ForceType::Jump);
+        forcesManager.RemoveForcesByType(ForceType::MoveRight);
+        forcesManager.RemoveForcesByType(ForceType::MoveLeft);
+
+        // Apply impulse directly to velocity (impulse = velocity change)
+        float impulse = directionX * ForceConstants::DASH_FORCE;
+        velocityX = impulse / mass;  // Set velocity directly
+        velocityY = 0.0f;  // Zero out vertical velocity
+
+        // Add a dummy dash "force" with 0 magnitude just to track that we're dashing
+        // This allows HasForceType(Dash) to work for checking dash state
+        forcesManager.AddCustomForce(std::make_unique<LinearDirectionalForce>(
+            directionX, 0.0f,
+            0.0f,  // No actual force applied
+            ForceConstants::DASH_DURATION,
+            ForceType::Dash
+        ));
+    }
 
     // ===== Forces Manager Access =====
     /**

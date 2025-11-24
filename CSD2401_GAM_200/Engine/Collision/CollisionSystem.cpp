@@ -145,6 +145,13 @@ void CollisionSystem::Update(float deltaTime)
             if (!col2)
                 continue;
 
+
+            // OPTIMIZATION: Check layer collision rules FIRST (cheap)
+            // Skip expensive shape collision if layers should not collide
+            if (!ShouldCollide(col1->GetLayer(), col2->GetLayer()))
+            {
+                continue;  // Skip this pair entirely
+            }
             bool isColliding = false;
 
             // Narrow-phase: Detect collision based on shape types
@@ -172,12 +179,6 @@ void CollisionSystem::Update(float deltaTime)
                     isColliding = CollisionIntersection_RectCircle_Static(
                         col2->GetAABB(), col1->GetCircle());
                 }
-            }
-
-            // Check layer collision rules
-            if (isColliding && !ShouldCollide(col1->GetLayer(), col2->GetLayer()))
-            {
-                isColliding = false;
             }
 
             if (isColliding)
