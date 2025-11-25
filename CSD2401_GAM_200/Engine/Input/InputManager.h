@@ -24,6 +24,10 @@ Technology is prohibited.
 #include "GraphicsSystem.h"
 #include "core.h"
 #include "audio.h"
+#ifdef USE_IMGUI
+#include "imgui.h"
+#include <imgui_impl_glfw.h>
+#endif
 
 /**
  * @class InputManager

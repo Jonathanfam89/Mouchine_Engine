@@ -14,7 +14,9 @@ Technology is prohibited.
 /* End Header **************************************************************************/
 
 #include "core.h"
-//#include "LevelEditor.h"
+#ifdef USE_IMGUI
+#include "LevelEditor.h"
+#endif
 #include "Message.h"
 #include "IMessageHandler.h"
 
