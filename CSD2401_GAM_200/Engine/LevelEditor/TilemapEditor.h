@@ -10,7 +10,7 @@ without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 */
 /* End Header **************************************************************************/
-
+#ifdef USE_IMGUI
 #pragma once
 
 #include <imgui.h>
@@ -229,3 +229,4 @@ private:
 };
 
 extern bool isTileMapFocused;
+#endif

@@ -92,6 +92,7 @@ void InputManager::Update(float dt)
     MouseWorldY = static_cast<double>(height / 2.0 - ypos) + camPos.y; // Flip Y axis
 
     static bool keyPressed = false;
+#ifdef USE_IMGUI
     LevelEditor *levelEditor = CORE->GetLevelEditor();
     if (levelEditor && levelEditor->GetEditorMode() != EditorMode::Play && levelEditor->GetEditorMode() != EditorMode::Stop)
     {
@@ -102,6 +103,7 @@ void InputManager::Update(float dt)
         mouseY = ypos;
         return;
     }
+#endif
 
     static std::unordered_map<int, bool> singleTriggerKeys = {
         {GLFW_KEY_SPACE, false},

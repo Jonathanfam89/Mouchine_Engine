@@ -133,6 +133,7 @@ public:
      */
     mat4 GetMatrix();
 
+#ifdef USE_IMGUI
     void test() 
     {
         _propertySlot.push_back({ "aa", "aa" }); 
@@ -141,6 +142,7 @@ public:
             // WIP but i cant call renderimgui for some fucking reason im dedass bout to eat my whole keyboard this is a nightmare
         }
     };
+#endif
 
 public:
     float posX, posY;     // Position

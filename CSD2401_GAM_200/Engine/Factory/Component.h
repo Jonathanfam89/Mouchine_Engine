@@ -27,9 +27,12 @@ must haves like the component must haves
 #include <string>
 #include <memory>
 #include <vector>
+#ifdef USE_IMGUI
 #include "imgui.h"
+#endif
 
 class GameObject;
+#ifdef USE_IMGUI
 void ReceiveDragAndDrop(std::string const& _expectedPayload,std::string const& _receivedData);
 
 class PropertiesSlot
@@ -69,6 +72,7 @@ private:
     std::string _receivedData;
     inline static unsigned int _totalID = 0;
 };
+#endif
 
 // Base Component class - contains both data and behavior
 class IComponent
@@ -128,10 +132,12 @@ public:
      * @param displayText       Name to display.
      * @param expectedPayload   Payload type its expecting to receive.
      */
+#ifdef USE_IMGUI
     void AddDragDropSlot(std::string const& displayText, std::string const& expectedPayload) { _propertySlot.push_back(PropertiesSlot(displayText, expectedPayload)); }
     void AddDragDropSlot(PropertiesSlot const& ps) { _propertySlot.push_back(ps); }
 
     std::vector<PropertiesSlot> const& GetPropertySlots() { return _propertySlot; }
+#endif
 
     /**
      * @brief Checks if the component is currently enabled.
@@ -142,7 +148,11 @@ public:
 protected:
     GameObject *owner;
     bool enabled;
+#ifdef USE_IMGUI
     std::vector<PropertiesSlot> _propertySlot;
+#endif
 private:
-    //class PropertiesSlot;
+#ifdef USE_IMGUI
+    class PropertiesSlot;
+#endif
 };

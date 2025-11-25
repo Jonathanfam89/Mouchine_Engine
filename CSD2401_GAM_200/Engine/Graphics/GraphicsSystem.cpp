@@ -248,18 +248,18 @@ void GraphicsSystem::Initialize()
                 if (sounds.find("bgm") != sounds.end())
                 {
                     // Game scene - play game BGM
-                    std::cout << "[LevelEditor] Playing game BGM\n";
+                    std::cout << "Playing game BGM\n";
                     audioManager->PlaySound("bgm", "bgm_channel");
                 }
                 else if (sounds.find("MainMenuBGM") != sounds.end())
                 {
                     // Main menu scene - play menu BGM
-                    std::cout << "[LevelEditor] Playing main menu BGM\n";
+                    std::cout << "Playing main menu BGM\n";
                     audioManager->PlaySound("MainMenuBGM", "menu_bgm_channel");
                 }
                 else
                 {
-                    std::cout << "[LevelEditor] No BGM found in AudioManager\n";
+                    std::cout << "No BGM found in AudioManager\n";
                 }
             }
         });
@@ -465,6 +465,7 @@ void GraphicsSystem::Update(float)
     // === View-Projection Matrix Calculation ===
     float renderWidth = editorMode ? (float)(frameBufferWidth) : float(Wwidth);
     float renderHeight = editorMode ? (float)(frameBufferHeight) : float(Wheight);
+#ifdef USE_IMGUI
     if (levelEditor && (levelEditor->GetEditorMode() == EditorMode::Stop || levelEditor->GetEditorMode() == EditorMode::Pause))
     {
         // EDITOR MODE: Use free editor camera for level editing
@@ -477,13 +478,22 @@ void GraphicsSystem::Update(float)
         vp = CameraManager::Instance().GetViewProjectMatrix(renderWidth, renderHeight);
         vec2 camPos = CameraManager::Instance().GetCameraPosition();
     }
+#endif
+
+    vp = CameraManager::Instance().GetViewProjectMatrix(renderWidth, renderHeight);
+    vec2 camPos = CameraManager::Instance().GetCameraPosition();
+
     // Accumulate all geometry into batches
     batches.clear();
 
     auto* textObj = GameObjectFactory::Instance().FindGameObject("Text FPS");
     if (textObj) {
         auto* textFPS = textObj->GetComponent<TextComponent>();
+#ifdef USE_IMGUI
         if (InputManager::ShowFPS && CORE->GetLevelEditor()->GetEditorMode() == EditorMode::Play) {
+#else
+        if (InputManager::ShowFPS){
+#endif
             textFPS->SetEnabled(true);
             textFPS->SetText(std::to_string(CORE->GetFPS()));
         }

@@ -11,7 +11,7 @@ without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 */
 /* End Header **************************************************************************/
-
+#ifdef USE_IMGUI
 #pragma once
 
 #include "Animator.hpp"
@@ -421,3 +421,4 @@ private:
     float currentBGMVolume = 0.5f;
     static const int undoCapacity = 20;  // Maximum (action) history size
 };
+#endif

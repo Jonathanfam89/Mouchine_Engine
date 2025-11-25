@@ -10,7 +10,7 @@ without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 */
 /* End Header **************************************************************************/
-
+#ifdef USE_IMGUI
 #include "TilemapEditor.h"
 #include "ResourceManager.h"
 #include <fstream>
@@ -1195,3 +1195,4 @@ ImVec2 TilemapEditor::GetTileUV1(int tileID) const
 
     return ImVec2(u1, v1);
 }
+#endif

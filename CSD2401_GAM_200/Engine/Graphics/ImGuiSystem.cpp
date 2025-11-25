@@ -13,7 +13,7 @@ without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 */
 /* End Header **************************************************************************/
-
+#ifdef USE_IMGUI
 #include "ImGuiSystem.h"
 #include "PrefabManager.h"
 #include <iostream>
@@ -2884,3 +2884,4 @@ void TileMap_Render(float dt)
         tilemapEditor->SetVisible(false);
     }
 }
+#endif

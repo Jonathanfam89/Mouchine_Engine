@@ -209,6 +209,7 @@ void ComponentSerialization::DeserializeTransform(const json &j, GameObject *go)
     const auto &t = j["TransformComponent"];
     auto *tc = go->AddComponent<TransformComponent>();
 
+#ifdef USE_IMGUI
     if (Serialization::Prefab_DragAndDropped)
     {
         std::cout << "[DeserializeTransform] Prefab transform set to cursor pos\n";
@@ -225,6 +226,9 @@ void ComponentSerialization::DeserializeTransform(const json &j, GameObject *go)
         std::cout << "[DeserializeTransform] Prefab transform set to serialised pos\n";
         tc->SetPosition(t["pos"][0], t["pos"][1]);
     }
+#else
+    tc->SetPosition(t["pos"][0], t["pos"][1]);
+#endif
 
     tc->SetScale(t["scale"][0], t["scale"][1]);
     tc->SetRotation(t["rotation"]);

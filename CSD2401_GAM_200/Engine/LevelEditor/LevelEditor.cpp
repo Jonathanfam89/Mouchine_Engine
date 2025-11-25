@@ -11,7 +11,7 @@ without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 */
 /* End Header **************************************************************************/
-
+#ifdef USE_IMGUI
 #include "core.h"
 #include "ColliderComponent.h"
 #include "LevelEditor.h"
@@ -1527,3 +1527,4 @@ void LevelEditor::PerformUndo() {
 //        }
 //    }
 //}
+#endif

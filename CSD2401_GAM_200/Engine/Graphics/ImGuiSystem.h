@@ -11,7 +11,7 @@ without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 */
 /* End Header **************************************************************************/
-
+#ifdef USE_IMGUI
 #pragma once
 #include "System.h"
 #include "factory.h"
@@ -331,3 +331,4 @@ void M2_RenderStressTest();
 void AudioAssetsPanel_Render();
 
 void TileMap_Render(float dt);
+#endif

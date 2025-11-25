@@ -136,7 +136,9 @@ void Serialization::DeserializeGameObject(const json &j)
 	GameObject *go = factory.CreateGameObject(name);
 	std::cout << "[Deserialize] Created GO at " << go << " (ID " << go->GetID() << ")\n";
 
+#ifdef USE_IMGUI
 	prefabInstances[name].push_back(go->GetID());						// keeps tracks of the newly created prefabs
+#endif
 	go->SetActive(j.value("active", true));
 
 	ComponentSerialization::DeserializeAllComponents(go, j);

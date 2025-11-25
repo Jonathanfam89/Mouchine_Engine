@@ -26,7 +26,10 @@ Technology is prohibited.
 #include <thread>
 #include <chrono>
 #include <Physics.h>
+#ifdef USE_IMGUI
 #include "ImGuiSystem.h"
+#include "LevelEditor.h"
+#endif
 #include "InputManager.h"
 #include "transformSystem.h"
 #include "CollisionSystem.h"
@@ -38,7 +41,6 @@ Technology is prohibited.
 #include "MathLib.h"
 #include "Serialization.h"
 #include "logic.h"
-#include "LevelEditor.h"
 #include "MenuLogic.h"
 #include "AudioManager.h"
 
@@ -53,14 +55,16 @@ Technology is prohibited.
 // Forward declarations
 class GameObjectSystem;
 class GraphicsSystem;
+#ifdef USE_IMGUI
 class ImGuiSystem;
+class LevelEditor;
+#endif
 class InputManager;
 class CollisionSystem;
 class PhysicsSystem;
 class DebugSystem;
 class TransformSystem;
 class ScriptSystem;
-class LevelEditor;
 class MenuLogicSystem;
 class AudioManager;
 class CoreEngine : public IMessageHandler
@@ -129,10 +133,12 @@ public:
      * @brief Gets a pointer to the ImGuiSystem (for debugging/tools).
      * @return A pointer to the ImGuiSystem.
      */
+#ifdef USE_IMGUI
     ImGuiSystem *GetImguiSystem() const
     {
         return imguiSystem;
     }
+#endif
 
     /**
      * @brief Gets a pointer to the InputManager.
@@ -202,11 +208,12 @@ public:
      * @brief Gets a pointer to the LevelEditor.
      * @return A pointer to the LevelEditor.
      */
+#ifdef USE_IMGUI
     LevelEditor *GetLevelEditor() const
     {
         return levelEditor;
     }
-
+#endif
     /**
      * @brief Gets a pointer to the MenuLogicSystem.
      * @return A pointer to the MenuLogicSystem.
@@ -310,7 +317,10 @@ private:
 
     GameObjectSystem *gameObjectSystem = nullptr;
     GraphicsSystem *graphicsSystem = nullptr;
+#ifdef USE_IMGUI
     ImGuiSystem *imguiSystem = nullptr;
+    LevelEditor *levelEditor = nullptr;
+#endif
     InputManager *inputManager = nullptr;
     CollisionSystem *collisionSystem = nullptr;
     PhysicsSystem *physicsSystem = nullptr;
@@ -319,7 +329,6 @@ private:
     TransformSystem *transformSystem = nullptr;
     ScriptSystem *scriptSystem = nullptr;
     CameraSystem *cameraSystem = nullptr;
-    LevelEditor *levelEditor = nullptr;
     MenuLogicSystem *menuLogicSystem = nullptr;
     AudioManager *audioManager = nullptr;
     TimerSystem *timerSystem = nullptr;

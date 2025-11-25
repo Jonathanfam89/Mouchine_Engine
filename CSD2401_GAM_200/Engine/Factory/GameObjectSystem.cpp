@@ -144,6 +144,7 @@ Technology is prohibited.
          std::cout << "   Has Collider:  " << (go->GetComponent<ColliderComponent>() ? "Yes" : "No") << std::endl;
          
          // Update the last undo entry with new ID
+#ifdef USE_IMGUI
          LevelEditor* editor = CORE->GetLevelEditor();
          if (editor)
          {
@@ -156,6 +157,7 @@ Technology is prohibited.
 
              editor->RecordUndo(undocmd);
          }
+#endif
      }
  }
 
