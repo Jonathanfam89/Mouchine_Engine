@@ -299,6 +299,8 @@ public:
 
     bool IsGamePaused() const { return m_gamePause; }
 
+    bool LoadLevelDirectly(const std::string& filepath);
+
 private:
     /**
      * @brief Initializes all engine systems in the correct order.

@@ -23,8 +23,6 @@ Technology is prohibited.
 #include "physics.h"
 #include "GraphicsSystem.h"
 #include "core.h"
-#include "imgui.h"
-#include <imgui_impl_glfw.h>
 #include "audio.h"
 
 /**

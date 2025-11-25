@@ -8,6 +8,41 @@
       "channel": "bgm_channel"
     }
   },
+  "AudioManager": {
+    "sounds": [
+      {
+        "name": "bgm",
+        "filepath": "../Assets/audio/level_1.wav",
+        "loop": true,
+        "volume": 0.5,
+        "category": "music"
+      },
+      {
+        "name": "jump_sfx",
+        "filepath": "../Assets/audio/jump.wav",
+        "loop": false,
+        "volume": 0.8,
+        "category": "sfx"
+      },
+      {
+        "name": "footstep_sfx",
+        "filepath": "../Assets/audio/footstep.wav",
+        "loop": false,
+        "volume": 0.6,
+        "category": "sfx"
+      }
+    ],
+    "events": [
+      {
+        "event": "PlayerJump",
+        "sound": "jump_sfx"
+      },
+      {
+        "event": "PlayerLand",
+        "sound": "footstep_sfx"
+      }
+    ]
+  },
   "GameObjects": [
     {
       "name": "bgImage",

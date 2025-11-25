@@ -14,7 +14,7 @@ Technology is prohibited.
 /* End Header **************************************************************************/
 
 #include "core.h"
-#include "LevelEditor.h"
+//#include "LevelEditor.h"
 #include "Message.h"
 #include "IMessageHandler.h"
 
@@ -182,6 +182,26 @@ void CoreEngine::GameLoop()
             std::cout << "[CoreEngine] Scene to load: " << m_pendingScene << std::endl;
             std::cout << "[CoreEngine] Auto-play flag: " << (m_autoPlayAfterLoad ? "TRUE" : "FALSE") << std::endl;
 
+            LoadLevelDirectly(m_pendingScene);
+
+            if (audioManager)
+            {
+
+                // Check what sounds are available and play the appropriate BGM
+                const auto& sounds = audioManager->GetSoundDatabase();
+
+                if (sounds.find("bgm") != sounds.end())
+                {
+                    // Game scene - play game BGM
+                    audioManager->PlaySound("bgm", "bgm_channel");
+                }
+                else if (sounds.find("MainMenuBGM") != sounds.end())
+                {
+                    // Main menu scene - play menu BGM
+                    audioManager->PlaySound("MainMenuBGM", "menu_bgm_channel");
+                }
+            }
+
             //LevelEditor *level = GetLevelEditor();
             //level->LoadLevel(m_pendingScene);
             //std::cout << "[CoreEngine] Scene loaded successfully" << std::endl;
@@ -232,12 +252,12 @@ void CoreEngine::GameLoop()
             g_systemTimings[graphicsSystem->GetName()] = 0.0;
         if (debugSystem)
             g_systemTimings[debugSystem->GetName()] = 0.0;
-        if (levelEditor)
-            g_systemTimings[levelEditor->GetName()] = 0.0;
+        //if (levelEditor)
+        //    g_systemTimings[levelEditor->GetName()] = 0.0;
         if (scriptSystem)
             g_systemTimings[scriptSystem->GetName()] = 0.0;
-        if (imguiSystem)
-            g_systemTimings[imguiSystem->GetName()] = 0.0;
+        //if (imguiSystem)
+        //    g_systemTimings[imguiSystem->GetName()] = 0.0;
         if (menuLogicSystem)
             g_systemTimings[menuLogicSystem->GetName()] = 0.0;
         if (timerSystem)
@@ -247,18 +267,18 @@ void CoreEngine::GameLoop()
             g_systemTimings[eventSystemRunner->GetName()] = 0.0;
 
         // Start ImGui frame
-        if (imguiSystem)
-        {
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            glViewport(0, 0, graphicsSystem->GetWindowWidth(), graphicsSystem->GetWindowHeight());
-            glClearColor(0.15f, 0.15f, 0.15f, 1.f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //if (imguiSystem)
+        //{
+        //    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        //    glViewport(0, 0, graphicsSystem->GetWindowWidth(), graphicsSystem->GetWindowHeight());
+        //    glClearColor(0.15f, 0.15f, 0.15f, 1.f);
+        //    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            ImGui_ImplOpenGL3_NewFrame();
-            ImGui_ImplGlfw_NewFrame();
-            ImGui::NewFrame();
-            ImGuizmo::BeginFrame();
-        }
+        //    ImGui_ImplOpenGL3_NewFrame();
+        //    ImGui_ImplGlfw_NewFrame();
+        //    ImGui::NewFrame();
+        //    ImGuizmo::BeginFrame();
+        //}
 
         // FIXED TIMESTEP LOOP - Run physics multiple times if needed
         while (accumulator >= fixed_dt)
@@ -380,42 +400,42 @@ void CoreEngine::GameLoop()
             g_totalLoopTime += ms;
         }
 
-        if (levelEditor)
-        {
-            std::chrono::high_resolution_clock::time_point sysStart = std::chrono::high_resolution_clock::now();
-            levelEditor->Update(static_cast<float>(delta_time));
-            std::chrono::high_resolution_clock::time_point sysEnd = std::chrono::high_resolution_clock::now();
-            double ms = std::chrono::duration<double, std::milli>(sysEnd - sysStart).count();
-            g_systemTimings[levelEditor->GetName()] = ms;
-            g_totalLoopTime += ms;
-        }
+        //if (levelEditor)
+        //{
+        //    std::chrono::high_resolution_clock::time_point sysStart = std::chrono::high_resolution_clock::now();
+        //    levelEditor->Update(static_cast<float>(delta_time));
+        //    std::chrono::high_resolution_clock::time_point sysEnd = std::chrono::high_resolution_clock::now();
+        //    double ms = std::chrono::duration<double, std::milli>(sysEnd - sysStart).count();
+        //    g_systemTimings[levelEditor->GetName()] = ms;
+        //    g_totalLoopTime += ms;
+        //}
 
-        if (levelEditor && levelEditor->HasPendingSceneReload())
-        {
-            levelEditor->PerformSceneReload();
-        }
+        //if (levelEditor && levelEditor->HasPendingSceneReload())
+        //{
+        //    levelEditor->PerformSceneReload();
+        //}
 
         if (timerSystem)
         {
             timerSystem->Update(static_cast<float>(delta_time));
         }
 
-        if (imguiSystem)
-        {
-            std::chrono::high_resolution_clock::time_point sysStart = std::chrono::high_resolution_clock::now();
-            imguiSystem->Update(static_cast<float>(delta_time));
-            std::chrono::high_resolution_clock::time_point sysEnd = std::chrono::high_resolution_clock::now();
-            double ms = std::chrono::duration<double, std::milli>(sysEnd - sysStart).count();
-            g_systemTimings[imguiSystem->GetName()] = ms;
-            g_totalLoopTime += ms;
-        }
+        //if (imguiSystem)
+        //{
+        //    std::chrono::high_resolution_clock::time_point sysStart = std::chrono::high_resolution_clock::now();
+        //    imguiSystem->Update(static_cast<float>(delta_time));
+        //    std::chrono::high_resolution_clock::time_point sysEnd = std::chrono::high_resolution_clock::now();
+        //    double ms = std::chrono::duration<double, std::milli>(sysEnd - sysStart).count();
+        //    g_systemTimings[imguiSystem->GetName()] = ms;
+        //    g_totalLoopTime += ms;
+        //}
 
-        // End ImGui frame and render
-        if (imguiSystem)
-        {
-            ImGui::Render();
-            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-        }
+        //// End ImGui frame and render
+        //if (imguiSystem)
+        //{
+        //    ImGui::Render();
+        //    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        //}
 
         if (g_UseGameStates)
         {
@@ -503,12 +523,164 @@ void CoreEngine::SetGamePaused(bool paused)
 
     m_gamePause = paused;
 
-    if (audioEngine && levelEditor)
+    if (audioEngine)
     {
-        std::string bgmChannel = levelEditor->GetCurrentBGMChannel();
-        if (!bgmChannel.empty())
+        audioEngine->stopAllSound();
+    }
+}
+
+
+bool CoreEngine::LoadLevelDirectly(const std::string& filepath)
+{
+    try
+    {
+        std::cout << "LOADING LEVEL: " << filepath << "\n";
+
+        // open & parse
+        std::ifstream inFile(filepath);
+        if (!inFile.is_open())
         {
-            audioEngine->pauseSound(bgmChannel, paused);
+            std::cerr << "Failed to open file for reading: " << filepath << std::endl;
+            return false;
         }
+
+        json root;
+        inFile >> root;
+        inFile.close();
+
+        if (CORE)
+        {
+            TimerSystem* ts = CORE->GetTimerSystem();
+            if (ts)
+            {
+                std::cout << "[LoadLevel] Clearing active timers...\n";
+                ts->ClearAllTimers();
+            }
+            PhysicsSystem* ps = CORE->GetPhysicsSystem();
+            if (ps)
+            {
+                ps->ClearCollisionQueue();
+            }
+        }
+
+
+        // stop/unload audio (if any)
+        auto& resourceMgr = ResourceManager::Instance();
+        AudioEngine* audio = resourceMgr.GetAudioEngine();
+
+        if (audio)
+        {
+            std::cout << "[LoadLevel] Stopping all sounds...\n";
+            audio->stopAllSound();
+            audio->updateAudio(); // ensure FMOD flushes
+            std::cout << "[LoadLevel] All sounds stopped\n";
+        }
+
+        std::cout << "[LoadLevel] Unloading audio resources...\n";
+        resourceMgr.UnloadAllAudio();
+
+        // clear current level
+        GameObjectFactory& factory = GameObjectFactory::Instance();
+        factory.Clear();
+
+        // also clear any active camera binding
+        CameraManager::Instance().ClearActiveCamera();
+
+        size_t lastSlash = filepath.find_last_of("/\\");
+        size_t lastDot = filepath.find_last_of('.');
+        std::string filenameOnly = filepath;
+
+        if (lastSlash != std::string::npos)
+            filenameOnly = filepath.substr(lastSlash + 1);
+
+        if (lastDot != std::string::npos && lastDot > lastSlash)
+            filenameOnly = filenameOnly.substr(0, lastDot - (lastSlash + 1));
+
+        // load audio manager configuration
+        if (root.contains("AudioManager") && CORE)
+        {
+            std::cout << "[LoadLevel] Found AudioManager section in JSON\n";
+            AudioManager* audioManager = CORE->GetAudioManager();
+            if (audioManager)
+            {
+                std::cout << "[LoadLevel] AudioManager pointer is valid\n";
+                Serialization::DeserializeAudioManager(root, audioManager);
+                std::cout << "[LoadLevel] AudioManager deserialization complete\n";
+                audioManager->PrintConfig();
+            }
+            else
+            {
+                std::cerr << "[LoadLevel] ERROR: AudioManager pointer is NULL!\n";
+            }
+        }
+        else
+        {
+            if (!root.contains("AudioManager"))
+            {
+                std::cerr << "[LoadLevel] ERROR: No AudioManager section found in JSON!\n";
+            }
+            if (!CORE)
+            {
+                std::cerr << "[LoadLevel] ERROR: CORE is NULL!\n";
+            }
+        }
+
+        // load all game objects
+        if (root.contains("GameObjects") && root["GameObjects"].is_array())
+        {
+            std::cout << "[LoadLevel] Loading game objects...\n";
+            for (const auto& objData : root["GameObjects"])
+            {
+                Serialization::DeserializeGameObject(objData);
+            }
+        }
+        Serialization::ResolveHierarchy();
+
+
+        // check if MainCamera exists, create one if not
+        GameObject* mainCam = factory.FindGameObject("MainCamera");
+        if (!mainCam) {
+            std::cout << "No MainCamera found in scene, creating one...\n";
+
+            // create MainCamera
+            mainCam = factory.CreateGameObject("MainCamera");
+            mainCam->AddComponent<TransformComponent>();
+            auto* camComp = mainCam->AddComponent<CameraComponent>();
+            camComp->SetZoom(1.0f);
+            camComp->SetMode(CameraComponent::CameraMode::FIXED);
+            CameraManager::Instance().SetActiveCamera(mainCam);
+
+            std::cout << "MainCamera created successfully\n";
+        }
+        else {
+            // MainCamera exists, but check if it has a CameraComponent
+            auto* camComp = mainCam->GetComponent<CameraComponent>();
+            if (!camComp) {
+                std::cout << "MainCamera exists but missing CameraComponent, adding one...\n";
+
+                if (!mainCam->GetComponent<TransformComponent>()) {
+                    mainCam->AddComponent<TransformComponent>();
+                }
+                camComp = mainCam->AddComponent<CameraComponent>();
+                camComp->SetZoom(1.0f);
+                camComp->SetMode(CameraComponent::CameraMode::FIXED);
+                CameraManager::Instance().SetActiveCamera(mainCam);
+
+                std::cout << "CameraComponent added successfully\n";
+            }
+            else {
+                std::cout << "MainCamera with CameraComponent found in scene\n";
+            }
+        }
+
+        std::cout << "Level loaded from: " << filepath << "\n";
+        std::cout << "Loaded " << factory.GetAllGameObjects().size() << " game objects\n";
+
+        return true;
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "Error loading level: " << e.what() << std::endl;
+        return false;
     }
 }
