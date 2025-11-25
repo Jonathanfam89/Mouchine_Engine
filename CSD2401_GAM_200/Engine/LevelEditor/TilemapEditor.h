@@ -18,6 +18,7 @@ Technology is prohibited.
 #include <vector>
 #include <GL/glew.h>
 #include "MathLib.h"
+#include "ImGuiSystem.h"
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::ordered_json;
@@ -216,7 +217,7 @@ private:
     bool showLoadDialog;
 
     // Tileset loading
-    char tilesetPath[256];
+    char tilesetPath[256] = "";
     bool showTilesetLoadDialog;
     int tempTileWidth;
     int tempTileHeight;

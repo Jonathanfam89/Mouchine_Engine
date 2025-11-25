@@ -53,7 +53,8 @@ TilemapEditor::TilemapEditor()
     // Initialize filepath buffers
     std::memset(saveFilepath, 0, sizeof(saveFilepath));
     std::memset(loadFilepath, 0, sizeof(loadFilepath));
-    std::memset(tilesetPath, 0, sizeof(tilesetPath));
+    //std::memset(tilesetPath, 0, sizeof(tilesetPath));
+    strcpy(tilesetPath, "<empty>");
 
     // Initialize layer names - 3 layers: Background (0), Main (1), Foreground (2)
     layerNames = { "Background", "Main", "Foreground" };
@@ -191,43 +192,6 @@ void TilemapEditor::Render()
             {
                 std::cout << "Tilemap loaded: " << filepath << std::endl;
             }
-            ImGui::CloseCurrentPopup();
-        }
-
-        ImGui::SameLine();
-        if (ImGui::Button("Cancel", ImVec2(120, 0)))
-        {
-            ImGui::CloseCurrentPopup();
-        }
-
-        ImGui::EndPopup();
-    }
-
-    // Tileset load dialog
-    if (ImGui::BeginPopupModal("Load Tileset", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        ImGui::Text("Tileset Path:");
-        ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Example: ../Assets/Tiles/tileset.png");
-        ImGui::InputText("##tilesetpath", tilesetPath, sizeof(tilesetPath));
-
-        ImGui::Text("Tile Size:");
-        ImGui::InputInt("Width##tilewidth", &tempTileWidth);
-        ImGui::InputInt("Height##tileheight", &tempTileHeight);
-
-        if (ImGui::Button("Load", ImVec2(120, 0)))
-        {
-            currentTileset.tileWidth = tempTileWidth;
-            currentTileset.tileHeight = tempTileHeight;
-
-            if (LoadTileset(tilesetPath))
-            {
-                std::cout << "[TilemapEditor] Tileset loaded successfully!" << std::endl;
-            }
-            else
-            {
-                std::cout << "[TilemapEditor] Failed to load tileset!" << std::endl;
-            }
-
             ImGui::CloseCurrentPopup();
         }
 
@@ -533,10 +497,35 @@ void TilemapEditor::RenderTilesetPanel()
     {
         if (!tilesetLoaded)
         {
+            ImGui::Text("Tile Size:");
+            ImGui::InputInt("Width##tilewidth", &currentTileset.tileWidth);
+            ImGui::InputInt("Height##tileheight", &currentTileset.tileHeight);
+            currentTileset.tileWidth = tempTileWidth;
+            currentTileset.tileHeight = tempTileHeight;
+
+            std::string draggedTiles{};
             ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "No tileset loaded");
-            if (ImGui::Button("Load Tileset", ImVec2(-1, 0)))
+
+            ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Specify directory or Drag&Drop here");
+            ImGui::InputText("##tilesetpath", tilesetPath, sizeof(tilesetPath));
+            if (ImGui::IsItemFocused() && ImGui::IsKeyPressed(ImGuiKey_Enter))
             {
-                showTilesetLoadDialog = true;
+                draggedTiles = tilesetPath;
+            }
+
+            ReceiveDragAndDrop(TilesetPayloadID, draggedTiles);
+            if (!draggedTiles.empty())
+            {
+                strcpy(tilesetPath, draggedTiles.c_str());
+                std::cout << draggedTiles << std::endl;
+                if (LoadTileset(draggedTiles))
+                {
+                    std::cout << "[TilemapEditor] Tileset loaded successfully!" << std::endl;
+                }
+                else
+                {
+                    std::cout << "[TilemapEditor] Failed to load tileset!" << std::endl;
+                }
             }
             return;
         }
@@ -570,7 +559,7 @@ void TilemapEditor::RenderTilesetPanel()
             {
                 std::cout << "[TilemapEditor] WARNING: Changing tileset will affect existing tiles!" << std::endl;
             }
-            showTilesetLoadDialog = true;
+            tilesetLoaded = false;
         }
 
         if (hasTiles)

@@ -86,8 +86,7 @@ static bool hierarchy_renameFocus = false;
 char hierarchy_rename_str[128]{ "" };
 std::string hierarchy_oldname{};
 
-// PROPERTIES TAB SLOT 
-std::vector<PropertiesSlot> propertySlotsList;
+// CONTAINERS
 std::vector < std::tuple<ComponentType, std::string, ImTextureID, std::function<void(GameObject*)>>>  AllComponents;
 std::unordered_map<std::string, std::vector<EntityID>> prefabInstances;
 
@@ -1520,25 +1519,30 @@ void DirectoryNavigator::RenderImGui()
             if (ImGui::IsItemActive() && ImGui::IsMouseDown(ImGuiMouseButton_Left))
             {
                 // Depending on folder its in, send the respective payloadIDs to receive
+                // changed from string() to generic_string() because of weird issues with front n back slashes
                 if (iter.path().parent_path().filename() == "Scenes")
                 {
-                    SendDragAndDrop(ScenePayloadID, iter.path().string(), fileName.c_str());            // For scenes files
+                    SendDragAndDrop(ScenePayloadID, iter.path().generic_string(), fileName.c_str());            // For scenes files
                 }
                 else if (iter.path().parent_path().filename() == "Prefabs")
                 {
-                    SendDragAndDrop(PrefabPayloadID, iter.path().stem().string(), fileName);            // For prefab files
+                    SendDragAndDrop(PrefabPayloadID, iter.path().stem().generic_string(), fileName);            // For prefab files
                 }
                 else if (iter.path().parent_path().filename() == "Audio" || iter.path().parent_path().filename() == "audio")
                 {
-                    SendDragAndDrop(AudioPayloadID, iter.path().string(), fileName.c_str());            // For Audio files
+                    SendDragAndDrop(AudioPayloadID, iter.path().generic_string(), fileName.c_str());            // For Audio files
                 }
                 else if (iter.path().parent_path().filename() == "Sprites")
                 {
-                    SendDragAndDrop(SpritePayloadID, iter.path().string(), fileName.c_str());            // For Sprites/ Spritesheets files
+                    SendDragAndDrop(SpritePayloadID, iter.path().generic_string(), fileName.c_str());            // For Sprites/ Spritesheets files
+                }
+                else if (iter.path().parent_path().filename() == "Tiles")
+                {
+                    SendDragAndDrop(TilesetPayloadID, iter.path().generic_string(), fileName.c_str());            // For Tilesets for tile editor
                 }
                 else
                 {
-                    SendDragAndDrop(AssetPayloadID, iter.path().string(), fileName.c_str());            // Anything else considered an general asset
+                    SendDragAndDrop(AssetPayloadID, iter.path().generic_string(), fileName.c_str());            // Anything else considered an general asset
                 }
             }
         }
@@ -1922,7 +1926,6 @@ GameObject* ImGuiSystem::GetSelectedGameObject() const
     return factory.GetGameObject(selectedGameObjectID);
 }
 
-PropertiesSlot ps("test", PrefabPayloadID);
 /**
  * @brief Render property editor for Selected GOs. Will be empty by default, and then show details if a GO is selected.
  */
@@ -1959,7 +1962,7 @@ void ImGuiSystem::RenderPropertyEditor()
 
     ImGui::Spacing();
     // this is done, just need to attach to a component? so it'll belong to a specific component where users can drag and drop stuff
-    ps.RenderImGui();
+    //ps.RenderImGui();
 
     // GO transform screen
     if (auto* transform = obj->GetComponent<TransformComponent>())
@@ -2036,6 +2039,11 @@ void ImGuiSystem::RenderPropertyEditor()
             }
             BeginEdit();
             EndEdit();
+
+            if (ImGui::Button("ljlacbifuckingsot"))
+            {
+                transform->test();
+            }
         }
 
     }
@@ -2348,22 +2356,6 @@ void ImGuiSystem::RenderEventComponent(GameObject* obj)
             ec->rules.push_back(newRule);
         }
     }
-}
-
-
-void PropertiesSlot::RenderImGui()
-{
-    ImGui::PushID(std::to_string(_id).c_str());
-    ImGui::AlignTextToFramePadding();
-    ImGui::TextUnformatted(_displayText.c_str());
-    ImGui::SameLine();
-
-    if (ImGui::Button(_receivedData.empty() ? "None" : _receivedData.c_str(), ImVec2(200, 0)))
-    {
-
-    }
-    ReceiveDragAndDrop(PrefabPayloadID, _receivedData);
-    ImGui::PopID();
 }
 
 /**
