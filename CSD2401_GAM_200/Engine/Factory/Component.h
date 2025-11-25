@@ -153,6 +153,6 @@ protected:
 #endif
 private:
 #ifdef USE_IMGUI
-    class PropertiesSlot;
+    //class PropertiesSlot;
 #endif
 };

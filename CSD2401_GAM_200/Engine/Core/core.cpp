@@ -86,8 +86,9 @@ void CoreEngine::InitSystems()
     graphicsSystem = AddSystem<GraphicsSystem>(WindWidth, WindHeight);
 
     // 2. ImGui (needs graphics window)
-    //imguiSystem = AddSystem<ImGuiSystem>(graphicsSystem->getWindow());
-
+#ifdef USE_IMGUI
+    imguiSystem = AddSystem<ImGuiSystem>(graphicsSystem->getWindow());
+#endif
     // 3. Input Manager - MUST BE EARLY to capture input before physics updates
     inputManager = AddSystem<InputManager>(graphicsSystem->getWindow(), audioEngine);
     debugSystem = AddSystem<DebugSystem>();
@@ -108,8 +109,9 @@ void CoreEngine::InitSystems()
     cameraSystem = AddSystem<CameraSystem>();
 
     // 8. Level Editor - for editing levels
-    //levelEditor = AddSystem<LevelEditor>();
-
+#ifdef USE_IMGUI
+    levelEditor = AddSystem<LevelEditor>();
+#endif
     // Connect CollisionSystem to PhysicsSystem
     collisionSystem->SetPhysicsSystem(physicsSystem);
 
@@ -122,8 +124,9 @@ void CoreEngine::InitSystems()
     eventSystemRunner = AddSystem<EventSystemRunner>();
 
     // Connect GraphicsSystem to LevelEditor for editor camera
-    //graphicsSystem->SetLevelEditor(levelEditor);
-
+#ifdef USE_IMGUI
+    graphicsSystem->SetLevelEditor(levelEditor);
+#endif
     // Subscribe systems to specific message types
     messageBus.Subscribe<PlaySoundMessage>(audioEngine);
     messageBus.Subscribe<PauseSoundMessage>(audioEngine);
@@ -184,6 +187,8 @@ void CoreEngine::GameLoop()
             std::cout << "[CoreEngine] Scene to load: " << m_pendingScene << std::endl;
             std::cout << "[CoreEngine] Auto-play flag: " << (m_autoPlayAfterLoad ? "TRUE" : "FALSE") << std::endl;
 
+#ifdef USE_IMGUI
+#else
             LoadLevelDirectly(m_pendingScene);
 
             if (audioManager)
@@ -203,22 +208,27 @@ void CoreEngine::GameLoop()
                     audioManager->PlaySound("MainMenuBGM", "menu_bgm_channel");
                 }
             }
+#endif
 
-            //LevelEditor *level = GetLevelEditor();
-            //level->LoadLevel(m_pendingScene);
-            //std::cout << "[CoreEngine] Scene loaded successfully" << std::endl;
+#ifdef USE_IMGUI
+            LevelEditor *level = GetLevelEditor();
+            level->LoadLevel(m_pendingScene);
+            std::cout << "[CoreEngine] Scene loaded successfully" << std::endl;
+#endif
 
             // ===== AUTO-ENTER PLAY MODE IF REQUESTED =====
-            //if (m_autoPlayAfterLoad)
-            //{
-            //    std::cout << "[CoreEngine] Auto-play flag is TRUE - entering play mode\n";
-            //    level->EnterPlayMode();
-            //    std::cout << "[CoreEngine] Play mode entered\n";
-            //}
-            //else
-            //{
-            //    std::cout << "[CoreEngine] Auto-play flag is FALSE - NOT entering play mode\n";
-            //}
+#ifdef USE_IMGUI
+            if (m_autoPlayAfterLoad)
+            {
+                std::cout << "[CoreEngine] Auto-play flag is TRUE - entering play mode\n";
+                level->EnterPlayMode();
+                std::cout << "[CoreEngine] Play mode entered\n";
+            }
+            else
+            {
+                std::cout << "[CoreEngine] Auto-play flag is FALSE - NOT entering play mode\n";
+            }
+#endif
 
             m_pendingScene = "";
             m_hasPendingLoad = false;
@@ -254,12 +264,16 @@ void CoreEngine::GameLoop()
             g_systemTimings[graphicsSystem->GetName()] = 0.0;
         if (debugSystem)
             g_systemTimings[debugSystem->GetName()] = 0.0;
-        //if (levelEditor)
-        //    g_systemTimings[levelEditor->GetName()] = 0.0;
+#ifdef USE_IMGUI
+        if (levelEditor)
+            g_systemTimings[levelEditor->GetName()] = 0.0;
+#endif
         if (scriptSystem)
             g_systemTimings[scriptSystem->GetName()] = 0.0;
-        //if (imguiSystem)
-        //    g_systemTimings[imguiSystem->GetName()] = 0.0;
+#ifdef USE_IMGUI
+        if (imguiSystem)
+            g_systemTimings[imguiSystem->GetName()] = 0.0;
+#endif
         if (menuLogicSystem)
             g_systemTimings[menuLogicSystem->GetName()] = 0.0;
         if (timerSystem)
@@ -269,18 +283,20 @@ void CoreEngine::GameLoop()
             g_systemTimings[eventSystemRunner->GetName()] = 0.0;
 
         // Start ImGui frame
-        //if (imguiSystem)
-        //{
-        //    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        //    glViewport(0, 0, graphicsSystem->GetWindowWidth(), graphicsSystem->GetWindowHeight());
-        //    glClearColor(0.15f, 0.15f, 0.15f, 1.f);
-        //    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+#ifdef USE_IMGUI
+        if (imguiSystem)
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glViewport(0, 0, graphicsSystem->GetWindowWidth(), graphicsSystem->GetWindowHeight());
+            glClearColor(0.15f, 0.15f, 0.15f, 1.f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        //    ImGui_ImplOpenGL3_NewFrame();
-        //    ImGui_ImplGlfw_NewFrame();
-        //    ImGui::NewFrame();
-        //    ImGuizmo::BeginFrame();
-        //}
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+            ImGuizmo::BeginFrame();
+        }
+#endif
 
         // FIXED TIMESTEP LOOP - Run physics multiple times if needed
         while (accumulator >= fixed_dt)
@@ -402,42 +418,46 @@ void CoreEngine::GameLoop()
             g_totalLoopTime += ms;
         }
 
-        //if (levelEditor)
-        //{
-        //    std::chrono::high_resolution_clock::time_point sysStart = std::chrono::high_resolution_clock::now();
-        //    levelEditor->Update(static_cast<float>(delta_time));
-        //    std::chrono::high_resolution_clock::time_point sysEnd = std::chrono::high_resolution_clock::now();
-        //    double ms = std::chrono::duration<double, std::milli>(sysEnd - sysStart).count();
-        //    g_systemTimings[levelEditor->GetName()] = ms;
-        //    g_totalLoopTime += ms;
-        //}
+#ifdef USE_IMGUI
+        if (levelEditor)
+        {
+            std::chrono::high_resolution_clock::time_point sysStart = std::chrono::high_resolution_clock::now();
+            levelEditor->Update(static_cast<float>(delta_time));
+            std::chrono::high_resolution_clock::time_point sysEnd = std::chrono::high_resolution_clock::now();
+            double ms = std::chrono::duration<double, std::milli>(sysEnd - sysStart).count();
+            g_systemTimings[levelEditor->GetName()] = ms;
+            g_totalLoopTime += ms;
+        }
 
-        //if (levelEditor && levelEditor->HasPendingSceneReload())
-        //{
-        //    levelEditor->PerformSceneReload();
-        //}
+        if (levelEditor && levelEditor->HasPendingSceneReload())
+        {
+            levelEditor->PerformSceneReload();
+        }
+#endif
 
         if (timerSystem)
         {
             timerSystem->Update(static_cast<float>(delta_time));
         }
 
-        //if (imguiSystem)
-        //{
-        //    std::chrono::high_resolution_clock::time_point sysStart = std::chrono::high_resolution_clock::now();
-        //    imguiSystem->Update(static_cast<float>(delta_time));
-        //    std::chrono::high_resolution_clock::time_point sysEnd = std::chrono::high_resolution_clock::now();
-        //    double ms = std::chrono::duration<double, std::milli>(sysEnd - sysStart).count();
-        //    g_systemTimings[imguiSystem->GetName()] = ms;
-        //    g_totalLoopTime += ms;
-        //}
+#ifdef USE_IMGUI
+        if (imguiSystem)
+        {
+            std::chrono::high_resolution_clock::time_point sysStart = std::chrono::high_resolution_clock::now();
+            imguiSystem->Update(static_cast<float>(delta_time));
+            std::chrono::high_resolution_clock::time_point sysEnd = std::chrono::high_resolution_clock::now();
+            double ms = std::chrono::duration<double, std::milli>(sysEnd - sysStart).count();
+            g_systemTimings[imguiSystem->GetName()] = ms;
+            g_totalLoopTime += ms;
+        }
 
-        //// End ImGui frame and render
-        //if (imguiSystem)
-        //{
-        //    ImGui::Render();
-        //    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-        //}
+        // End ImGui frame and render
+        if (imguiSystem)
+        {
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        }
+#endif
 
         if (g_UseGameStates)
         {
@@ -531,7 +551,8 @@ void CoreEngine::SetGamePaused(bool paused)
     }
 }
 
-
+#ifdef USE_IMGUI
+#else
 bool CoreEngine::LoadLevelDirectly(const std::string& filepath)
 {
     try
@@ -686,3 +707,4 @@ bool CoreEngine::LoadLevelDirectly(const std::string& filepath)
         return false;
     }
 }
+#endif
