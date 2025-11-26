@@ -303,8 +303,29 @@ void ImGuiSystem::Update(float dt)
                 if (!draggedPrefab.empty())
                 {
                     // filter for type of data here
-                    std::cout << draggedPrefab << std::endl;                         // Prints the data sent via drag and drop
-                    Serialization::LoadPrefab(draggedPrefab);
+                    //std::cout << draggedPrefab << std::endl;                         // Prints the data sent via drag and drop
+                    //Serialization::LoadPrefab(draggedPrefab);
+
+                   // Load prefab AND retrieve the root object created
+                    GameObject* root = Serialization::LoadPrefabWithReturn(draggedPrefab);
+
+                    if (root)
+                    {
+                        // Record Undo Entries - Undo Create on Drag and Drop
+                        LevelEditor* editor = CORE->GetLevelEditor();
+                        if (editor)
+                        {
+                            EditorUndoCommand cmd;
+                            cmd.action = EditorUndoCommand::ActionType::ObjectCreated;
+                            cmd.entityID = root->GetID();
+
+                            // Save object's entire state for redo
+                            cmd.afterJson = Serialization::SerializeGameObject(root);
+
+                            editor->RecordUndo(cmd);
+                        }
+                    }
+                
                 }
 
                 // Viewport accepts Sprites for drag and drop
@@ -687,14 +708,16 @@ void ImGuiSystem::Hierarchy_Render()
     {
         M2_RenderStressTest();
     }
-    // Undo feature
+    // Undo Feature
     LevelEditor* editor = CORE->GetLevelEditor();
     bool canUndo = !editor->undoStack.empty();
 
     if (!canUndo) ImGui::BeginDisabled();
     if (ImGui::Button("Undo"))
     {
-        if (canUndo) CORE->GetLevelEditor()->PerformUndo();
+        if (canUndo) {
+            CORE->GetLevelEditor()->PerformUndo();       
+        } 
     }
     if (!canUndo) ImGui::EndDisabled();
 
@@ -960,10 +983,16 @@ void ImGuiSystem::Hierarchy_GameObjectTree_Renderer(GameObject *obj, int depth, 
         {
             // TODO - block out the deleting of main camera - crashes the game
 
-            // Record undo-delete
+            // Record Undo Entries - Undo Delete
             LevelEditor* editor = CORE->GetLevelEditor();
             GameObject* obj = factory.GetGameObject(id);
 
+            {
+                GameObject* p = obj->GetParent();              
+                if (p) {
+                    auto kids = p->GetAllChildren();                  
+                }
+            }
             if (obj)
             {             
                 EditorUndoCommand undocmd;
@@ -974,11 +1003,23 @@ void ImGuiSystem::Hierarchy_GameObjectTree_Renderer(GameObject *obj, int depth, 
 
                 // Store Parent
                 GameObject* parent = obj->GetParent();
-                undocmd.parentName = parent ? parent->GetName() : "";
+                undocmd.parentID = parent ? parent->GetID() : 0;
+
+                if (parent) // Get child order
+                {
+                    for (GameObject* c : parent->GetAllChildren()) 
+                        undocmd.siblingOrderIDs.push_back(c->GetID()); // Order of children
+                }
+                else { // Get root order
+                    auto& allObjs = GameObjectFactory::Instance().GetAllGameObjects();
+                    for (auto& u : allObjs) {
+                        undocmd.rootOrderIDs.push_back(u->GetID()); // Order of root objects
+                    }
+                }
 
                 // Store Children
                 for (GameObject* c : obj->GetAllChildren())
-                    undocmd.childNames.push_back(c->GetName());
+                    undocmd.childIDs.push_back(c->GetID());
 
                 editor->RecordUndo(undocmd);
 
@@ -1345,6 +1386,33 @@ void ImGuiSystem::Viewport_ManageGizmos()
             float* deltaMat{};                                                  // we not gonna use this for anything, just a filler ptr so we can access bounds
             float bounds[6] = { -0.5f, -0.5f, 0.0f, 0.5f, 0.5f, 0.0f };         // plots the cross section so we can get the middle edges
             ImGuizmo::Manipulate(value_ptr(view), value_ptr(CORE->GetGraphicsSystem()->getVp()), ImGuizmo::OPERATION::BOUNDS, ImGuizmo::WORLD, value_ptr(mtx), deltaMat, deltaMat, bounds);     // manipulate with bounds in mind
+        }
+
+        // Record Undo Entries - Undo Transform on Gizmo
+        static bool gizmoEditing = false;
+        static json gizmoBeforeJson;
+
+        if (ImGuizmo::IsUsing() && !gizmoEditing)
+        {
+            // User STARTED dragging gizmo, record BEFORE state
+            gizmoEditing = true;
+            gizmoBeforeJson = Serialization::SerializeGameObject(go)["TransformComponent"];
+        }
+
+        if (!ImGuizmo::IsUsing() && gizmoEditing)
+        {
+            // User STOPPED dragging, record AFTER & push undo
+            gizmoEditing = false;
+
+            LevelEditor* editor = CORE->GetLevelEditor();
+
+            EditorUndoCommand cmd;
+            cmd.action = EditorUndoCommand::ActionType::ObjectTransform;
+            cmd.entityID = go->GetID();
+            cmd.beforeJson = gizmoBeforeJson;
+            cmd.afterJson = Serialization::SerializeGameObject(go)["TransformComponent"];
+
+            editor->RecordUndo(cmd);
         }
 
         if (ImGuizmo::IsUsing)
@@ -1969,7 +2037,7 @@ void ImGuiSystem::RenderPropertyEditor()
     {
         if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
         {
-            // For Undo Feature
+            // Record Undo Entries - Undo Transform
             LevelEditor* editor = CORE->GetLevelEditor();
 
             static bool editingTransform = false;
@@ -2040,9 +2108,17 @@ void ImGuiSystem::RenderPropertyEditor()
             BeginEdit();
             EndEdit();
 
-            if (ImGui::Button("ljlacbifuckingsot"))
+            if (ImGui::Button("Press Here to add DND Slot"))
             {
-                transform->test();
+                transform->AddDragDropSlot("todayisaBADday", PrefabPayloadID);
+            }
+
+            if (transform->GetPropertySlots().size())
+            {
+                for (auto& slot : transform->GetPropertySlots())
+                {
+                    slot.RenderImGui();
+                }
             }
         }
 
@@ -2183,29 +2259,10 @@ void ImGuiSystem::RenderPropertyEditor()
     // Add event into GameObjects
     RenderEventComponent(obj); 
 
-    // TODO WIP drag and drop section for assets from project navigator
-    // currently we dont have drag and drop spot for assets for textures etc, so this is just here to show it works 
-    // Draws a box and lets it take in drag and drops for assets
-
-    //ImGui::BeginGroup();
-    //ImVec2 boxSize = ImVec2(256, 256);
-    //ImGui::Text("Preview:");
-    //ImGui::Dummy(boxSize); // Reserves space for preview
-
-    //ImDrawList* drawList = ImGui::GetWindowDrawList(); // Imgui rendering for box with white outline
-    //drawList->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), IM_COL32(255, 255, 255, 255));
-
-    //static std::string draggedAsset{};
-    //ReceiveDragAndDrop(AssetPayloadID, draggedAsset);
-
-    //ImGui::EndGroup();
-    //// Do something with DnD asset data - maybe insert into boxes to assign sprites
-    //ImGui::Text(draggedAsset.c_str());
-
     // Add Component Button
     ImVec2 space = ImGui::GetContentRegionAvail();
     ImVec2 buttonSize{ 100,25 };
-    ImGui::SetCursorPos({ (space.x - buttonSize.x)/2, space.y });
+    ImGui::SetCursorPosX((space.x - buttonSize.x)/2);
     if (ImGui::Button("Add Component", buttonSize))
     {
         ImGui::OpenPopup("Add_Component");

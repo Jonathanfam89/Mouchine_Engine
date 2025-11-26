@@ -29,6 +29,10 @@ Technology is prohibited.
 class Spritesheet;
 using json = nlohmann::ordered_json;
 
+extern bool DND_firstObject;
+extern float DND_rootJsonX;
+extern float DND_rootJsonY;
+
 /**
 * @brief Declares per-component serialization and deserialization functions.
 *    Each component knows how to read and write its own data to/from JSON.

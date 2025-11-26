@@ -38,7 +38,6 @@ void ReceiveDragAndDrop(std::string const& _expectedPayload,std::string const& _
 class PropertiesSlot
 {
 public:
-    ~PropertiesSlot() { --_totalID; }
 
     PropertiesSlot(std::string const& displayText, std::string const& expectedPayload) : _displayText(displayText), _expectedPayload(expectedPayload), _id(++_totalID), _receivedData{} {}
 
@@ -49,7 +48,8 @@ public:
         ImGui::TextUnformatted(_displayText.c_str());
         ImGui::SameLine();
 
-        if (ImGui::Button(_receivedData.empty() ? "None" : _receivedData.c_str(), ImVec2(200, 0)))
+        std::string id = _receivedData.empty() ? "None " + std::to_string(_id) : _receivedData + "##" + std::to_string(_id);
+        if (ImGui::Button(id.c_str(), ImVec2(200, 0)))
         {
             // do something on click?
         }
@@ -57,7 +57,11 @@ public:
         ReceiveDragAndDrop(_expectedPayload, received);
 
         if (!received.empty())
+        {
             _receivedData = received;
+            
+        }
+            
         ImGui::PopID();
     }
     void SetDisplayText(std::string const& text) { _displayText = text; }
@@ -129,6 +133,7 @@ public:
 
     /**
      * @brief Add a new drag and drop slot on the component tab in the properties tab.
+     *        In the future, this will be implemented with scripting. The coder can then access the data dragged onto the slot
      * @param displayText       Name to display.
      * @param expectedPayload   Payload type its expecting to receive.
      */
@@ -136,9 +141,9 @@ public:
     void AddDragDropSlot(std::string const& displayText, std::string const& expectedPayload) { _propertySlot.push_back(PropertiesSlot(displayText, expectedPayload)); }
     void AddDragDropSlot(PropertiesSlot const& ps) { _propertySlot.push_back(ps); }
 
-    std::vector<PropertiesSlot> const& GetPropertySlots() { return _propertySlot; }
+    std::vector<PropertiesSlot> const& GetPropertySlots() const { return _propertySlot; }
+    std::vector<PropertiesSlot>& GetPropertySlots() { return _propertySlot; }
 #endif
-
     /**
      * @brief Checks if the component is currently enabled.
      * @return true if the component is enabled, false otherwise.

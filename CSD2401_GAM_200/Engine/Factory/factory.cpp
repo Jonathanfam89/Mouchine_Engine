@@ -594,6 +594,17 @@ EntityID GameObjectFactory::GetNextEntityID() const
     return nextEntityID;
 }
 
+EntityID GameObjectFactory::GetSmallestAvailableID() const
+{
+    EntityID candidate = 1;
+
+    while (const_cast<GameObjectFactory*>(this)->GetGameObject(candidate) != nullptr)
+        candidate++;
+
+    return candidate;
+}
+
+
 GameObject* GameObjectFactory::FindByName(const std::string& name)
 {
     for (auto& go : gameObjects)
@@ -604,6 +615,35 @@ GameObject* GameObjectFactory::FindByName(const std::string& name)
     return nullptr;
 }
 
+void GameObjectFactory::ReorderRootObjects(const std::vector<EntityID>& order) {
+    if (order.empty()) return;
+
+    std::unordered_map<EntityID, std::unique_ptr<GameObject>> moved;
+    moved.reserve(gameObjects.size());
+
+    for (auto& u : gameObjects) {
+        moved[u->GetID()] = std::move(u);
+    }
+
+    std::vector<std::unique_ptr<GameObject>> newList;
+    newList.reserve(order.size());
+
+    for (EntityID id : order) {
+        auto it = moved.find(id);
+        if (it != moved.end()) {
+            newList.push_back(std::move(it->second));
+        }
+    }
+
+    gameObjects = std::move(newList);
+
+    entityToIndex.clear();
+    for (size_t i = 0; i < gameObjects.size(); ++i) {
+        if (gameObjects[i]) {
+            entityToIndex[gameObjects[i]->GetID()] = i;
+        }
+    }
+}
 
 #pragma region M1 Showcase - 2500 GOs Test
 

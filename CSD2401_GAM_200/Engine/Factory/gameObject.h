@@ -266,6 +266,8 @@ public:
 
     std::vector<GameObject*> GetAllChildren() const;
 
+    void ReorderChildren(const std::vector<EntityID>& order);
+
     virtual void OnEventTriggered(EventType event, GameObject* other);
 
 private:

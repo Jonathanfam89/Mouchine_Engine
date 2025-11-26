@@ -118,8 +118,10 @@ struct EditorUndoCommand {
     json beforeJson;
     json afterJson;
 
-    std::string parentName;
-    std::vector<std::string> childNames;
+    EntityID parentID = static_cast<EntityID>(-1);
+    std::vector<EntityID> childIDs;
+    std::vector<EntityID> siblingOrderIDs;
+    std::vector<EntityID> rootOrderIDs;
 };
 
 /**
@@ -336,6 +338,7 @@ public:
 
     void RecordUndo(const EditorUndoCommand& cmd);
     void PerformUndo();
+    void ClearUndoStack();
 
     std::vector<EditorUndoCommand> undoStack;
     std::vector<EditorUndoCommand> redoStack;

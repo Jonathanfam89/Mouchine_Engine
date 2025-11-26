@@ -1,18 +1,18 @@
 {
     "GameObjects": [
         {
-            "name": "parent",
+            "name": "Boss",
+            "localID": 100,
+            "parentID": 4294967295,
             "active": true,
-            "parent": null,
-            "siblingIndex": 9,
             "TransformComponent": {
                 "pos": [
-                    -415.0,
-                    51.0
+                    -200.0,
+                    300.0
                 ],
                 "scale": [
-                    50.0,
-                    50.0
+                    120.0,
+                    120.0
                 ],
                 "rotation": 0.0
             },
@@ -20,30 +20,31 @@
                 "shapeType": "Square",
                 "texturePath": "",
                 "color": [
-                    0.0,
+                    1.0,
                     0.0,
                     0.0,
                     1.0
                 ]
             },
             "ColliderComponent": {
-                "shape": "Square",
-                "layer": "Default"
+                "shape": "Circle",
+                "layer": "Enemy"
             },
+            "EventComponent": [],
             "children": [
                 {
-                    "name": "child1",
+                    "name": "LeftWing",
+                    "localID": 101,
+                    "parentID": 100,
                     "active": true,
-                    "parent": "parent",
-                    "siblingIndex": 0,
                     "TransformComponent": {
                         "pos": [
-                            -482.5,
-                            0.0
+                            -300.0,
+                            300.0
                         ],
                         "scale": [
-                            50.0,
-                            50.0
+                            70.0,
+                            70.0
                         ],
                         "rotation": 0.0
                     },
@@ -51,31 +52,27 @@
                         "shapeType": "Square",
                         "texturePath": "",
                         "color": [
-                            0.0,
-                            0.0,
-                            0.0,
+                            1.0,
+                            0.30000001192092896,
+                            0.30000001192092896,
                             1.0
                         ]
-                    },
-                    "ColliderComponent": {
-                        "shape": "Square",
-                        "layer": "Default"
                     },
                     "children": []
                 },
                 {
-                    "name": "child2",
+                    "name": "RightWing",
+                    "localID": 102,
+                    "parentID": 100,
                     "active": true,
-                    "parent": "parent",
-                    "siblingIndex": 1,
                     "TransformComponent": {
                         "pos": [
-                            -351.5,
-                            0.0
+                            -100.0,
+                            300.0
                         ],
                         "scale": [
-                            50.0,
-                            50.0
+                            70.0,
+                            70.0
                         ],
                         "rotation": 0.0
                     },
@@ -83,15 +80,11 @@
                         "shapeType": "Square",
                         "texturePath": "",
                         "color": [
-                            0.0,
-                            0.0,
-                            0.0,
+                            1.0,
+                            0.30000001192092896,
+                            0.30000001192092896,
                             1.0
                         ]
-                    },
-                    "ColliderComponent": {
-                        "shape": "Square",
-                        "layer": "Default"
                     },
                     "children": []
                 }

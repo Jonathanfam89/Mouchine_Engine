@@ -8,30 +8,8 @@
       "channel": "bgm_channel"
     }
   },
+
   "AudioManager": {
-    "sounds": [
-      {
-        "name": "bgm",
-        "filepath": "../Assets/audio/level_1.wav",
-        "loop": true,
-        "volume": 0.5,
-        "category": "music"
-      },
-      {
-        "name": "jump_sfx",
-        "filepath": "../Assets/audio/jump.wav",
-        "loop": false,
-        "volume": 0.8,
-        "category": "sfx"
-      },
-      {
-        "name": "footstep_sfx",
-        "filepath": "../Assets/audio/footstep.wav",
-        "loop": false,
-        "volume": 0.6,
-        "category": "sfx"
-      }
-    ],
     "events": [
       {
         "event": "PlayerJump",
@@ -41,33 +19,67 @@
         "event": "PlayerLand",
         "sound": "footstep_sfx"
       }
+    ],
+    "sounds": [
+      {
+        "category": "music",
+        "filepath": "../Assets/audio/level_1.wav",
+        "loop": true,
+        "name": "bgm",
+        "pitch": 1.0,
+        "volume": 0.20000000298023224
+      },
+      {
+        "category": "sfx",
+        "filepath": "../Assets/audio/footstep.wav",
+        "loop": false,
+        "name": "footstep_sfx",
+        "pitch": 0.5,
+        "volume": 0.6000000238418579
+      },
+      {
+        "category": "sfx",
+        "filepath": "../Assets/audio/jump.wav",
+        "loop": false,
+        "name": "jump_sfx",
+        "pitch": 1.0,
+        "volume": 0.800000011920929
+      }
     ]
   },
+
   "GameObjects": [
     {
       "name": "bgImage",
+      "localID": 1,
+      "parentID": -1,
+      "active": true,
+
       "RenderComponent": {
         "texturePath": "../Assets/wallpaper_transparent.png",
         "shapeType": "Square"
       },
+
       "TransformComponent": {
-        "pos": [
-          0,
-          0
-        ],
-        "scale": [
-          2400,
-          1380
-        ],
+        "pos": [0, 0],
+        "scale": [2400, 1380],
         "rotation": 0.0
-      }
+      },
+
+      "children": []
     },
+
     {
       "name": "Hero",
+      "localID": 2,
+      "parentID": -1,
+      "active": true,
+
       "RenderComponent": {
         "texturePath": "../Assets/spritesheet_R.png",
         "shapeType": "Square"
       },
+
       "Spritesheet": {
         "defaultAnimation": "Idle_R",
         "animations": [
@@ -80,7 +92,7 @@
             "startCol": 0,
             "endRow": 7,
             "endCol": 2,
-            "fps": 16.0
+            "fps": 4.0
           },
           {
             "name": "Idle_L",
@@ -91,7 +103,7 @@
             "startCol": 0,
             "endRow": 7,
             "endCol": 2,
-            "fps": 16.0
+            "fps": 4.0
           },
           {
             "name": "Run_R",
@@ -139,192 +151,197 @@
           }
         ]
       },
+
       "TransformComponent": {
-        "pos": [
-          0,
-          0
-        ],
-        "scale": [
-          150,
-          150
-        ],
+        "pos": [0, 0],
+        "scale": [150, 150],
         "rotation": 0.0
       },
+
       "ColliderComponent": {
         "shape": "Square",
         "layer": "Player"
       },
+
       "PhysicsComponent": {
         "useGravity": true,
         "isStatic": false,
-        "velocity": [
-          0,
-          0
-        ]
-      }
+        "velocity": [0, 0]
+      },
+
+      "children": []
     },
+
     {
       "name": "Ground",
+      "localID": 3,
+      "parentID": -1,
+      "active": true,
+
       "RenderComponent": {
         "shapeType": "Square",
-        "color": [
-          0.0,
-          0.0,
-          0.0,
-          1.0
-        ]
+        "color": [0.0, 0.0, 0.0, 1.0]
       },
+
       "TransformComponent": {
-        "pos": [
-          0,
-          -500
-        ],
-        "scale": [
-          3000,
-          500
-        ],
+        "pos": [0, -500],
+        "scale": [3000, 500],
         "rotation": 0.0
       },
+
       "ColliderComponent": {
         "shape": "Square",
         "layer": "Ground"
       },
+
       "PhysicsComponent": {
         "isStatic": true,
         "useGravity": false
-      }
+      },
+
+      "children": []
     },
+
     {
       "name": "Wall",
+      "localID": 4,
+      "parentID": -1,
+      "active": true,
+
       "RenderComponent": {
         "shapeType": "Square",
-        "color": [
-          0.0,
-          0.0,
-          0.0,
-          1.0
-        ]
+        "color": [0.0, 0.0, 0.0, 1.0]
       },
+
       "TransformComponent": {
-        "pos": [
-          1500,
-          -500
-        ],
-        "scale": [
-          1000,
-          3000
-        ],
+        "pos": [1500, -500],
+        "scale": [1000, 3000],
         "rotation": 0.0
       },
+
       "ColliderComponent": {
         "shape": "Square",
         "layer": "Ground"
       },
+
       "PhysicsComponent": {
         "isStatic": true,
         "useGravity": false
-      }
+      },
+
+      "children": []
     },
+
     {
       "name": "Wall2",
+      "localID": 5,
+      "parentID": -1,
+      "active": true,
+
       "RenderComponent": {
         "shapeType": "Square",
-        "color": [
-          0.0,
-          0.0,
-          0.0,
-          1.0
-        ]
+        "color": [0.0, 0.0, 0.0, 1.0]
       },
+
       "TransformComponent": {
-        "pos": [
-          -1500,
-          -500
-        ],
-        "scale": [
-          1000,
-          3000
-        ],
+        "pos": [-1500, -500],
+        "scale": [1000, 3000],
         "rotation": 0.0
       },
+
       "ColliderComponent": {
         "shape": "Square",
         "layer": "Ground"
       },
+
       "PhysicsComponent": {
         "isStatic": true,
         "useGravity": false
-      }
+      },
+
+      "children": []
     },
+
     {
       "name": "Circle",
+      "localID": 6,
+      "parentID": -1,
+      "active": true,
+
       "RenderComponent": {
         "shapeType": "Circle",
-        "color": [
-          1.0,
-          0.0,
-          0.0,
-          1.0
-        ]
+        "color": [1.0, 0.0, 0.0, 1.0]
       },
+
       "TransformComponent": {
-        "pos": [
-          150,
-          300
-        ],
-        "scale": [
-          100,
-          100
-        ],
+        "pos": [150, 300],
+        "scale": [100, 100],
         "rotation": 0.0
       },
+
       "ColliderComponent": {
         "shape": "Circle",
         "layer": "Enemy"
       },
+
       "PhysicsComponent": {
-        "velocity": [
-          -250,
-          0
-        ],
+        "velocity": [-250, 0],
         "isStatic": false,
         "useGravity": true
-      }
+      },
+
+      "children": []
     },
+
     {
       "name": "Circle2",
+      "localID": 7,
+      "parentID": -1,
+      "active": true,
+
       "RenderComponent": {
         "shapeType": "Circle",
-        "color": [
-          1.0,
-          0.0,
-          0.0,
-          1.0
-        ]
+        "color": [1.0, 0.0, 0.0, 1.0]
       },
+
       "TransformComponent": {
-        "pos": [
-          -150,
-          300
-        ],
-        "scale": [
-          100,
-          100
-        ],
+        "pos": [-150, 300],
+        "scale": [100, 100],
         "rotation": 0.0
       },
+
       "ColliderComponent": {
         "shape": "Circle",
         "layer": "Enemy"
       },
+
       "PhysicsComponent": {
-        "velocity": [
-          250,
-          0
-        ],
+        "velocity": [250, 0],
         "isStatic": false,
         "useGravity": true
-      }
+      },
+
+      "children": []
+    },
+
+    {
+      "name": "MainCamera",
+      "localID": 8,
+      "parentID": -1,
+      "active": true,
+
+      "TransformComponent": {
+        "pos": [0, 0],
+        "scale": [1, 1],
+        "rotation": 0.0
+      },
+
+      "CameraComponent": {
+        "zoom": 1.0,
+        "mode": "FIXED"
+      },
+
+      "children": []
     },
     {
       "name": "Text FPS",

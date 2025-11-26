@@ -30,3 +30,19 @@ Attempted to add duplicate PhysicsComponent to GameObject: BlueSquare
 [11] BaseThreadInitThunk - 0x7ffe803be8c0
 [12] RtlUserThreadStart - 0x7ffe823cc510
 
+
+[EXCEPTION] 2025-11-25 22:03:11
+invalid stoi argument
+[0] CrashHandler::GetStackTrace - 0x7ff60649d890
+[1] CrashHandler::LogCrash - 0x7ff60649db40
+[2] main$catch$9 - 0x7ff6069a133f
+[3] _CxxFrameHandler4 - 0x7ff812c76c40
+[5] RtlCaptureContext2 - 0x7ff8288a0fc0
+[6] main - 0x7ff60649dda0
+[7] invoke_main - 0x7ff606995100
+[8] __scrt_common_main_seh - 0x7ff606994ef0
+[9] __scrt_common_main - 0x7ff606994ed0
+[10] mainCRTStartup - 0x7ff6069951c0
+[11] BaseThreadInitThunk - 0x7ff8265de8c0
+[12] RtlUserThreadStart - 0x7ff82880c510
+

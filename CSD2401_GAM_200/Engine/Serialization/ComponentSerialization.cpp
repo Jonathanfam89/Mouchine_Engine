@@ -21,6 +21,10 @@ std::unordered_map<std::string, GLuint> s_IDByTexturePath;
 bool Serialization::Prefab_DragAndDropped;
 bool Serialization::Prefab_Reinstantiate;
 
+bool DND_firstObject = true;
+float DND_rootJsonX = 0.0f;
+float DND_rootJsonY = 0.0f;
+
 // ------------------- Serialize -------------------
 /**
  * @brief Serializes the TransformComponent into JSON.
@@ -210,11 +214,35 @@ void ComponentSerialization::DeserializeTransform(const json &j, GameObject *go)
     auto *tc = go->AddComponent<TransformComponent>();
 
 #ifdef USE_IMGUI
+    float jsonX = t["pos"][0];
+    float jsonY = t["pos"][1];
+
     if (Serialization::Prefab_DragAndDropped)
     {
-        std::cout << "[DeserializeTransform] Prefab transform set to cursor pos\n";
+        /*std::cout << "[DeserializeTransform] Prefab transform set to cursor pos\n";
         tc->SetPosition(viewportCursorPos.x, viewportCursorPos.y);
         std::cout << "CREATED AT " << "(" << viewportCursorPos.x << ", " << viewportCursorPos.y << ")\n";
+        */
+
+        ImVec2 spawnPos = viewportCursorPos;
+
+        if (DND_firstObject)
+        {
+            // ROOT JSON position
+            DND_rootJsonX = jsonX;
+            DND_rootJsonY = jsonY;
+
+            tc->SetPosition(spawnPos.x, spawnPos.y);
+            DND_firstObject = false;
+        }
+        else
+        {
+            // RELATIVE offset based on JSON
+            float relX = jsonX - DND_rootJsonX;
+            float relY = jsonY - DND_rootJsonY;
+
+            tc->SetPosition(spawnPos.x + relX, spawnPos.y + relY);
+        }
     }
     else if (Serialization::Prefab_Reinstantiate)
     {

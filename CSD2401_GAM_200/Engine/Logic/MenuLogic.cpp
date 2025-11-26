@@ -28,18 +28,18 @@ void MenuLogicSystem::Update(float dt)
             {
                 std::cout << "PlayButton Clicked!" << std::endl;
                 std::cout << "[MenuLogic] Requesting scene load with AUTO-PLAY = TRUE" << std::endl;
-                CORE->RequestSceneLoad("../Assets/Scenes/Prefab_TestScene.json", true);
+                CORE->RequestSceneLoad("../Assets/Scenes/Scene1.json", true);
                 std::cout << "[MenuLogic] RequestSceneLoad called" << std::endl;
             }
             else if (hoveredButtonName == "SettingsButton")
             {
                 std::cout << "SettingsButton Clicked!" << std::endl;
-                CORE->RequestSceneLoad("../Assets/Scenes/Prefab_TestScene2.json", true);
+                CORE->RequestSceneLoad("../Assets/Scenes/Scene2.json", true);
             }
             else if (hoveredButtonName == "QuitButton")
             {
                 std::cout << "QuitButton Clicked!" << std::endl;
-                CORE->RequestSceneLoad("../Assets/Scenes/Prefab_TestScene3.json", true);
+                CORE->RequestSceneLoad("../Assets/Scenes/Scene3.json", true);
             }
 
             pendingSceneChange = false;
