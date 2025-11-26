@@ -315,11 +315,18 @@ static bool Internal_OnTriggerStay(MonoString* obj1, MonoString* obj2) {
 static int Internal_RandomRange(int min, int max) {
     return API::RandomNumberGen(max, min); // Note: API args are (max, min)
 }
-
-ScriptSystem::~ScriptSystem()
-{
-    Shutdown();
+static float Internal_GetDelta_Time() {
+    return API::GetDelta_Time();
 }
+static float Internal_GetFixed_Delta_Time()
+{
+    return API::GetFixedDelta_time();
+}
+static float Internal_GetFramesPerSecond() {
+    return API::GetFramePerSecond();
+}
+
+
 // === Input ===
 static bool Internal_IsKeyDown(int key)
 {
@@ -349,6 +356,12 @@ static float Internal_GetMouseWorldX()
 static float Internal_GetMouseWorldY()
 {
     return API::GetMouseWorldY();
+}
+
+
+ScriptSystem::~ScriptSystem()
+{
+    Shutdown();
 }
 
 void ScriptSystem::Initialize()
@@ -476,6 +489,9 @@ void ScriptSystem::RegisterInternalCalls()
 
     // === Utils ===
     mono_add_internal_call("CSharpScript.Utils::RandomRange", (void*)Internal_RandomRange);
+    mono_add_internal_call("CSharpScript.Utils::GetDelta_Time", (void*)Internal_GetDelta_Time);
+    mono_add_internal_call("CSharpScript.Utils::GetFixed_Delta_Time", (void*)Internal_GetFixed_Delta_Time);
+    mono_add_internal_call("CSharpScript.Utils::GetFramesPerSecond", (void*)Internal_GetFramesPerSecond);
 
     // === Input ===
     mono_add_internal_call("CSharpScript.Input::IsKeyDown", (void*)Internal_IsKeyDown);

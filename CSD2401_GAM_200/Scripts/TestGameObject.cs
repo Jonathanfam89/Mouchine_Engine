@@ -77,7 +77,7 @@ namespace GameScripts
             {
                 redSquareX = 500;
             }
-            Console.WriteLine(Input.GetMouseX());
+            Console.WriteLine(Utils.GetDelta_Time());
          }
 
         public void OnDestroy()

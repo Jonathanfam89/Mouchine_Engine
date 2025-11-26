@@ -374,6 +374,8 @@ namespace API {
 #pragma region Misc
     int RandomNumberGen(int, int);
     float GetDelta_Time();
+    float GetFixedDelta_time();
+    float GetFramePerSecond();
 #pragma endregion
 
 

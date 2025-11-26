@@ -447,6 +447,12 @@ namespace CSharpScript
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int RandomRange(int min, int max);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float GetDelta_Time();
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float GetFixed_Delta_Time();
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float GetFramesPerSecond();
     }
 
     public static class Input

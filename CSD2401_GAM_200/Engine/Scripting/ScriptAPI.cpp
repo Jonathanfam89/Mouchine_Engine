@@ -548,6 +548,17 @@ namespace API
         int result = rand() % range + min;
         return result;
     }
+    float GetDelta_Time()
+    {
+        return CORE->GetDeltaTime();
+    }
+    float GetFixedDelta_time()
+    {
+        return CORE->GetFixedDeltaTime();
+    }
+    float GetFramePerSecond() {
+        return CORE->GetFPS();
+    }
 #pragma endregion
 
 #pragma region Audio
