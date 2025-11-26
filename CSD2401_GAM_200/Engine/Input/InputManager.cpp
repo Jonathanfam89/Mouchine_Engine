@@ -103,7 +103,7 @@ void InputManager::Update(float dt)
         mouseY = ypos;
         return;
     }
-#endif
+
 
     // ------------------- UNDO: Ctrl + Z -------------------//
     {
@@ -131,7 +131,7 @@ void InputManager::Update(float dt)
             }
         }
     }
-
+#endif
 
     static std::unordered_map<int, bool> singleTriggerKeys = {
         {GLFW_KEY_SPACE, false},
