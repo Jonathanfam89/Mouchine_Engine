@@ -73,8 +73,9 @@ json Serialization::SerializeGameObject(GameObject *go)
 	j["parentID"] = go->GetParent() ? go->GetParent()->GetID() : -1; // -1 if root
 
 	j["active"] = go->IsActive();
-
+#ifdef USE_IMGUI
 	prefabInstances[go->GetName()].push_back(go->GetID());						// keeps tracks of the newly created prefabs
+#endif
 
 	// Serialize components
 	ComponentSerialization::SerializeAllComponents(go, j);

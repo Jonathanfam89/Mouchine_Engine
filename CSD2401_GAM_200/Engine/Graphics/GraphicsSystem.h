@@ -257,7 +257,7 @@ private:
 	GLint Wwidth, Wheight;					// Current dimensions of the window's client area (in screen coordinates).
 	int windowedPosX, windowedPosY;
 	int windowedWidth, windowedHeight;
-	bool isFullscreen = false;
+	bool isFullscreen = true;
 	mat4 vp;								// Current view-projection matrix (camera transform).
 	bool debugMode = false;					// Flag to control rendering of debug shapes (lines, outlines).
 	bool editorMode;						// Flag to indicate if rendering should target the FBO (true) or the screen (false).
