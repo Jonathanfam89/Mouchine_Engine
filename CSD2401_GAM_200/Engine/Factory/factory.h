@@ -311,7 +311,7 @@ public:
     EntityID GetSmallestAvailableID() const;
 
 private:
-    GameObjectFactory() : nextEntityID(1), cloneCounter(0) {}
+    GameObjectFactory() : nextEntityID(1), cloneCounter(0) { gameObjects.reserve(1000); }           // HAVE TO PUT THIS HERE IF NOT CRASHES WHEN WE WANT TO CLONE LOL
     EntityID nextEntityID;
     std::vector<std::unique_ptr<GameObject>> gameObjects;
     std::unordered_map<EntityID, size_t> entityToIndex;

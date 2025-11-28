@@ -54,6 +54,10 @@ GameObject* GameObject::Clone(const std::string& newName) const {
 
     // 3. Copy state and initialize
     clone->isActive = this->isActive;
+    if (this->GetParent())
+    {
+        clone->SetParent(this->GetParent());
+    }
     clone->Initialize();
 
     return clone;
@@ -152,6 +156,7 @@ void GameObject::RemoveParent()
 
 GameObject* GameObject::GetParent() const
 {
+    if (!parent) return nullptr;
     return parent;
 }
 

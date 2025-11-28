@@ -169,7 +169,12 @@ bool IntersectRayAABB(const vec2& origin, const vec2& direction,
         }
     }
 
-    hitDistance = tMin;
+    if (tMin < 0.0001f && tMax > tMin) {
+        hitDistance = tMax;
+    }
+    else {
+        hitDistance = tMin;
+    }
     return true;
 }
 

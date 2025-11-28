@@ -302,7 +302,7 @@ bool CollisionSystem::JustStopped(GameObject* obj1, GameObject* obj2) {
  * @brief Casts a ray and returns the first object hit (optionally filtered by layer)
  */
 bool CollisionSystem::Raycast(const vec2& origin, const vec2& direction, float distance,
-    RaycastHit& hit, CollisionLayer layerMask)
+    RaycastHit& hit, GameObject* self, CollisionLayer layerMask)
 {
     // Normalize direction
     float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
@@ -319,6 +319,10 @@ bool CollisionSystem::Raycast(const vec2& origin, const vec2& direction, float d
     // Check all objects with colliders
     for (const auto& obj : gameObjects)
     {
+        if (obj.get() == self) {
+            continue; // Skip the object that is casting the ray
+        }
+
         auto* collider = obj->GetComponent<ColliderComponent>();
         if (!collider) continue;
 

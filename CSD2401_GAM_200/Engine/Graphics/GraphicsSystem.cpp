@@ -241,26 +241,6 @@ void GraphicsSystem::Initialize()
             else
             {
                 CORE->SetGamePaused(false);
-                auto* audioManager = CORE->GetAudioManager();
-
-                const auto& sounds = audioManager->GetSoundDatabase();
-
-                if (sounds.find("bgm") != sounds.end())
-                {
-                    // Game scene - play game BGM
-                    std::cout << "Playing game BGM\n";
-                    audioManager->PlaySound("bgm", "bgm_channel");
-                }
-                else if (sounds.find("MainMenuBGM") != sounds.end())
-                {
-                    // Main menu scene - play menu BGM
-                    std::cout << "Playing main menu BGM\n";
-                    audioManager->PlaySound("MainMenuBGM", "menu_bgm_channel");
-                }
-                else
-                {
-                    std::cout << "No BGM found in AudioManager\n";
-                }
             }
         });
 

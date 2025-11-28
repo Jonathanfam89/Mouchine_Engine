@@ -74,6 +74,8 @@ json Serialization::SerializeGameObject(GameObject *go)
 
 	j["active"] = go->IsActive();
 
+	prefabInstances[go->GetName()].push_back(go->GetID());						// keeps tracks of the newly created prefabs
+
 	// Serialize components
 	ComponentSerialization::SerializeAllComponents(go, j);
 

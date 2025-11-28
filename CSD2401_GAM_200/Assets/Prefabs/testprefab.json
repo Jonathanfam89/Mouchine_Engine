@@ -1,33 +1,36 @@
 {
     "GameObjects": [
         {
-            "ColliderComponent": {
-                "layer": "Default",
-                "shape": "Circle"
-            },
-            "RenderComponent": {
-                "color": [
-                    0.8823528289794922,
-                    0.0,
-                    1.0,
-                    1.0
-                ],
-                "shapeType": "Circle",
-                "texturePath": ""
-            },
+            "name": "testprefab",
+            "localID": 12,
+            "parentID": 4294967295,
+            "active": true,
             "TransformComponent": {
                 "pos": [
-                    0.0,
-                    0.0
+                    216.0,
+                    -95.5
                 ],
-                "rotation": 0.0,
                 "scale": [
-                    151.3000030517578,
-                    50.0
+                    100.0,
+                    301.0
+                ],
+                "rotation": 0.0
+            },
+            "RenderComponent": {
+                "shapeType": "Square",
+                "texturePath": "",
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
                 ]
             },
-            "active": true,
-            "name": "testprefab"
+            "ColliderComponent": {
+                "shape": "Square",
+                "layer": "Default"
+            },
+            "children": []
         }
     ]
 }

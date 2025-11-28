@@ -44,8 +44,6 @@ TilemapEditor::TilemapEditor()
     showSaveDialog(false),
     showLoadDialog(false),
     showTilesetLoadDialog(false),
-    tempTileWidth(64),
-    tempTileHeight(64),
     showNewTilemapDialog(false),
     tempMapWidth(20),
     tempMapHeight(15)
@@ -500,8 +498,6 @@ void TilemapEditor::RenderTilesetPanel()
             ImGui::Text("Tile Size:");
             ImGui::InputInt("Width##tilewidth", &currentTileset.tileWidth);
             ImGui::InputInt("Height##tileheight", &currentTileset.tileHeight);
-            currentTileset.tileWidth = tempTileWidth;
-            currentTileset.tileHeight = tempTileHeight;
 
             std::string draggedTiles{};
             ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "No tileset loaded");
@@ -647,19 +643,24 @@ void TilemapEditor::RenderToolsPanel()
     {
         ImGui::Text("Tool:");
 
-        if (ImGui::RadioButton("Brush", currentTool == Tool::Brush))
+        // [WIP] make key binds only work when hovering over tilemap 
+        if (ImGui::RadioButton("Brush", currentTool == Tool::Brush) || (ImGui::IsKeyPressed(ImGuiKey_B)))
             currentTool = Tool::Brush;
+        CreateHintText("(B) Draw Tool");
 
         ImGui::SameLine();
-        if (ImGui::RadioButton("Eraser", currentTool == Tool::Eraser))
+        if (ImGui::RadioButton("Eraser", currentTool == Tool::Eraser) || (ImGui::IsKeyPressed(ImGuiKey_D)))
             currentTool = Tool::Eraser;
+        CreateHintText("(D) Remove Tool");
 
-        if (ImGui::RadioButton("Fill", currentTool == Tool::Fill))
+        if (ImGui::RadioButton("Fill", currentTool == Tool::Fill) || (ImGui::IsKeyPressed(ImGuiKey_F)))
             currentTool = Tool::Fill;
+        CreateHintText("(F) Fill Space Tool");
 
         ImGui::SameLine();
-        if (ImGui::RadioButton("Eyedropper", currentTool == Tool::Eyedropper))
+        if (ImGui::RadioButton("Eyedropper", currentTool == Tool::Eyedropper) || (ImGui::IsKeyPressed(ImGuiKey_G)))
             currentTool = Tool::Eyedropper;
+        CreateHintText("(G) Color Picker Tool");
 
         ImGui::Separator();
 

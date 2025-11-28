@@ -489,7 +489,7 @@ void InputManager::Update(float dt)
                 std::cout << "[InputManager] CORE pointer = " << CORE << std::endl;
                 //PlaySoundMessage msg("jump_sfx");
                 //CORE->GetMessageBus().Publish(msg);
-                 audioEngine->playSound("jump_sfx", "jump_channel");
+                 audioManager->PlaySound("jump_sfx", "jump_channel");
             }
         }
     }

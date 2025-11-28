@@ -20,12 +20,12 @@ namespace CSharpScript
 {
     // --- Structs ---
     [StructLayout(LayoutKind.Sequential)]
-    public struct Vector2
+    public struct vec2
     {
         public float x;
         public float y;
 
-        public Vector2(float x, float y)
+        public vec2(float x, float y)
         {
             this.x = x;
             this.y = y;
@@ -37,11 +37,11 @@ namespace CSharpScript
         }
     }
     [StructLayout(LayoutKind.Sequential)]
-    public struct Vector4
+    public struct vec4
     {
         public float x, y, z, w;
 
-        public Vector4(float x, float y, float z, float w)
+        public vec4(float x, float y, float z, float w)
         {
             this.x = x;
             this.y = y;
@@ -274,10 +274,10 @@ namespace CSharpScript
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void GetPosition_Internal(string objectName, out float x, out float y);
 
-        public static Vector2 GetPosition(string objectName)
+        public static vec2 GetPosition(string objectName)
         {
             GetPosition_Internal(objectName, out float x, out float y);
-            return new Vector2(x, y);
+            return new vec2(x, y);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -286,10 +286,10 @@ namespace CSharpScript
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void GetScale_Internal(string objectName, out float x, out float y);
 
-        public static Vector2 GetScale(string objectName)
+        public static vec2 GetScale(string objectName)
         {
             GetScale_Internal(objectName, out float x, out float y);
-            return new Vector2(x, y);
+            return new vec2(x, y);
         }
     }
 
@@ -334,7 +334,7 @@ namespace CSharpScript
         public static extern void SetAlpha(string objectName, float alpha);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern Vector4 GetColor(string objectName);
+        public static extern vec4 GetColor(string objectName);
     }
 
     /// <summary>
@@ -385,7 +385,7 @@ namespace CSharpScript
         public static extern void SetStatic(string objectName, bool isStatic);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern Vector2 GetVelocity(string objectName);
+        public static extern vec2 GetVelocity(string objectName);
     }
 
     /// <summary>
@@ -409,6 +409,23 @@ namespace CSharpScript
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetCollisionLayer(string objectName, int layer);
 
+        /// <summary>
+        /// Casts a ray into the scene and returns information about what it hits.
+        /// </summary>
+        /// <param name="origin">The starting point of the ray in world coordinates.</param>
+        /// <param name="direction">The direction of the ray (should be a normalized vector).</param>
+        /// <param name="distance">The maximum distance the ray should travel.</param>
+        /// <param name="hitObjectName">Output: The name of the game object that was hit.</param>
+        /// <param name="hitDistance">Output: The distance from the origin to the hit point.</param>
+        /// <returns>True if the ray hit something, false otherwise.</returns>
+        public static bool Raycast(string selfName, vec2 origin, vec2 direction, float distance, out string hitObjectName, out float hitDistance)
+        {
+            return Raycast_Internal(selfName, origin.x, origin.y, direction.x, direction.y, distance, out hitObjectName, out hitDistance);
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool Raycast_Internal(string selfName, float x, float y, float dx, float dy, float distance, out string hitObjectName, out float hitDistance);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool OnTriggerEnter(string obj1, string obj2);
 
@@ -428,8 +445,36 @@ namespace CSharpScript
     /// <summary>
     /// Component management functions.
     /// </summary>
+    public static class Scripting
+    {
+        /// <summary>
+        /// Attaches a script to a GameObject.
+        /// </summary>
+        /// <param name="objectName">The name of the GameObject.</param>
+        /// <param name="scriptClassName">The name of the script class to attach.</param>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool AttachScript(string objectName, string scriptClassName);
+    }
+
     public static class Components
     {
+        /// <summary>
+        /// Sets the active state of a component on a GameObject.
+        /// </summary>
+        /// <param name="objectName">The name of the GameObject.</param>
+        /// <param name="componentName">The name of the component.</param>
+        /// <param name="active">The new active state.</param>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetComponentActive(string objectName, string componentName, bool active);
+
+        /// <summary>
+        /// Removes a component from a GameObject.
+        /// </summary>
+        /// <param name="objectName">The name of the GameObject.</param>
+        /// <param name="componentName">The name of the component to remove.</param>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void RemoveComponent(string objectName, string componentName);
+
         /// <summary>
         /// Adds a Transform component to a GameObject.
         /// </summary>
@@ -511,7 +556,7 @@ namespace CSharpScript
         public static extern void SetMode(int mode);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern Vector2 GetPosition();
+        public static extern vec2 GetPosition();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float GetZoom();

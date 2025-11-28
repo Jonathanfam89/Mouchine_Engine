@@ -304,6 +304,12 @@ void LevelEditor::StopPlayMode()
             std::cout << "[LevelEditor] Clearing all active timers.\n";
             ts->ClearAllTimers();
         }
+        MenuLogicSystem* menuLogic = CORE->GetMenuLogic();
+        if (menuLogic)
+        {
+			std::cout << "[LevelEditor] Resetting menu logic.\n";
+			menuLogic->Reset();
+		}
     }
 
     RestoreSceneState();           // restore saved scene
@@ -613,6 +619,7 @@ bool LevelEditor::SaveLevel(const std::string &filepath)
                 continue;
 
             GameObject* obj = objPtr.get();
+            if (!obj) continue;
             if (obj->GetParent() == nullptr)   // <-- ROOT OBJECT ONLY
                 roots.push_back(obj);
         }

@@ -282,6 +282,9 @@ namespace API {
 #pragma endregion
 
 #pragma region Components
+    void SetComponentActive(const std::string& objectName, const std::string& componentName, bool active);
+    void RemoveComponent(const std::string& objectName, const std::string& componentName);
+
     /**
      * @brief Adds a Transform component to a GameObject.
      * @param objectName The name of the GameObject.
@@ -309,6 +312,7 @@ namespace API {
 #pragma endregion
 
 #pragma region Collision
+    bool Raycast(float x, float y, float dx, float dy, float distance, MonoString* selfName, MonoString** hitObjectName, float* hitDistance);
     int GetCollisionLayer(const std::string& objectName);
     int GetCollisionShape(const std::string& objectName);
 
@@ -385,7 +389,9 @@ namespace API {
     float GetFramePerSecond();
 #pragma endregion
 
-
+#pragma region Scripting
+    bool AttachScript(const std::string& objectName, const std::string& scriptClassName);
+#pragma endregion
 
 #pragma region Input
     bool IsKeyDown(int key);

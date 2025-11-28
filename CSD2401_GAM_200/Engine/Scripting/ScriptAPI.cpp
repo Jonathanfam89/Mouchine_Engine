@@ -520,6 +520,64 @@ namespace API
             }
         }
     }
+
+    void SetComponentActive(const std::string& objectName, const std::string& componentName, bool active)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            if (componentName == "Transform")
+            {
+                if (auto* comp = obj->GetComponent<TransformComponent>()) comp->SetEnabled(active);
+            }
+            else if (componentName == "Render")
+            {
+                if (auto* comp = obj->GetComponent<RenderComponent>()) comp->SetEnabled(active);
+            }
+            else if (componentName == "Physics")
+            {
+                if (auto* comp = obj->GetComponent<PhysicsComponent>()) comp->SetEnabled(active);
+            }
+            else if (componentName == "Collider")
+            {
+                if (auto* comp = obj->GetComponent<ColliderComponent>()) comp->SetEnabled(active);
+            }
+            else
+            {
+                throw std::runtime_error("Attempted to set active state for unknown component: " + componentName);
+            }
+        }
+    }
+
+    void RemoveComponent(const std::string& objectName, const std::string& componentName)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            if (componentName == "Transform")
+            {
+                obj->RemoveComponent<TransformComponent>();
+            }
+            else if (componentName == "Render")
+            {
+                obj->RemoveComponent<RenderComponent>();
+            }
+            else if (componentName == "Physics")
+            {
+                obj->RemoveComponent<PhysicsComponent>();
+            }
+            else if (componentName == "Collider")
+            {
+                obj->RemoveComponent<ColliderComponent>();
+            }
+            else
+            {
+                throw std::runtime_error("Attempted to remove unknown component: " + componentName);
+            }
+        }
+    }
 #pragma endregion
 
 #pragma region Collision
@@ -619,10 +677,42 @@ namespace API
         return false;
     }
 
-    
+bool Raycast(float x, float y, float dx, float dy, float distance, MonoString* selfName, MonoString** hitObjectName, float* hitDistance)
+{
+    CollisionSystem* collisionSystem = CORE->GetCollisionSystem();
+    if (!collisionSystem)
+    {
+        return false;
+    }
+
+    auto& factory = GameObjectFactory::Instance();
+    GameObject* self = nullptr;
+    if (selfName)
+    {
+        self = factory.FindGameObject(mono_string_to_utf8(selfName));
+    }
+
+    RaycastHit hit;
+    vec2 origin(x, y);
+    vec2 direction(dx, dy);
+
+    if (collisionSystem->Raycast(origin, direction, distance, hit, self))
+    {
+        if (hit.gameObject)
+        {
+            // Convert the hit object's name to a MonoString
+            *hitObjectName = mono_string_new(mono_domain_get(), hit.gameObject->GetName().c_str());
+            *hitDistance = hit.distance;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
 
 #pragma endregion
-
 #pragma region Camera
     vec2 GetCameraPosition()
     {
@@ -938,6 +1028,22 @@ namespace API
     }
 #pragma endregion
 
+#pragma region Scripting
+    bool AttachScript(const std::string& objectName, const std::string& scriptClassName)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            ScriptSystem* scriptSystem = CORE->GetScriptSystem();
+            if (scriptSystem)
+            {
+                return scriptSystem->AttachScript(obj, scriptClassName);
+            }
+        }
+        return false;
+    }
+#pragma endregion
 
 #pragma region Input
     bool IsKeyDown(int key)

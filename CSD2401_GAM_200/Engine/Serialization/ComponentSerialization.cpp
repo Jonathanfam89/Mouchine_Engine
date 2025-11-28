@@ -57,7 +57,8 @@ void ComponentSerialization::SerializeRender(json &j, RenderComponent *r)
     j["RenderComponent"] = {
         {"shapeType", r->GetShapeTypeName()},
         {"texturePath", texPath},
-        {"color", {r->GetColor().x, r->GetColor().y, r->GetColor().z, r->GetColor().w}}};
+        {"color", {r->GetColor().x, r->GetColor().y, r->GetColor().z, r->GetColor().w}},
+        {"layer", r->GetLayer()} };
 }
 
 /**
@@ -281,6 +282,10 @@ void ComponentSerialization::DeserializeRender(const json &j, GameObject *go)
 
     std::string shapeType = r.value("shapeType", "Square");
     render->SetShapeType(RenderComponentTools::ShapeEnumToString(shapeType));
+
+    // Deserialize layer with default value of 0
+    int layer = r.value("layer", 0);
+    render->SetLayer(layer);
 
     std::string texPath = r.value("texturePath", "");
     GLuint texID = 0;

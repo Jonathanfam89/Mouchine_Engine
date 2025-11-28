@@ -232,6 +232,34 @@ static int Internal_GetCollisionShape(MonoString* objectName)
 }
 
 // === Components ===
+static bool Internal_AttachScript(MonoString* objectName, MonoString* scriptClassName)
+{
+    char* objName = mono_string_to_utf8(objectName);
+    char* scriptName = mono_string_to_utf8(scriptClassName);
+    bool result = API::AttachScript(objName, scriptName);
+    mono_free(objName);
+    mono_free(scriptName);
+    return result;
+}
+
+static void Internal_SetComponentActive(MonoString* objectName, MonoString* componentName, bool active)
+{
+    char* objName = mono_string_to_utf8(objectName);
+    char* compName = mono_string_to_utf8(componentName);
+    API::SetComponentActive(objName, compName, active);
+    mono_free(objName);
+    mono_free(compName);
+}
+
+static void Internal_RemoveComponent(MonoString* objectName, MonoString* componentName)
+{
+    char* objName = mono_string_to_utf8(objectName);
+    char* compName = mono_string_to_utf8(componentName);
+    API::RemoveComponent(objName, compName);
+    mono_free(objName);
+    mono_free(compName);
+}
+
 static void Internal_AddTransformComponent(MonoString *objectName)
 {
     char *name = mono_string_to_utf8(objectName);
@@ -349,6 +377,11 @@ static int Internal_GetCameraMode()
 
 static void Internal_SetCameraMode(int mode) {
     API::setCameraMode((CameraComponent::CameraMode)mode);
+}
+
+static bool Internal_Raycast(MonoString* selfName, float x, float y, float dx, float dy, float distance, MonoString** hitObjectName, float* hitDistance)
+{
+    return API::Raycast(x, y, dx, dy, distance, selfName, hitObjectName, hitDistance);
 }
 
 // === Collision Queries ===
@@ -579,7 +612,12 @@ void ScriptSystem::RegisterInternalCalls()
     mono_add_internal_call("CSharpScript.Collision::GetCollisionLayer", (void*)Internal_GetCollisionLayer);
     mono_add_internal_call("CSharpScript.Collision::GetCollisionShape", (void*)Internal_GetCollisionShape);
 
+    // === Scripting ===
+    mono_add_internal_call("CSharpScript.Scripting::AttachScript", (void*)Internal_AttachScript);
+
     // === Components ===
+    mono_add_internal_call("CSharpScript.Components::SetComponentActive", (void*)Internal_SetComponentActive);
+    mono_add_internal_call("CSharpScript.Components::RemoveComponent", (void*)Internal_RemoveComponent);
     mono_add_internal_call("CSharpScript.Components::AddTransformComponent", (void *)Internal_AddTransformComponent);
     mono_add_internal_call("CSharpScript.Components::AddRenderComponent", (void *)Internal_AddRenderComponent);
     mono_add_internal_call("CSharpScript.Components::AddCollisionComponent", (void *)Internal_AddCollisionComponent);
@@ -613,6 +651,7 @@ void ScriptSystem::RegisterInternalCalls()
     mono_add_internal_call("CSharpScript.Camera::GetMode", (void*)Internal_GetCameraMode);
 
     // === Collision Queries ===
+    mono_add_internal_call("CSharpScript.Collision::Raycast_Internal", (void*)Internal_Raycast);
     mono_add_internal_call("CSharpScript.Collision::OnTriggerEnter", (void*)Internal_OnTriggerEnter);
     mono_add_internal_call("CSharpScript.Collision::OnTriggerExit", (void*)Internal_OnTriggerExit);
     mono_add_internal_call("CSharpScript.Collision::OnTriggerStay", (void*)Internal_OnTriggerStay);

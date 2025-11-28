@@ -49,7 +49,7 @@ struct TilesetData {
     int totalTiles;          // Total number of tiles
 
     TilesetData()
-        : textureID(0), tileWidth(32), tileHeight(32),
+        : textureID(0), tileWidth(64), tileHeight(64),
         tilesPerRow(8), tilesPerColumn(8), totalTiles(64) {
     }
 };
@@ -219,8 +219,6 @@ private:
     // Tileset loading
     char tilesetPath[256] = "";
     bool showTilesetLoadDialog;
-    int tempTileWidth;
-    int tempTileHeight;
 
     // New tilemap dialog
     bool showNewTilemapDialog;

@@ -53,6 +53,10 @@ public:
      */
     void Initialize() override {}
  
+    /**
+     * @brief Resets the menu state to the default (Home screen).
+     */
+    void Reset();
 
 private:
     std::string hoveredButtonName = "";   ///< The name of the currently hovered button

@@ -79,7 +79,7 @@ public:
      * @return True if something was hit
      */
     bool Raycast(const vec2& origin, const vec2& direction, float distance,
-        RaycastHit& hit, CollisionLayer layerMask = CollisionLayer::Default);
+        RaycastHit& hit, GameObject* self = nullptr, CollisionLayer layerMask = CollisionLayer::Default);
 
     // ===== Helper Functions for Specific Object Collision Queries =====
     bool AreColliding(GameObject* obj1, GameObject* obj2);
