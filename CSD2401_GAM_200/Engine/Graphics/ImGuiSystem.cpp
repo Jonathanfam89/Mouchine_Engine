@@ -109,6 +109,9 @@ int gizmo_type = -1;
 ImVec2 viewportSize;
 ImVec2 viewportPos;
 
+// PROPERTIES
+char draggedSprite_str[128]{"<Drag Image Here>"};
+
 // IMGUI COLOURS
 ImVec4 color_icon_highlighted{ 0.5f, 0.5f, 0.5f, .7f };
 ImVec4 color_icon_normal{ 1.f, 1.f, 1.f, .7f };
@@ -1093,6 +1096,7 @@ void GOCreationMenu_Spawn()
 void ImGuiSystem::SetSelectedGameObject(EntityID id)
 {
     selectedGameObjectID = id;
+    CORE->GetGraphicsSystem()->ClearEditorSelection();              // need to clear after resassigning so newly selected GO can have the correct outlines drawn
 }
 
 void ImGuiSystem::ResetSelectedGameObject()
@@ -1447,35 +1451,35 @@ void ImGuiSystem::Viewport_RenderGizmoToolbar()
     ImGui::Begin("##Toolbar", nullptr, flags);
 
     if (ImGui::ImageButton("##Gizmo_Select", ImTextureID(icon_giz_select_ui), icon_size_medium, { 0, 1 }, { 1, 0 },
-        (gizmo_type == -1) ? color_icon_highlighted : color_icon_normal, color_icon_bg) || ImGui::IsKeyPressed(ImGuiKey_Q))
+        (gizmo_type == -1) ? color_icon_highlighted : color_icon_normal, color_icon_bg) || ImGui::IsKeyPressed(ImGuiKey_Q) && isHoveringOverViewport)
     {
         gizmo_type = -1;
     }
     CreateHintText("(Q) Select");
     ImGui::Separator();
     if (ImGui::ImageButton("##Gizmo_Translate", ImTextureID(icon_giz_translate_ui), icon_size_medium, { 0, 1 }, { 1, 0 },
-        (gizmo_type == int(ImGuizmo::OPERATION::TRANSLATE)) ? color_icon_highlighted : color_icon_normal, color_icon_bg) || ImGui::IsKeyPressed(ImGuiKey_W))
+        (gizmo_type == int(ImGuizmo::OPERATION::TRANSLATE)) ? color_icon_highlighted : color_icon_normal, color_icon_bg) || ImGui::IsKeyPressed(ImGuiKey_W) && isHoveringOverViewport)
     {
         gizmo_type = int(ImGuizmo::OPERATION::TRANSLATE);
     }
     CreateHintText("(W) Move");
     ImGui::Separator();
     if (ImGui::ImageButton("##Gizmo_Scale", ImTextureID(icon_giz_scale_ui), icon_size_medium, { 0, 1 }, { 1, 0 },
-        (gizmo_type == int(ImGuizmo::OPERATION::SCALE)) ? color_icon_highlighted : color_icon_normal, color_icon_bg) || ImGui::IsKeyPressed(ImGuiKey_E))
+        (gizmo_type == int(ImGuizmo::OPERATION::SCALE)) ? color_icon_highlighted : color_icon_normal, color_icon_bg) || ImGui::IsKeyPressed(ImGuiKey_E) && isHoveringOverViewport)
     {
         gizmo_type = int(ImGuizmo::OPERATION::SCALE);
     }
     CreateHintText("(E) Scale");
     ImGui::Separator();
     if (ImGui::ImageButton("##Gizmo_Rotate", ImTextureID(icon_giz_rotate_ui), icon_size_medium, { 0, 1 }, { 1, 0 },
-        (gizmo_type == int(ImGuizmo::OPERATION::ROTATE)) ? color_icon_highlighted : color_icon_normal, color_icon_bg) || ImGui::IsKeyPressed(ImGuiKey_R))
+        (gizmo_type == int(ImGuizmo::OPERATION::ROTATE)) ? color_icon_highlighted : color_icon_normal, color_icon_bg) || ImGui::IsKeyPressed(ImGuiKey_R) && isHoveringOverViewport)
     {
         gizmo_type = int(ImGuizmo::OPERATION::ROTATE);
     }
     CreateHintText("(R) Rotate");
     ImGui::Separator();
     if (ImGui::ImageButton("##Gizmo_Resize", ImTextureID(icon_giz_resize_ui), icon_size_medium, { 0, 1 }, { 1, 0 },
-        (gizmo_type == int(ImGuizmo::OPERATION::BOUNDS)) ? color_icon_highlighted : color_icon_normal, color_icon_bg) || ImGui::IsKeyPressed(ImGuiKey_T))
+        (gizmo_type == int(ImGuizmo::OPERATION::BOUNDS)) ? color_icon_highlighted : color_icon_normal, color_icon_bg) || ImGui::IsKeyPressed(ImGuiKey_T) && isHoveringOverViewport)
     {
         gizmo_type = int(ImGuizmo::OPERATION::BOUNDS);
     }
@@ -1489,19 +1493,29 @@ void ImGuiSystem::Viewport_HighlightGO()
     // TODO WIP FOR HIGHLIGHTING SELECTED GO, I GOT SO LOST IN THE SAUCE LMAO ITS ALMOST DONE THO I JUST DK HOW TO GET VP MATRIX
     if (!selectedGameObjectID) return;
     auto* transform = GameObjectFactory::Instance().GetGameObject(selectedGameObjectID)->GetComponent<TransformComponent>();
-    //CORE->GetLevelEditor()->GetEditorViewProjection()
+    auto* collider = GameObjectFactory::Instance().GetGameObject(selectedGameObjectID)->GetComponent<ColliderComponent>();
+
     if (transform)
     {
         float x, y, sx, sy;
 
-        //CameraManager::Instance().GetViewProjectMatrix(renderWidth, renderHeight);
         transform->GetPosition(x, y);
         transform->GetScale(sx, sy);
         if (CORE->GetGraphicsSystem())
         {
             CORE->GetGraphicsSystem()->SetEditorSelection(x, y, sx, sy);
         }
+        if (collider)
+        {
+            vec2 colliderScale{ collider->GetSize() };
+
+            if (CORE->GetGraphicsSystem())
+            {
+                CORE->GetGraphicsSystem()->SetEditorSelection_ColliderOnly(x, y, colliderScale.x, colliderScale.y);
+            }
+        }
     }
+
 }
 #pragma endregion
 
@@ -2131,6 +2145,7 @@ void ImGuiSystem::RenderPropertyEditor()
         if (ImGui::CollapsingHeader("Render", ImGuiTreeNodeFlags_DefaultOpen))
         {
             ImGui::Text("Shape Type: %s", GetShapeTypeName((int)render->GetShapeType()));
+            static bool showTextureDND = false;
 
             // Show colour picker for GO colour (only if no texture id for custom texture/ sprite)
             if (render->GetTextureID() == 0)
@@ -2141,11 +2156,61 @@ void ImGuiSystem::RenderPropertyEditor()
                 {
                     render->SetColor(vec4(colorArray[0], colorArray[1], colorArray[2], colorArray[3]));
                 }
+                
+                if (showTextureDND)
+                {
+                    std::string draggedSprite{};
+                    ImGui::InputText("##DragImageHere", draggedSprite_str, sizeof(draggedSprite_str));
+                    if (ImGui::IsItemFocused() && ImGui::IsKeyPressed(ImGuiKey_Enter))
+                    {
+                        draggedSprite = draggedSprite_str;
+                    }
+
+                    ReceiveDragAndDrop(SpritePayloadID, draggedSprite);
+                    if (!draggedSprite.empty())
+                    {
+                        std::cout << draggedSprite << std::endl;
+                        render->SetTexturePath(draggedSprite);
+                        GLuint newTexID =  CORE->GetGraphicsSystem()->LoadTexture(draggedSprite.c_str());
+                        if (newTexID)
+                        {
+                            render->SetColor(1.0f);                                 // removes colour and makes way for loading image
+                            render->SetTextureID(newTexID);
+                            strcpy(draggedSprite_str, "<Drag Image Here>");                   // reset
+                            std::cout << "[Properties] New Texture loaded successfully!" << std::endl;
+                        }
+                        else
+                        {
+                            std::cout << "[Properties] Failed to load texture!" << std::endl;
+                        }
+                    }
+                }
+
+                // placed below here for cleaner transition when pressing the button
+                if (!showTextureDND && ImGui::Button("Add Texture"))                        
+                {
+                    render->SetTextureID(GLuint{});
+                    showTextureDND = true;
+                }
             }
             else
             {
                 ImGui::Text("Texture ID: %u", render->GetTextureID());
+                showTextureDND = false;
+                if (ImGui::Button("Remove Existing Texture"))
+                {
+                    render->SetTextureID(GLuint{});
+                    render->SetColor({1,0,1,1});                    // set to pink to make it obvious if texture missing
+                }
             }
+            int goRenderLayer{ render->GetLayer() };
+            ImGui::Text("Rendering Layer");
+            ImGui::SetNextItemWidth(100.0f);
+            if (ImGui::InputInt("##Rendering Layer", &goRenderLayer))
+            {
+                render->SetLayer(goRenderLayer);
+            }
+            CreateHintText("Ascending order for topmost rendering position");
         }
     }
 

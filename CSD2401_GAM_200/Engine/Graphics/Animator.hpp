@@ -21,6 +21,7 @@ Technology is prohibited.
 #include <iostream>
 #include <cctype>
 #include <map>
+#include <queue>
 #include <string>
 
 struct AnimationData {
@@ -80,6 +81,8 @@ public:
 	void RegisterAnimation(const std::string& name, const std::string& path, int numRows, int numCols, int startRow, int startCol, int endRow, int endCol, float fps);
 
 	void PlayAnimation(const std::string& name);
+
+	void AddToQueue(const std::string& animationName);
 	/**
 	 * @brief Loads a new spritesheet file within the same object.
 	 * @param textureFile Filepath for spritesheet
@@ -154,6 +157,7 @@ private:
 
 	std::map<std::string, AnimationData> animation_mList;
 	std::string currentAnimName;
+    std::queue<std::string> animationQueue;
 
 	const char *SpriteFile; // File path for spritesheet
 	GLuint textureID;		// Personalised ID for the texture

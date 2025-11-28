@@ -16,6 +16,42 @@ Technology is prohibited.
 #include <string>
 #include <cmath>
 
+// Forward declarations
+class GameObject;
+class ColliderComponent;
+enum class CollisionLayer;
+
+// --------------------
+// Raycast Structures
+// --------------------
+
+/**
+ * @brief Represents a ray for raycasting
+ */
+struct Ray {
+    vec2 origin;      // Starting point of the ray
+    vec2 direction;   // Direction vector (should be normalized)
+
+    Ray() : origin{ 0.0f, 0.0f }, direction{ 0.0f, 0.0f } {}
+    Ray(const vec2& orig, const vec2& dir) : origin(orig), direction(dir) {}
+};
+
+/**
+ * @brief Contains information about a raycast hit
+ */
+struct RaycastHit {
+    GameObject* gameObject;           // The GameObject that was hit
+    ColliderComponent* collider;      // The collider that was hit
+    vec2 point;                       // The point in world space where the ray hit
+    vec2 normal;                      // The normal of the surface hit
+    float distance;                   // Distance from ray origin to hit point
+
+    RaycastHit()
+        : gameObject(nullptr), collider(nullptr),
+        point{ 0.0f, 0.0f }, normal{ 0.0f, 0.0f }, distance(0.0f) {
+    }
+};
+
 // --------------------
 // Collider Types
 // --------------------
@@ -77,6 +113,34 @@ bool CollisionIntersection_RectRect_Dynamic(const AABB& aabb1,
     float& firstTimeOfCollision);
 
 // (Circle vs Circle dynamic can be added later)
+
+// --------------------
+// Ray Intersection Tests
+// --------------------
+
+/**
+ * @brief Tests if a ray intersects an AABB
+ * @param origin Ray starting point
+ * @param direction Ray direction (normalized)
+ * @param aabb Axis-aligned bounding box
+ * @param maxDistance Maximum ray distance
+ * @param hitDistance Output: distance to hit point if collision occurs
+ * @return True if ray intersects the AABB
+ */
+bool IntersectRayAABB(const vec2& origin, const vec2& direction,
+    const AABB& aabb, float maxDistance, float& hitDistance);
+
+/**
+ * @brief Tests if a ray intersects a circle
+ * @param origin Ray starting point
+ * @param direction Ray direction (normalized)
+ * @param circle Circle to test against
+ * @param maxDistance Maximum ray distance
+ * @param hitDistance Output: distance to hit point if collision occurs
+ * @return True if ray intersects the circle
+ */
+bool IntersectRayCircle(const vec2& origin, const vec2& direction,
+    const Circle& circle, float maxDistance, float& hitDistance);
 
 // --------------------
 // Unified Helpers

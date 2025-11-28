@@ -67,6 +67,20 @@ public:
      */
     static bool ShouldCollide(CollisionLayer layer1, CollisionLayer layer2);
 
+    // ===== Raycast Functions =====
+
+    /**
+     * @brief Casts a ray and returns the first object hit
+     * @param origin Starting point of the ray
+     * @param direction Direction of the ray (will be normalized)
+     * @param distance Maximum distance to cast
+     * @param hit Output: Information about what was hit
+     * @param layerMask Optional: Only detect collisions with this layer (Default = all layers)
+     * @return True if something was hit
+     */
+    bool Raycast(const vec2& origin, const vec2& direction, float distance,
+        RaycastHit& hit, CollisionLayer layerMask = CollisionLayer::Default);
+
     // ===== Helper Functions for Specific Object Collision Queries =====
     bool AreColliding(GameObject* obj1, GameObject* obj2);
     bool JustCollided(GameObject* obj1, GameObject* obj2);

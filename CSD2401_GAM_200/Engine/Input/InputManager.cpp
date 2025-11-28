@@ -214,12 +214,11 @@ void InputManager::Update(float dt)
                 }
                 else if (key == GLFW_KEY_F4)
                 {
-                    CORE->GetGraphicsSystem()->SetEditorMode(!CORE->GetGraphicsSystem()->IsEditorMode());
-                    std::cout << "Editor Mode Toggled" << CORE->GetGraphicsSystem()->IsEditorMode() << std::endl;
-                }
-                else if (key == GLFW_KEY_P) {
                     ShowFPS = !ShowFPS;
                     std::cout << "FPS display " << (ShowFPS ? "ENABLED" : "DISABLED") << std::endl;
+                }
+                else if (key == GLFW_KEY_P) {
+
                 }
             }
             wasPressed = true;
@@ -229,6 +228,17 @@ void InputManager::Update(float dt)
             wasPressed = false;
         }
     }
+    // ===== HERO MOVEMENT CONSTANTS (Customizable) =====
+    static float HERO_GRAVITY = -381.0f;
+    static float HERO_MOVE_FORCE = 200.0f;
+    static float HERO_JUMP_FORCE = 1000.0f;
+    static float HERO_JUMP_DURATION = 0.4f;
+    static float HERO_FRICTION_COEFFICIENT = 5.0f;
+    static float HERO_KNOCKBACK_FORCE = 800.0f;         // Sustained push force
+    static float HERO_KNOCKBACK_DURATION = 0.2f;
+    static float HERO_KNOCKBACK_IMPULSE_X = 300.0f;     // Instant horizontal velocity change
+    static float HERO_KNOCKBACK_IMPULSE_Y = 100.0f;     // Instant vertical velocity change
+
     GameObject* player = nullptr;
 
 
@@ -258,17 +268,13 @@ void InputManager::Update(float dt)
     TransformComponent* transform = player->GetComponent<TransformComponent>();
     if (!transform) return;
 
-
-  
-
-    //// Ensure player has drag force for smooth stopping (add once)
-    // static bool dragInitialized = false;
-    // if (!dragInitialized && physics)
-    //{
-    //     auto& forcesManager = physics->GetForcesManager();
-    //     forcesManager.AddDrag();
-    //     dragInitialized = true;
-    // }
+    // =====KINEMATIC SETUP=====
+    static bool kinematicInitialized = false;
+    if (!kinematicInitialized) {
+        physics->SetKinematic(true);
+        physics->SetGravityValue(HERO_GRAVITY);
+        kinematicInitialized = true;
+    }
 
     float vx, vy;
     physics->GetVelocity(vx, vy);
@@ -293,23 +299,35 @@ void InputManager::Update(float dt)
     {
         moveDirectionX = -1.0f;
 
-        // Remove friction when actively moving
-        forcesManager.RemoveForcesByType(ForceType::Friction);
-        // Add left movement force using helper
-        forcesManager.AddForce(ForceType::MoveLeft);
-        // Remove right movement if present
-        forcesManager.RemoveForcesByType(ForceType::MoveRight);
+        // Only apply movement if not blocked by wall
+        bool blockedByWall = physics->isCollidingLeft &&
+            physics->leftCollisionLayer == CollisionLayer::Ground;
+
+        if (!blockedByWall) {
+            // Remove friction when actively moving
+            forcesManager.RemoveForcesByType(ForceType::Friction);
+            // Remove existing movement force
+            forcesManager.RemoveForcesByType(ForceType::Move);
+            // Add movement force with left direction
+            forcesManager.AddForce(ForceType::Move, HERO_MOVE_FORCE, -1.0f, -1.0f, 0.0f);
+        }
     }
     else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
     {
         moveDirectionX = 1.0f;
 
-        // Remove friction when actively moving
-        forcesManager.RemoveForcesByType(ForceType::Friction);
-        // Add right movement force using helper
-        forcesManager.AddForce(ForceType::MoveRight);
-        // Remove left movement if present
-        forcesManager.RemoveForcesByType(ForceType::MoveLeft);
+        // Only apply movement if not blocked by wall
+        bool blockedByWall = physics->isCollidingRight &&
+            physics->rightCollisionLayer == CollisionLayer::Ground;
+
+        if (!blockedByWall) {
+            // Remove friction when actively moving
+            forcesManager.RemoveForcesByType(ForceType::Friction);
+            // Remove existing movement force
+            forcesManager.RemoveForcesByType(ForceType::Move);
+            // Add movement force with right direction
+            forcesManager.AddForce(ForceType::Move, HERO_MOVE_FORCE, -1.0f, 1.0f, 0.0f);
+        }
     }
     else if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
         CameraManager::Instance().AddCameraTrauma(1.f);
@@ -318,14 +336,13 @@ void InputManager::Update(float dt)
     }
     else
     {
-        // No movement keys pressed - remove all movement forces
-        forcesManager.RemoveForcesByType(ForceType::MoveLeft);
-        forcesManager.RemoveForcesByType(ForceType::MoveRight);
+        // No movement keys pressed - remove movement force
+        forcesManager.RemoveForcesByType(ForceType::Move);
 
         // Add friction to slow down (only if not already present)
         if (!forcesManager.HasForceType(ForceType::Friction) && physics->IsGrounded())
         {
-            forcesManager.AddFriction(&physics->isGrounded);
+            forcesManager.AddForce(ForceType::Friction, HERO_FRICTION_COEFFICIENT, -1.0f, 0.0f, 0.0f, &physics->isGrounded);
         }
 
         // Reset footstep timer when not moving
@@ -364,6 +381,82 @@ void InputManager::Update(float dt)
         physics->SetVelocity(clampedVx, vy);
     }
 
+    // Get current velocity for collision checks
+    physics->GetVelocity(vx, vy);
+
+    // ===== ENEMY COLLISION HANDLING ===== //
+    // Check if colliding with enemies and apply knockback (impulse + force)
+    if (physics->isCollidingLeft && physics->leftCollisionLayer == CollisionLayer::Enemy) {
+        // Enemy on left, push player right
+
+        // Apply instant impulse
+        physics->velocity.x += HERO_KNOCKBACK_IMPULSE_X;
+        physics->velocity.y += HERO_KNOCKBACK_IMPULSE_Y;
+
+        // Apply knockback force
+        forcesManager.ApplyKnockback(1.0f, 0.2f, HERO_KNOCKBACK_FORCE);
+
+        // Can add other things besides knockback like damage
+    }
+
+    if (physics->isCollidingRight && physics->rightCollisionLayer == CollisionLayer::Enemy) {
+        // Enemy on right, push player left
+
+        // Apply instant impulse
+        physics->velocity.x -= HERO_KNOCKBACK_IMPULSE_X;
+        physics->velocity.y += HERO_KNOCKBACK_IMPULSE_Y;
+
+        // Apply knockback force
+        forcesManager.ApplyKnockback(-1.0f, 0.2f, HERO_KNOCKBACK_FORCE);
+    }
+
+    // ===== WALL/GROUND COLLISION HANDLING =====
+    // Stop horizontal movement when hitting walls
+    if (physics->isCollidingLeft &&
+        physics->leftCollisionLayer == CollisionLayer::Ground) {
+        if (physics->velocity.x < 0) {
+            physics->velocity.x = 0.0f;
+            forcesManager.RemoveForcesByType(ForceType::Move);
+        }
+    }
+
+    if (physics->isCollidingRight &&
+        physics->rightCollisionLayer == CollisionLayer::Ground) {
+        if (physics->velocity.x > 0) {
+            physics->velocity.x = 0.0f;
+            forcesManager.RemoveForcesByType(ForceType::Move);
+        }
+    }
+
+    // Stop vertical movement when hitting ceiling
+    if (physics->isCollidingTop &&
+        physics->topCollisionLayer == CollisionLayer::Ground) {
+        if (physics->velocity.y > 0) {
+            physics->velocity.y = 0.0f;
+        }
+    }
+
+    // Stop downward movement when hitting ground
+    if (physics->isCollidingBottom &&
+        physics->bottomCollisionLayer == CollisionLayer::Ground) {
+        if (physics->velocity.y < 0) {
+            physics->velocity.y = 0.0f;
+        }
+    }
+
+    // Wall slide effect (pretty cool ngl)
+    bool touchingLeftWall = physics->isCollidingLeft &&
+        physics->leftCollisionLayer == CollisionLayer::Ground;
+    bool touchingRightWall = physics->isCollidingRight &&
+        physics->rightCollisionLayer == CollisionLayer::Ground;
+
+    if ((touchingLeftWall || touchingRightWall) &&
+        !physics->IsGrounded() &&
+        physics->velocity.y < -50.0f) {
+        // Slow down fall when sliding on wall
+        physics->velocity.y = -50.0f;
+    }
+
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
         KeyStateQuit = true;
@@ -384,7 +477,8 @@ void InputManager::Update(float dt)
         if (physics->IsGrounded())
         {
             is_jumping = false;
-            physics->GetForcesManager().AddForce(ForceType::Jump);
+            // Apply jump
+            physics->GetForcesManager().AddForce(ForceType::Jump, HERO_JUMP_FORCE, HERO_JUMP_DURATION);
             physics->GetVelocity(vx, vy); // Get updated VY after jump
             // Play jump sound effect
             AudioManager* audioManager = CORE->GetAudioManager();
@@ -419,7 +513,6 @@ void InputManager::Update(float dt)
         // Can dash if: not already dashing AND (grounded OR has air dash available)
         if (!isDashing && (isGrounded || !hasUsedAirDash))
         {
-            // Determine dash direction using moveDirectionX if available, otherwise use velocityX
             float dashDirection = 1.0f;  // Default right
 
             if (std::abs(moveDirectionX) > 0.01f) {
@@ -427,7 +520,6 @@ void InputManager::Update(float dt)
                 dashDirection = moveDirectionX;
             }
             else if (vx < -0.1f) {
-                // Fallback to velocity direction if not pressing movement keys
                 dashDirection = -1.0f;
             }
             else if (vx > 0.1f) {
@@ -444,16 +536,7 @@ void InputManager::Update(float dt)
             // Mark air dash as used if in air
             if (!isGrounded) {
                 hasUsedAirDash = true;
-                std::cout << "[Dash] Air dash used!" << std::endl;
             }
-
-            std::cout << "[Dash] Started! Direction: " << (dashDirection > 0 ? "Right" : "Left") << std::endl;
-        }
-        else if (isDashing) {
-            std::cout << "[Dash] Already dashing!" << std::endl;
-        }
-        else if (!isGrounded && hasUsedAirDash) {
-            std::cout << "[Dash] Air dash already used!" << std::endl;
         }
     }
     else if (!dashKeyDown) {
@@ -463,7 +546,7 @@ void InputManager::Update(float dt)
     // Check if dash just ended and restore gravity
     bool isDashing = physics->GetForcesManager().HasForceType(ForceType::Dash);
     if (wasDashing && !isDashing) {
-        // Dash just ended - restore gravity
+        // Dash just ended, restore gravity
         physics->SetGravity(true);
         std::cout << "[Dash] Ended, gravity restored" << std::endl;
     }
@@ -474,7 +557,6 @@ void InputManager::Update(float dt)
         hasUsedAirDash = false;
         std::cout << "[Dash] Air dash restored (grounded)" << std::endl;
     }
-    // ===== END DASH SYSTEM =====
 
     auto* anim = player->GetComponent<Spritesheet>();
         if (transform && anim)
@@ -482,51 +564,38 @@ void InputManager::Update(float dt)
             float absWidth = std::abs(transform->scaleX);
             transform->SetScale(absWidth, transform->scaleY);
 
-      
-            static bool isFacingRight = true;
 
-            if (moveDirectionX > 0.0f) isFacingRight = true;
-            if (moveDirectionX < 0.0f) isFacingRight = false;
+        static bool isFacingRight = true;
 
-            // 3. Determine Animation Name based on State AND Direction
-            std::string requestedState = "";
+        if (moveDirectionX > 0.0f) isFacingRight = true;
+        if (moveDirectionX < 0.0f) isFacingRight = false;
 
-            if (is_jumping)
-            {
-                requestedState = isFacingRight ? "Jump_R" : "Jump_L";
-            }
-            else if (std::abs(vx) > 1.0f)
-            {
-                requestedState = isFacingRight ? "Run_R" : "Run_L";
-            }
-            else
-            {
-                // If stopped, use the last known direction
-                requestedState = isFacingRight ? "Idle_R" : "Idle_L";
-            }
+        // 3. Determine Animation Name based on State AND Direction
+        std::string requestedState = "";
 
-            // 4. Play the specific Left/Right animation
-            anim->PlayAnimation(requestedState);
+        if (is_jumping)
+        {
+            requestedState = isFacingRight ? "Jump_R" : "Jump_L";
+        }
+        else if (std::abs(vx) > 1.0f)
+        {
+            requestedState = isFacingRight ? "Run_R" : "Run_L";
+        }
+        else
+        {
+            // If stopped, use the last known direction
+            requestedState = isFacingRight ? "Idle_R" : "Idle_L";
         }
 
-    // Note: Don't call SetVelocity anymore - forces handle movement
-    // The Integrate() method will update velocity based on forces
-
-    // Mouse
-    //if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-    //{
-    //    std::cout << "Left Mouse Press, X:" << mouseX << " Y:" << mouseY << std::endl;
-    //}
-    //if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
-    //{
-    //    std::cout << "Right Mouse Press" << mouseX << " Y:" << mouseY << std::endl;
-    //}
+        // 4. Play the specific Left/Right animation
+        anim->PlayAnimation(requestedState);
+    }
 
     }
 
     void InputManager::ResetState()
     {
- 
+
         MouseLeftClicked = false;
 
         mouseX = 0.0;
@@ -540,4 +609,3 @@ void InputManager::Update(float dt)
         cachedPlayerID = 0;
         std::cout << "[InputManager] State reset." << std::endl;
     }
-

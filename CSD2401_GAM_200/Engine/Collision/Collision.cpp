@@ -116,3 +116,99 @@ bool CollisionIntersection_RectRect_Dynamic(const AABB& aabb1,
     firstTimeOfCollision = tFirst;
     return true;
 }
+
+// --------------------------------------------------
+// Ray Intersections
+// --------------------------------------------------
+
+/**
+ * @brief Tests if a ray intersects an AABB using slab method
+ */
+bool IntersectRayAABB(const vec2& origin, const vec2& direction,
+    const AABB& aabb, float maxDistance, float& hitDistance)
+{
+    // Initialize intersection distances
+    float tMin = 0.0f;
+    float tMax = maxDistance;
+
+    // Check X axis
+    if (std::abs(direction.x) > 0.0001f) {
+        float t1 = (aabb.min.x - origin.x) / direction.x;
+        float t2 = (aabb.max.x - origin.x) / direction.x;
+
+        if (t1 > t2) std::swap(t1, t2);
+
+        tMin = std::max(tMin, t1);
+        tMax = std::min(tMax, t2);
+
+        if (tMin > tMax) return false;
+    }
+    else {
+        // Ray is parallel to X axis
+        if (origin.x < aabb.min.x || origin.x > aabb.max.x) {
+            return false;
+        }
+    }
+
+    // Check Y axis
+    if (std::abs(direction.y) > 0.0001f) {
+        float t1 = (aabb.min.y - origin.y) / direction.y;
+        float t2 = (aabb.max.y - origin.y) / direction.y;
+
+        if (t1 > t2) std::swap(t1, t2);
+
+        tMin = std::max(tMin, t1);
+        tMax = std::min(tMax, t2);
+
+        if (tMin > tMax) return false;
+    }
+    else {
+        // Ray is parallel to Y axis
+        if (origin.y < aabb.min.y || origin.y > aabb.max.y) {
+            return false;
+        }
+    }
+
+    hitDistance = tMin;
+    return true;
+}
+
+/**
+ * @brief Tests if a ray intersects a circle using quadratic equation
+ */
+bool IntersectRayCircle(const vec2& origin, const vec2& direction,
+    const Circle& circle, float maxDistance, float& hitDistance)
+{
+    // Vector from ray origin to circle center
+    vec2 oc = { origin.x - circle.center.x, origin.y - circle.center.y };
+
+    // Quadratic equation coefficients: at^2 + bt + c = 0
+    float a = direction.x * direction.x + direction.y * direction.y;
+    float b = 2.0f * (oc.x * direction.x + oc.y * direction.y);
+    float c = oc.x * oc.x + oc.y * oc.y - circle.radius * circle.radius;
+
+    float discriminant = b * b - 4.0f * a * c;
+
+    // No intersection if discriminant is negative
+    if (discriminant < 0.0f) {
+        return false;
+    }
+
+    // Calculate the two possible intersection points
+    float sqrtDisc = std::sqrt(discriminant);
+    float t1 = (-b - sqrtDisc) / (2.0f * a);
+    float t2 = (-b + sqrtDisc) / (2.0f * a);
+
+    // Find the closest valid hit
+    if (t1 >= 0.0f && t1 <= maxDistance) {
+        hitDistance = t1;
+        return true;
+    }
+
+    if (t2 >= 0.0f && t2 <= maxDistance) {
+        hitDistance = t2;
+        return true;
+    }
+
+    return false;
+}

@@ -13,10 +13,48 @@ Technology is prohibited.
 /* End Header **************************************************************************/
 
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using static System.Runtime.CompilerServices.RuntimeHelpers;
 
 namespace CSharpScript
 {
+    // --- Structs ---
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Vector2
+    {
+        public float x;
+        public float y;
+
+        public Vector2(float x, float y)
+        {
+            this.x = x;
+            this.y = y;
+        }
+
+        public override string ToString()
+        {
+            return $"({x}, {y})";
+        }
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Vector4
+    {
+        public float x, y, z, w;
+
+        public Vector4(float x, float y, float z, float w)
+        {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.w = w;
+        }
+
+        public override string ToString()
+        {
+            return $"({x}, {y}, {z}, {w})";
+        }
+    }
+
     // --- Enums ---
     // These must match your C++ enum values exactly
 
@@ -157,7 +195,7 @@ namespace CSharpScript
             float width, float height,
             string texturePath,
             int rows, int columns,
-            int startFrame, int endFrame,
+            int startRow, int startCol, int endRow, int endCol,
             float fps,
             int layer,
             bool hasPhysics,
@@ -232,6 +270,27 @@ namespace CSharpScript
         {
             SetScale_XY(objectName, x, y);
         }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void GetPosition_Internal(string objectName, out float x, out float y);
+
+        public static Vector2 GetPosition(string objectName)
+        {
+            GetPosition_Internal(objectName, out float x, out float y);
+            return new Vector2(x, y);
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float GetRotation(string objectName);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void GetScale_Internal(string objectName, out float x, out float y);
+
+        public static Vector2 GetScale(string objectName)
+        {
+            GetScale_Internal(objectName, out float x, out float y);
+            return new Vector2(x, y);
+        }
     }
 
     /// <summary>
@@ -273,6 +332,9 @@ namespace CSharpScript
         /// <param name="alpha">The alpha value (0.0 to 1.0, where 0.0 is fully transparent and 1.0 is fully opaque).</param>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetAlpha(string objectName, float alpha);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern Vector4 GetColor(string objectName);
     }
 
     /// <summary>
@@ -321,6 +383,9 @@ namespace CSharpScript
         /// <param name="isStatic">True if the object should be static, false otherwise.</param>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetStatic(string objectName, bool isStatic);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern Vector2 GetVelocity(string objectName);
     }
 
     /// <summary>
@@ -352,6 +417,12 @@ namespace CSharpScript
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool OnTriggerStay(string obj1, string obj2);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int GetCollisionLayer(string objectName);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int GetCollisionShape(string objectName);
     }
 
     /// <summary>
@@ -438,6 +509,33 @@ namespace CSharpScript
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetMode(int mode);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern Vector2 GetPosition();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float GetZoom();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int GetMode();
+    }
+
+    public static class Animation
+    {
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void PlayAnimation(string objectName, string animationName);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void AddToQueue(string objectName, string animationName);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void RegisterAnimation(string objectName, string animationName, string texturePath, int rows, int cols, int startRow, int startCol, int endRow, int endCol, float fps);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetAnimation(string objectName, int startFrame, int endFrame, float fps);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern string GetCurrentAnimationName(string objectName);
     }
 
     /// <summary>

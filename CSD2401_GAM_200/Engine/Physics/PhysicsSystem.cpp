@@ -75,6 +75,11 @@ void PhysicsSystem::Update(float deltaTime)
         if (physics && !physics->IsStatic())
         {
             physics->SetGrounded(false);
+            // Clear directional collision flags
+            physics->isCollidingLeft = false;
+            physics->isCollidingRight = false;
+            physics->isCollidingTop = false;
+            physics->isCollidingBottom = false;
         }
     }
 
@@ -189,12 +194,11 @@ void PhysicsSystem::ResolveCircleCircle(GameObject* obj1, GameObject* obj2,
     }
 
     // Apply bounce
-    float vx1, vy1, vx2, vy2;
-    physics1->GetVelocity(vx1, vy1);
-    physics2->GetVelocity(vx2, vy2);
+    vec2 vel1 = physics1->velocity;
+    vec2 vel2 = physics2->velocity;
 
-    float relVelX = vx1 - vx2;
-    float relVelY = vy1 - vy2;
+    float relVelX = vel1.x - vel2.x;
+    float relVelY = vel1.y - vel2.y;
     float velAlongNormal = relVelX * nx + relVelY * ny;
 
     // Check if either is a player - players don't bounce as much
@@ -219,16 +223,16 @@ void PhysicsSystem::ResolveCircleCircle(GameObject* obj1, GameObject* obj2,
 
     if (!physics1->IsStatic())
     {
-        vx1 += impulseX / mass1;
-        vy1 += impulseY / mass1;
-        physics1->SetVelocity(vx1, vy1);
+        vel1.x += impulseX / mass1;
+        vel1.y += impulseY / mass1;
+        physics1->velocity = vel1;
     }
 
     if (!physics2->IsStatic())
     {
-        vx2 -= impulseX / mass2;
-        vy2 -= impulseY / mass2;
-        physics2->SetVelocity(vx2, vy2);
+        vel2.x -= impulseX / mass2;
+        vel2.y -= impulseY / mass2;
+        physics2->velocity = vel2;
     }
 }
 
@@ -261,15 +265,55 @@ void PhysicsSystem::ResolveSquareSquare(GameObject* obj1, GameObject* obj2,
         auto* transform1 = obj1->GetComponent<TransformComponent>();
         auto* transform2 = obj2->GetComponent<TransformComponent>();
 
-        if (!physics1->IsStatic() && transform1)
+        // Set collision flags for obj1 (always set, even if kinematic)
+        if (direction < 0) {
+            physics1->isCollidingRight = true;
+            physics1->rightCollisionLayer = col2->GetLayer();
+        }
+        else {
+            physics1->isCollidingLeft = true;
+            physics1->leftCollisionLayer = col2->GetLayer();
+        }
+
+        // Set collision flags for obj2 (always set, even if kinematic)
+        if (direction < 0) {
+            physics2->isCollidingLeft = true;
+            physics2->leftCollisionLayer = col1->GetLayer();
+        }
+        else {
+            physics2->isCollidingRight = true;
+            physics2->rightCollisionLayer = col1->GetLayer();
+        }
+
+        // Resolve collision for non-kinematic objects
+        bool obj1Kinematic = physics1->IsKinematic();
+        bool obj2Kinematic = physics2->IsKinematic();
+
+        if (!physics1->IsStatic() && !obj1Kinematic && transform1)
         {
             transform1->Move(direction * overlapX * 0.5f, 0);
-            physics1->SetVelocity(0, physics1->velocityY);
+            physics1->velocity.x = 0.0f;
         }
-        if (!physics2->IsStatic() && transform2)
+        if (!physics2->IsStatic() && !obj2Kinematic && transform2)
         {
             transform2->Move(-direction * overlapX * 0.5f, 0);
-            physics2->SetVelocity(0, physics2->velocityY);
+            physics2->velocity.x = 0.0f;
+        }
+
+        // If one is kinematic and other isn't, push the non-kinematic one fully
+        if (obj1Kinematic && !obj2Kinematic && !physics2->IsStatic() && transform2) {
+            transform2->Move(-direction * overlapX, 0);  // Push full amount
+        }
+        if (obj2Kinematic && !obj1Kinematic && !physics1->IsStatic() && transform1) {
+            transform1->Move(direction * overlapX, 0);   // Push full amount
+        }
+
+        // CRITICAL: Push kinematic objects when colliding with static objects
+        if (obj1Kinematic && physics2->IsStatic() && transform1) {
+            transform1->Move(direction * overlapX, 0);  // Push kinematic away from static
+        }
+        if (obj2Kinematic && physics1->IsStatic() && transform2) {
+            transform2->Move(-direction * overlapX, 0);  // Push kinematic away from static
         }
     }
     else
@@ -280,25 +324,57 @@ void PhysicsSystem::ResolveSquareSquare(GameObject* obj1, GameObject* obj2,
         auto* transform1 = obj1->GetComponent<TransformComponent>();
         auto* transform2 = obj2->GetComponent<TransformComponent>();
 
-        if (!physics1->IsStatic() && transform1)
+        // Set collision flags for obj1 (always set, even if kinematic)
+        if (direction > 0) {
+            physics1->isCollidingBottom = true;
+            physics1->bottomCollisionLayer = col2->GetLayer();
+            physics1->SetGrounded(true);
+        }
+        else {
+            physics1->isCollidingTop = true;
+            physics1->topCollisionLayer = col2->GetLayer();
+        }
+
+        // Set collision flags for obj2 (always set, even if kinematic)
+        if (direction < 0) {
+            physics2->isCollidingBottom = true;
+            physics2->bottomCollisionLayer = col1->GetLayer();
+            physics2->SetGrounded(true);
+        }
+        else {
+            physics2->isCollidingTop = true;
+            physics2->topCollisionLayer = col1->GetLayer();
+        }
+
+        // Resolve collision for non-kinematic objects
+        bool obj1Kinematic = physics1->IsKinematic();
+        bool obj2Kinematic = physics2->IsKinematic();
+
+        if (!physics1->IsStatic() && !obj1Kinematic && transform1)
         {
             transform1->Move(0, direction * overlapY * 0.5f);
-            physics1->SetVelocity(physics1->velocityX, 0);
-            // obj1 is ABOVE obj2 when direction > 0, so it's landing on top
-            if (direction > 0 && physics1->velocityY <= 0)
-            {
-                physics1->SetGrounded(true);
-            }
+            physics1->velocity.y = 0.0f;
         }
-        if (!physics2->IsStatic() && transform2)
+        if (!physics2->IsStatic() && !obj2Kinematic && transform2)
         {
             transform2->Move(0, -direction * overlapY * 0.5f);
-            physics2->SetVelocity(physics2->velocityX, 0);
-            // obj2 is ABOVE obj1 when direction < 0, so it's landing on top
-            if (direction < 0 && physics2->velocityY <= 0)
-            {
-                physics2->SetGrounded(true);
-            }
+            physics2->velocity.y = 0.0f;
+        }
+
+        // If one is kinematic and other isn't, push the non-kinematic one fully
+        if (obj1Kinematic && !obj2Kinematic && !physics2->IsStatic() && transform2) {
+            transform2->Move(0, -direction * overlapY);  // Push full amount
+        }
+        if (obj2Kinematic && !obj1Kinematic && !physics1->IsStatic() && transform1) {
+            transform1->Move(0, direction * overlapY);   // Push full amount
+        }
+
+        // CRITICAL: Push kinematic objects when colliding with static objects
+        if (obj1Kinematic && physics2->IsStatic() && transform1) {
+            transform1->Move(0, direction * overlapY);  // Push kinematic away from static
+        }
+        if (obj2Kinematic && physics1->IsStatic() && transform2) {
+            transform2->Move(0, -direction * overlapY);  // Push kinematic away from static
         }
     }
 }
@@ -345,8 +421,7 @@ void PhysicsSystem::ResolveMixed(GameObject* obj1, GameObject* obj2,
         auto* squareTransform = squareObj->GetComponent<TransformComponent>();
         auto* circleTransform = circleObj->GetComponent<TransformComponent>();
 
-        float cvx, cvy;
-        circlePhysics->GetVelocity(cvx, cvy);
+        vec2 circleVel = circlePhysics->velocity;
 
         // Check if this is a player-enemy collision
         bool isPlayerSquare = (squareCol->GetLayer() == CollisionLayer::Player);
@@ -355,7 +430,35 @@ void PhysicsSystem::ResolveMixed(GameObject* obj1, GameObject* obj2,
         // Separate
         if (!squarePhysics->IsStatic() && squareTransform)
         {
-            squareTransform->Move(-nx * penetration * 0.5f, -ny * penetration * 0.5f);
+            // Set directional collision flags for square based on collision normal
+            // Normal points from square to circle, so negate for square's perspective
+            if (-nx > 0.5f) {
+                squarePhysics->isCollidingLeft = true;
+                squarePhysics->leftCollisionLayer = circleCol->GetLayer();
+            }
+            else if (-nx < -0.5f) {
+                squarePhysics->isCollidingRight = true;
+                squarePhysics->rightCollisionLayer = circleCol->GetLayer();
+            }
+
+            if (-ny > 0.5f) {
+                squarePhysics->isCollidingBottom = true;
+                squarePhysics->bottomCollisionLayer = circleCol->GetLayer();
+            }
+            else if (-ny < -0.5f) {
+                squarePhysics->isCollidingTop = true;
+                squarePhysics->topCollisionLayer = circleCol->GetLayer();
+            }
+
+            // Only resolve collision (move/stop) if not kinematic
+            // But if kinematic and colliding with non-static circle, still push kinematic away
+            if (!squarePhysics->IsKinematic()) {
+                squareTransform->Move(-nx * penetration * 0.5f, -ny * penetration * 0.5f);
+            }
+            else if (!circlePhysics->IsStatic()) {
+                // Kinematic square colliding with non-static circle - push square fully
+                squareTransform->Move(-nx * penetration, -ny * penetration);
+            }
 
             // Handle player-enemy collision
             if (isPlayerSquare && isEnemyCircle)
@@ -370,77 +473,42 @@ void PhysicsSystem::ResolveMixed(GameObject* obj1, GameObject* obj2,
                     squarePhysics->SetGrounded(true);
 
                     // Stop downward velocity to prevent phasing through
-                    float svx, svy;
-                    squarePhysics->GetVelocity(svx, svy);
-                    if (svy < 0) {  // If moving downward
-                        squarePhysics->SetVelocity(svx, 0);  // Stop vertical movement
+                    if (squarePhysics->velocity.y < 0) {
+                        squarePhysics->velocity.y = 0.0f;
                     }
 
                     std::cout << "[Grounded] Player standing on enemy!" << std::endl;
                 }
-                else
-                {
-                    // Player hit from side or below - apply elastic collision knockback
-                    // Use same physics as circle-circle collision
-
-                    float svx, svy;
-                    squarePhysics->GetVelocity(svx, svy);
-
-                    // Calculate relative velocity
-                    float relVelX = svx - cvx;
-                    float relVelY = svy - cvy;
-                    float velAlongNormal = relVelX * (-nx) + relVelY * (-ny);  // Using -n because we want player's perspective
-
-                    // Calculate elastic collision impulse (same as circle-circle)
-                    float restitution = 0.8f;  // High bounce
-                    float mass1 = squarePhysics->GetMass();
-                    float mass2 = circlePhysics->GetMass();
-
-                    if (mass1 < 0.01f) mass1 = 0.01f;
-                    if (mass2 < 0.01f) mass2 = 0.01f;
-
-                    float impulse = -(1 + restitution) * velAlongNormal;
-                    impulse /= (1.0f / mass1 + 1.0f / mass2);
-
-                    // Calculate impulse direction (away from circle)
-                    float impulseX = impulse * (-nx);  // Opposite of collision normal
-                    float impulseY = impulse * (-ny);
-
-                    // Apply impulse as velocity change
-                    svx += impulseX / mass1;
-                    svy += impulseY / mass1;
-                    squarePhysics->SetVelocity(svx, svy);
-
-                    // Also apply constant knockback force for sustained push
-                    squarePhysics->GetForcesManager().ApplyKnockback(-nx, -ny);
-
-                    std::cout << "[Knockback] Player hit by enemy! Impulse: ("
-                        << impulseX << ", " << impulseY << ")" << std::endl;
-                }
+                // NOTE: Knockback is now handled in InputManager, not here!
+                // PhysicsSystem only detects collision, game script decides response
             }
             else
             {
-                // For non-player collisions, zero velocity as before
-                squarePhysics->SetVelocity(0, 0);
+                // For non-player collisions, zero velocity as before (only if not kinematic)
+                if (!squarePhysics->IsKinematic()) {
+                    squarePhysics->velocity = { 0.0f, 0.0f };
+                }
             }
         }
-        if (!circlePhysics->IsStatic() && circleTransform)
+        if (!circlePhysics->IsStatic() && !circlePhysics->IsKinematic() && circleTransform)
         {
-            circleTransform->Move(nx * penetration, ny * penetration);
+            // Push circle away - if square is kinematic, push full amount
+            float pushMultiplier = squarePhysics->IsKinematic() ? 1.0f : 0.5f;
+            circleTransform->Move(nx * penetration * pushMultiplier, ny * penetration * pushMultiplier);
 
             // Apply bounce to circle
             float restitution = 0.9f;
-            float dot = cvx * nx + cvy * ny;
+            float dot = circleVel.x * nx + circleVel.y * ny;
 
-            cvx = cvx - (1 + restitution) * dot * nx;
-            cvy = cvy - (1 + restitution) * dot * ny;
+            circleVel.x = circleVel.x - (1 + restitution) * dot * nx;
+            circleVel.y = circleVel.y - (1 + restitution) * dot * ny;
 
-            circlePhysics->SetVelocity(cvx, cvy);
+            circlePhysics->velocity = circleVel;
 
             // Check for grounding
-            if (ny > 0.7f && std::abs(cvy) < 1.0f)
+            if (ny > 0.7f && std::abs(circleVel.y) < 1.0f)
             {
-                circlePhysics->SetVelocity(cvx, 0);
+                circlePhysics->velocity.y = 0.0f;
                 circlePhysics->SetGrounded(true);
             }
         }
@@ -474,7 +542,7 @@ void PhysicsSystem::HandleMessage(const CollisionMessage& msg)
     RaiseIfNeeded(objB, objA);
 
     // Queue for resolution during physics update
-    pendingCollisions.push_back({objA, objB, colA, colB});
+    pendingCollisions.push_back({ objA, objB, colA, colB });
 }
 
 void PhysicsSystem::ClearCollisionQueue()

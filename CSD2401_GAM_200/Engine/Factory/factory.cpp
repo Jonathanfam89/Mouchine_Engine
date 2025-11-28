@@ -243,7 +243,7 @@ GameObject *GameObjectFactory::CreateAnimatedImage(const std::string &name, floa
     GameObject *obj = CreateGameObject(name);
 
     auto *transform = obj->AddComponent<TransformComponent>(x, y);
-    transform->SetScale(-w, h);
+    transform->SetScale(w, h);
 
     auto spritesheetComp = std::make_unique<Spritesheet>(
         obj,

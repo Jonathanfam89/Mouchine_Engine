@@ -24,11 +24,10 @@ struct Force;
  */
 enum class ForceType {
     Jump,
-    MoveRight,
-    MoveLeft,
+    Move,          // Movement with custom direction
     Wind,
     Boost,
-    Friction,
+    Friction,      // Ground friction (acts as drag when grounded)
     Knockback,
     Dash
 };

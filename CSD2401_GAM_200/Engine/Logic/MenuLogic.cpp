@@ -15,6 +15,12 @@ Technology is prohibited.
 #include "MenuLogic.h"
 #include <iostream>
 
+// abit overkill but if we want more screens in the menu this is better
+enum MenuScreens {
+    Home = 0,       // Normal landing page
+    Settings
+};
+MenuScreens currScreen = MenuScreens::Home;
 
 void MenuLogicSystem::Update(float dt)
 {
@@ -24,23 +30,35 @@ void MenuLogicSystem::Update(float dt)
         pendingTimer -= dt;
         if (pendingTimer <= 0.0f)
         {
-            if (hoveredButtonName == "PlayButton")
+            switch (currScreen)
             {
-                std::cout << "PlayButton Clicked!" << std::endl;
-                std::cout << "[MenuLogic] Requesting scene load with AUTO-PLAY = TRUE" << std::endl;
-                CORE->RequestSceneLoad("../Assets/Scenes/Scene1.json", true);
-                std::cout << "[MenuLogic] RequestSceneLoad called" << std::endl;
+            case MenuScreens::Home:
+                if (hoveredButtonName == "PlayButton")
+                {
+                    std::cout << "PlayButton Clicked!" << std::endl;
+                    std::cout << "[MenuLogic] Requesting scene load with AUTO-PLAY = TRUE" << std::endl;
+                    CORE->RequestSceneLoad("../Assets/Scenes/Scene1.json", true);
+                    std::cout << "[MenuLogic] RequestSceneLoad called" << std::endl;
+                }
+                else if (hoveredButtonName == "SettingsButton")
+                {
+                    std::cout << "SettingsButton Clicked!" << std::endl;
+                    CORE->RequestSceneLoad("../Assets/Scenes/Scene2.json", true);
+                }
+                else if (hoveredButtonName == "QuitButton")
+                {
+                    std::cout << "QuitButton Clicked!" << std::endl;
+                    CORE->RequestSceneLoad("../Assets/Scenes/Scene3.json", true);
+                }
+                break;
+            case MenuScreens::Settings:
+                // do settings stuff here
+                break;
+            default:
+                currScreen = MenuScreens::Home;
+                break;
             }
-            else if (hoveredButtonName == "SettingsButton")
-            {
-                std::cout << "SettingsButton Clicked!" << std::endl;
-                CORE->RequestSceneLoad("../Assets/Scenes/Scene2.json", true);
-            }
-            else if (hoveredButtonName == "QuitButton")
-            {
-                std::cout << "QuitButton Clicked!" << std::endl;
-                CORE->RequestSceneLoad("../Assets/Scenes/Scene3.json", true);
-            }
+            
 
             pendingSceneChange = false;
             hoveredButtonName.clear();
@@ -56,18 +74,28 @@ void MenuLogicSystem::Update(float dt)
     auto& factory = GameObjectFactory::Instance();
     std::string currentHover = "";
 
-    // Check all buttons for intersection
-    if (IsMouseOver(factory.FindGameObject("PlayButton"), mouseX, mouseY))
+    switch (currScreen)
     {
-        currentHover = "PlayButton";
-    }
-    else if (IsMouseOver(factory.FindGameObject("SettingsButton"), mouseX, mouseY))
-    {
-        currentHover = "SettingsButton";
-    }
-    else if (IsMouseOver(factory.FindGameObject("QuitButton"), mouseX, mouseY))
-    {
-        currentHover = "QuitButton";
+    case MenuScreens::Home:
+        // Check all buttons for intersection
+        if (IsMouseOver(factory.FindGameObject("PlayButton"), mouseX, mouseY))
+        {
+            currentHover = "PlayButton";
+        }
+        else if (IsMouseOver(factory.FindGameObject("SettingsButton"), mouseX, mouseY))
+        {
+            currentHover = "SettingsButton";
+        }
+        else if (IsMouseOver(factory.FindGameObject("QuitButton"), mouseX, mouseY))
+        {
+            currentHover = "QuitButton";
+        }
+        break;
+    case MenuScreens::Settings:
+        // do settings stuff here
+        break;
+    default:
+        break;
     }
 
    
@@ -110,7 +138,7 @@ void MenuLogicSystem::Update(float dt)
 
         // Start small delay before loading scene
         pendingSceneChange = true;
-        pendingTimer = 0.40f; // 400ms delay to let click sound play
+        pendingTimer = 0.75f; // 400(changed to 750)ms delay to let click sound play
     }
 }
 

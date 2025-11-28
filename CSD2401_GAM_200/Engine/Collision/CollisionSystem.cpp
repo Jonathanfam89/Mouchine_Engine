@@ -47,10 +47,9 @@ void CollisionSystem::Initialize()
  * @brief Determines if two collision layers should interact based on layer rules
  * Layer interaction matrix:
  * - Default collides with everything
- * - Player collides with Ground, Wall, Enemy, Platform
- * - Enemy collides with Player, Ground, Wall, Platform, other Enemies
- * - Ground doesn't collide with other Ground or Walls
- * - Walls don't collide with other Walls or Ground
+ * - Player collides with Ground, Enemy, Platform
+ * - Enemy collides with Player, Ground, Platform, other Enemies
+ * - Ground doesn't collide with other Ground
  * - Platforms only collide with Player and Enemy
  */
 bool CollisionSystem::ShouldCollide(CollisionLayer layer1, CollisionLayer layer2)
@@ -64,7 +63,6 @@ bool CollisionSystem::ShouldCollide(CollisionLayer layer1, CollisionLayer layer2
     {
         CollisionLayer other = (layer1 == CollisionLayer::Player) ? layer2 : layer1;
         return (other == CollisionLayer::Ground ||
-            other == CollisionLayer::Wall ||
             other == CollisionLayer::Enemy ||
             other == CollisionLayer::Platform ||
             other == CollisionLayer::Player);
@@ -75,22 +73,11 @@ bool CollisionSystem::ShouldCollide(CollisionLayer layer1, CollisionLayer layer2
         CollisionLayer other = (layer1 == CollisionLayer::Enemy) ? layer2 : layer1;
         return (other == CollisionLayer::Player ||
             other == CollisionLayer::Ground ||
-            other == CollisionLayer::Wall ||
             other == CollisionLayer::Platform ||
             other == CollisionLayer::Enemy);
     }
 
     if (layer1 == CollisionLayer::Ground && layer2 == CollisionLayer::Ground)
-    {
-        return false;
-    }
-
-    if (layer1 == CollisionLayer::Wall && layer2 == CollisionLayer::Wall)
-    {
-        return false;
-    }
-    if ((layer1 == CollisionLayer::Wall && layer2 == CollisionLayer::Ground) ||
-        (layer1 == CollisionLayer::Ground && layer2 == CollisionLayer::Wall))
     {
         return false;
     }
@@ -307,4 +294,97 @@ bool CollisionSystem::JustStopped(GameObject* obj1, GameObject* obj2) {
     bool collidingNow = currentCollisions.find(key) != currentCollisions.end();
     bool collidingBefore = previousCollisions.find(key) != previousCollisions.end();
     return !collidingNow && collidingBefore;
+}
+
+// ===== Raycast Implementation =====
+
+/**
+ * @brief Casts a ray and returns the first object hit (optionally filtered by layer)
+ */
+bool CollisionSystem::Raycast(const vec2& origin, const vec2& direction, float distance,
+    RaycastHit& hit, CollisionLayer layerMask)
+{
+    // Normalize direction
+    float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+    if (length < 0.0001f) return false;
+
+    vec2 normDir = { direction.x / length, direction.y / length };
+
+    auto& factory = GameObjectFactory::Instance();
+    const auto& gameObjects = factory.GetAllGameObjects();
+
+    float closestDistance = distance;
+    bool foundHit = false;
+
+    // Check all objects with colliders
+    for (const auto& obj : gameObjects)
+    {
+        auto* collider = obj->GetComponent<ColliderComponent>();
+        if (!collider) continue;
+
+        // Filter by layer if not Default (Default means check all layers)
+        if (layerMask != CollisionLayer::Default &&
+            collider->GetLayer() != layerMask) {
+            continue;
+        }
+
+        float hitDist = 0.0f;
+        bool intersects = false;
+
+        // Check based on collider type
+        if (collider->GetType() == ColliderComponent::Type::Square)
+        {
+            AABB aabb = collider->GetAABB();
+            intersects = IntersectRayAABB(origin, normDir, aabb, closestDistance, hitDist);
+        }
+        else if (collider->GetType() == ColliderComponent::Type::Circle)
+        {
+            Circle circle = collider->GetCircle();
+            intersects = IntersectRayCircle(origin, normDir, circle, closestDistance, hitDist);
+        }
+
+        // If this is closer than previous hits, record it
+        if (intersects && hitDist < closestDistance)
+        {
+            closestDistance = hitDist;
+            foundHit = true;
+
+            hit.gameObject = obj.get();
+            hit.collider = collider;
+            hit.distance = hitDist;
+            hit.point = { origin.x + normDir.x * hitDist, origin.y + normDir.y * hitDist };
+
+            // Calculate normal based on hit point
+            if (collider->GetType() == ColliderComponent::Type::Square)
+            {
+                // For AABB, determine which face was hit
+                AABB aabb = collider->GetAABB();
+                vec2 center = { (aabb.min.x + aabb.max.x) * 0.5f, (aabb.min.y + aabb.max.y) * 0.5f };
+                vec2 toHit = { hit.point.x - center.x, hit.point.y - center.y };
+
+                // Determine which axis has larger offset
+                if (std::abs(toHit.x) > std::abs(toHit.y)) {
+                    hit.normal = { toHit.x > 0 ? 1.0f : -1.0f, 0.0f };
+                }
+                else {
+                    hit.normal = { 0.0f, toHit.y > 0 ? 1.0f : -1.0f };
+                }
+            }
+            else
+            {
+                // For circle, normal points from center to hit point
+                Circle circle = collider->GetCircle();
+                vec2 toHit = { hit.point.x - circle.center.x, hit.point.y - circle.center.y };
+                float len = std::sqrt(toHit.x * toHit.x + toHit.y * toHit.y);
+                if (len > 0.0001f) {
+                    hit.normal = { toHit.x / len, toHit.y / len };
+                }
+                else {
+                    hit.normal = { 0.0f, 1.0f };
+                }
+            }
+        }
+    }
+
+    return foundHit;
 }

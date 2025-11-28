@@ -13,27 +13,32 @@ Technology is prohibited.
 
 #pragma once
 #include "Component.h"
-#include "collision.h"   // for AABB, Circle, Vec2
+#include "collision.h" // for AABB, Circle, Vec2
 #include "transform.h"
 
 class TransformComponent;
 
 // Collision layers enum
-enum class CollisionLayer {
+enum class CollisionLayer
+{
     Player,
-    Ground,
-    Wall,    // Actually this one should go because ground is also wall technically
+    Ground, // Ground/Wall - used for all static terrain
     Enemy,
     Platform,
-    Default  // For objects without a specific layer
+    Default // For objects without a specific layer
 };
 
-class ColliderComponent : public IComponent {
+class ColliderComponent : public IComponent
+{
 public:
-    enum class Type { Square, Circle };
+    enum class Type
+    {
+        Square,
+        Circle
+    };
 
-    ColliderComponent(GameObject* own);
-     /**
+    ColliderComponent(GameObject *own);
+    /**
      * @brief Constructs a ColliderComponent
      * @param owner GameObject that owns this component
      * @param type Shape type (Square or Circle)
@@ -41,8 +46,8 @@ public:
      * @param h Height for squares (ignored for circles)
      * @param layer Collision layer for filtering
      */
-    ColliderComponent(GameObject* owner, Type type, float w, float h = 0.0f,
-        CollisionLayer layer = CollisionLayer::Default);
+    ColliderComponent(GameObject *owner, Type type, float w, float h = 0.0f,
+                      CollisionLayer layer = CollisionLayer::Default);
 
     /**
      * @brief Gets the component name
@@ -54,7 +59,7 @@ public:
      * @brief Gets the Axis-Aligned Bounding Box for this collider
      * @return AABB structure with min and max points
      */
-    AABB   GetAABB() const;
+    AABB GetAABB() const;
 
     /**
      * @brief Gets the Circle shape for this collider
@@ -74,14 +79,13 @@ public:
      */
     void SetLayer(CollisionLayer newLayer) { layer = newLayer; }
 
-
     void setColliShape(ColliderComponent::Type newShape) { type = newShape; }
     /**
      * @brief Creates a deep copy of this component
      * @param newOwner GameObject that will own the clone
      * @return Unique pointer to the cloned component
      */
-    std::unique_ptr<IComponent> Clone(GameObject* newOwner) const override;
+    std::unique_ptr<IComponent> Clone(GameObject *newOwner) const override;
 
     /**
      * @brief Gets the collider shape type
@@ -91,13 +95,15 @@ public:
 
     void SetSize(float w, float h);
 
- /*   void SetRotation(float r);*/
+    vec2 GetSize() const { return vec2(width, height); }
+
+    /*   void SetRotation(float r);*/
 
 private:
     Type type;
     float width;
     float height;
     float radius;
-    //float rotation;
+    // float rotation;
     CollisionLayer layer;
 };

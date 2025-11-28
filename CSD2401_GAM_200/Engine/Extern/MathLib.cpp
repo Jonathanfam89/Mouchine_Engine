@@ -273,13 +273,40 @@ bool IsAreaClicked(float buttonX, float buttonY, float buttonWidth, float button
 
 void DecomposeMatrix(mat4 const& m, float& x, float& y, float& w, float& h, float& rot)
 {
-    // translate
+    // Extract translation
     x = m.m[12];
     y = m.m[13];
 
-    // scale
-    w = std::sqrt(m.m[0] * m.m[0] + m.m[1] * m.m[1]);
-    h = std::sqrt(m.m[4] * m.m[4] + m.m[5] * m.m[5]);
+    // Extract scale
+    w = sqrt(m.m[0] * m.m[0] + m.m[1] * m.m[1]);
+    h = sqrt(m.m[4] * m.m[4] + m.m[5] * m.m[5]);
 
-    rot = std::atan2(m.m[1], m.m[0]);
+    // Create a matrix with rotation and scale
+    mat3 rotScaleMat;
+    rotScaleMat.m[0] = m.m[0];
+    rotScaleMat.m[1] = m.m[1];
+    rotScaleMat.m[3] = m.m[4];
+    rotScaleMat.m[4] = m.m[5];
+
+    // Remove scale from the matrix to get pure rotation
+    if (w > 0) {
+        rotScaleMat.m[0] /= w;
+        rotScaleMat.m[1] /= w;
+    }
+    if (h > 0) {
+        rotScaleMat.m[3] /= h;
+        rotScaleMat.m[4] /= h;
+    }
+
+    // Extract rotation from the pure rotation matrix
+    rot = atan2(rotScaleMat.m[1], rotScaleMat.m[0]);
+
+    // Check for reflection (negative scale)
+    if (m.m[0] * m.m[5] - m.m[4] * m.m[1] < 0) {
+        // This indicates a flip. We'll represent this as a 180-degree rotation
+        // and a positive scale, as C# might not handle negative scales well.
+        w = -w;
+        h = -h;
+        rot += 3.14159265359f; // Add 180 degrees (pi radians)
+    }
 }

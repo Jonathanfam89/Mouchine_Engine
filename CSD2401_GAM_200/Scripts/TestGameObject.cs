@@ -43,24 +43,19 @@ namespace GameScripts
                 300, 300,
                 "../Assets/spritesheet_R.png",
                 13,10,//size of the spritesheet
-                114,115,//start and end frames
+                11, 4, 11, 5, // start row/col and end row/col
                 8,(int)CollisionLayer.Default,
                 false,false,
                 false);
 
-            // Create second square - Blue, on the right
-            GameObject.CreateShape(
-                "Ground",                    // name
-                (int)ShapeType.Square,           // type: square
-                0, -500,                        // x, y position
-                3000, 500,                        // width, height
-                0.0f, 0.0f, 0.0f, 1.0f,          // r, g, b, a (blue color)
-                (int)CollisionLayer.Ground,     // collision layer
-                true,                           // hasPhysics = false (no physics)
-                true,                           // isStatic
-                false                            // hasGravity = false (no gravity)
-            );
+            GameObject.CreateAnimatedImage("Rolling", 0, -200, 200, 200, "../Assets/spritesheet_L.png", 13, 10, 8, 0, 8, 5, 12, (int)CollisionLayer.Default, false, false, false);
+            Animation.RegisterAnimation("Rolling", "Roll", "../Assets/spritesheet_L.png", 13, 10, 9, 0, 9, 9, 10);
+            Animation.RegisterAnimation("Rolling", "Idle", "../Assets/spritesheet_L.png", 13, 10, 0, 0, 0, 5, 10);
+            Animation.RegisterAnimation("Rolling", "Walk", "../Assets/spritesheet_L.png", 13, 10, 1, 0, 1, 5, 10);
 
+            Animation.AddToQueue("Rolling", "Roll");
+            Animation.AddToQueue("Rolling", "Idle");
+            Animation.AddToQueue("Rolling", "Walk");
             
         }
 
@@ -77,8 +72,7 @@ namespace GameScripts
             {
                 redSquareX = 500;
             }
-            Console.WriteLine(Utils.GetDelta_Time());
-         }
+        }
 
         public void OnDestroy()
         {

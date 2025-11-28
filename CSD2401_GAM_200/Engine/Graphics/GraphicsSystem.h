@@ -174,8 +174,13 @@ public:
 		currentSelection = { x,y,sx,sy,true };
 	}
 
+	void SetEditorSelection_ColliderOnly(float x, float y, float col_sx, float col_sy) {
+		currentSelection_ColliderOnly = { x,y,col_sx,col_sy,true };
+	}
+
 	void ClearEditorSelection() {
 		currentSelection.exist = false;
+		currentSelection_ColliderOnly.exist = false;
 	}
 
 	/**
@@ -310,6 +315,7 @@ private:
 	};
 
 	EditorSelection currentSelection;
+	EditorSelection currentSelection_ColliderOnly;
 
 	std::vector<RenderBatch> batches;		// Collection of all accumulated batches for the current frame.
 	GLuint batchVAO, batchVBO, batchEBO;	// OpenGL buffers for the batch rendering system.

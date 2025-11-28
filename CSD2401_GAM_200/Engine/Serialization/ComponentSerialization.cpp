@@ -120,7 +120,7 @@ void ComponentSerialization::SerializePhysics(json &j, PhysicsComponent *p)
         {"isStatic", p->IsStatic()},
         {"useGravity", p->useGravity},
         {"isGrounded", p->IsGrounded()},
-        {"velocity", {p->velocityX, p->velocityY}}};
+        {"velocity", {p->velocity.x, p->velocity.y}}};
 }
 
 /**

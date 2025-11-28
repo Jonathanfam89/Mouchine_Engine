@@ -23,7 +23,9 @@ Technology is prohibited.
 #include <iostream>
 #include <cmath>
 
-class TransformComponent; // Forward declaration
+// Forward declarations
+class TransformComponent;
+enum class CollisionLayer;  // Forward declare collision layer
 
 /**
  * @brief Manages all forces acting on a physics object
@@ -33,67 +35,51 @@ public:
     ForcesManager() = default;
 
     /**
-     * @brief Add a force by type (main interface)
+     * @brief Add a force by type with optional custom parameters
      * @param type The type of force to add
-     * @param mass The object's mass
+     * @param forceMagnitude Optional custom force magnitude (uses default if < 0)
+     * @param duration Optional custom duration (uses default if <= -999.0f)
+     * @param directionX Optional X direction for Move force (default 0)
+     * @param directionY Optional Y direction for Move force (default 0)
+     * @param groundedPtr Optional pointer for friction (only used for Friction type)
      */
-    void AddForce(ForceType type) {
+    void AddForce(ForceType type, float forceMagnitude = -1.0f, float duration = -999.0f,
+        float directionX = 0.0f, float directionY = 0.0f, bool* groundedPtr = nullptr) {
         switch (type) {
         case ForceType::Jump:
             // Only add if not already jumping
             if (!HasForceType(ForceType::Jump)) {
                 forces.push_back(std::make_unique<LinearDirectionalForce>(
                     0.0f, 1.0f,
-                    ForceConstants::JUMP_FORCE,
-                    ForceConstants::JUMP_DURATION,
+                    (forceMagnitude < 0.0f) ? ForceConstants::JUMP_FORCE : forceMagnitude,
+                    (duration <= -999.0f) ? ForceConstants::JUMP_DURATION : duration,
                     ForceType::Jump
                 ));
             }
             break;
 
-        case ForceType::MoveRight:
-            if (!HasForceType(ForceType::MoveRight)) {
+        case ForceType::Move:
+            if (!HasForceType(ForceType::Move)) {
                 forces.push_back(std::make_unique<LinearDirectionalForce>(
-                    1.0f, 0.0f,
-                    ForceConstants::MOVE_FORCE,
-                    -1.0f,
-                    ForceType::MoveRight
+                    directionX, directionY,
+                    (forceMagnitude < 0.0f) ? ForceConstants::MOVE_FORCE : forceMagnitude,
+                    -1.0f,  // Movement forces are permanent
+                    ForceType::Move
                 ));
             }
             break;
 
-        case ForceType::MoveLeft:
-            if (!HasForceType(ForceType::MoveLeft)) {
-                forces.push_back(std::make_unique<LinearDirectionalForce>(
-                    -1.0f, 0.0f,
-                    ForceConstants::MOVE_FORCE,
-                    -1.0f,
-                    ForceType::MoveLeft
-                ));
-            }
+        case ForceType::Friction:
+            forces.push_back(std::make_unique<FrictionForce>(
+                (forceMagnitude < 0.0f) ? ForceConstants::FRICTION_COEFFICIENT : forceMagnitude,
+                groundedPtr
+            ));
             break;
 
-        case ForceType::Wind:
-        case ForceType::Boost:
-            // These require custom parameters, use AddCustomForce instead
-            break;
+        //case ForceType::Wind:
+        //case ForceType::Boost:
+        //    break;
         }
-    }
-
-    /**
-     * @brief Add drag force
-     */
-    void AddDrag() {
-        forces.push_back(std::make_unique<DragForce>(ForceConstants::DRAG_COEFFICIENT));
-    }
-
-    /**
-     * @brief Add friction force (ground friction)
-     * @param groundedPtr Pointer to grounded state
-     */
-    void AddFriction(bool* groundedPtr) {
-        forces.push_back(std::make_unique<FrictionForce>(
-            ForceConstants::FRICTION_COEFFICIENT, groundedPtr));
     }
 
     /**
@@ -175,9 +161,8 @@ public:
     /**
      * @brief Calculate total acceleration from all active forces
      * @param mass Object's mass
-     * @param velocityX Current velocity X
-     * @param velocityY Current velocity Y
-     * @return Pair of (accelX, accelY)
+     * @param velocity Current velocity vector
+     * @return Acceleration vector
      */
     vec2 CalculateTotalAcceleration(float mass, const vec2& velocity) {
         vec2 totalAccel = { 0.0f, 0.0f };
@@ -295,20 +280,27 @@ public:
      */
     std::unique_ptr<IComponent>Clone(GameObject* NewClone) const override;
 
+    // ===== Unity-Style Velocity API =====
+
     /**
-     * @brief Sets the velocity of the object
+     * @brief Adds to the current velocity (Unity-style)
+     * @param deltaVel Velocity delta to add
+     */
+    void AddVelocity(const vec2& deltaVel);
+
+    /**
+     * @brief Sets the velocity of the object (legacy support)
      * @param x Horizontal velocity
      * @param y Vertical velocity
      */
     void SetVelocity(float x, float y);
 
     /**
-     * @brief Gets the current velocity
+     * @brief Gets the current velocity (legacy support)
      * @param x Output horizontal velocity
      * @param y Output vertical velocity
      */
     void GetVelocity(float& x, float& y) const;
-
 
     /**
      * @brief Sets the grounded state
@@ -326,13 +318,13 @@ public:
      * @brief Checks if object is falling
      * @return True if moving downward and not grounded
      */
-    bool IsFalling() const { return velocityY < 0 && !isGrounded; }
+    bool IsFalling() const { return velocity.y < 0 && !isGrounded; }
 
     /**
      * @brief Checks if object is rising
      * @return True if moving upward
      */
-    bool IsRising() const { return velocityY > 0; }
+    bool IsRising() const { return velocity.y > 0; }
 
     // Properties
     /**
@@ -360,10 +352,34 @@ public:
     bool IsStatic() const { return isStatic; }
 
     /**
-     * @brief Enables or disables gravity
+     * @brief Sets whether object is kinematic (script-controlled movement)
+     * @param kinematic Kinematic state
+     */
+    void SetKinematic(bool kinematic) { isKinematic = kinematic; }
+
+    /**
+     * @brief Checks if object is kinematic
+     * @return True if kinematic (movement controlled by script, not physics)
+     */
+    bool IsKinematic() const { return isKinematic; }
+
+    /**
+     * @brief Enables or disables gravity (Unity-style)
      * @param useGrav Whether to apply gravity
      */
-    void SetGravity(bool useGrav) { useGravity = useGrav; }
+    void SetGravity(bool useGrav);
+
+    /**
+     * @brief Sets the gravity acceleration value
+     * @param gravityAccel Gravity acceleration (typically negative Y value like -381.0f)
+     */
+    void SetGravityValue(float gravityAccel);
+
+    /**
+     * @brief Gets the gravity acceleration value
+     * @return Gravity acceleration
+     */
+    float GetGravity() const;
 
     /**
      * @brief Applies a dash impulse (instant velocity change)
@@ -373,13 +389,12 @@ public:
         // Remove any existing dash tracking force
         forcesManager.RemoveForcesByType(ForceType::Dash);
         forcesManager.RemoveForcesByType(ForceType::Jump);
-        forcesManager.RemoveForcesByType(ForceType::MoveRight);
-        forcesManager.RemoveForcesByType(ForceType::MoveLeft);
+        forcesManager.RemoveForcesByType(ForceType::Move);
 
         // Apply impulse directly to velocity (impulse = velocity change)
         float impulse = directionX * ForceConstants::DASH_FORCE;
-        velocityX = impulse / mass;  // Set velocity directly
-        velocityY = 0.0f;  // Zero out vertical velocity
+        velocity.x = impulse / mass;  // Set velocity directly
+        velocity.y = 0.0f;  // Zero out vertical velocity
 
         // Add a dummy dash "force" with 0 magnitude just to track that we're dashing
         // This allows HasForceType(Dash) to work for checking dash state
@@ -425,18 +440,32 @@ public:
     void Integrate(float dt);
 
 public:
-    // Linear motion
-    float velocityX, velocityY;
+    // Linear motion (vec2 velocity)
+    vec2 velocity;
 
     // Properties
     float mass;
     bool isStatic;
     bool useGravity;
+    bool isKinematic;
+    float gravityAcceleration;
 
     // State Flags
     bool isGrounded;
     bool wasGrounded;
     bool isJumping;
+
+    // Directional collision detection
+    bool isCollidingLeft;
+    bool isCollidingRight;
+    bool isCollidingTop;
+    bool isCollidingBottom;
+
+    // Collision layer information for each direction
+    CollisionLayer leftCollisionLayer;
+    CollisionLayer rightCollisionLayer;
+    CollisionLayer topCollisionLayer;
+    CollisionLayer bottomCollisionLayer;
 
 private:
     // Forces manager

@@ -103,11 +103,25 @@ void Spritesheet::Update(float dt)
 
 		if (nextFrameIndex > endFrame)
 		{
-			nextFrameIndex = startFrame;
+            if (!animationQueue.empty())
+            {
+                std::string nextAnimation = animationQueue.front();
+                animationQueue.pop();
+                PlayAnimation(nextAnimation);
+            }
+            else
+            {
+                nextFrameIndex = startFrame;
+            }
 		}
 		currRow = nextFrameIndex / cols; // Reassign new rows and cols, showing the next frame of animation
 		currCol = nextFrameIndex % cols;
 	}
+}
+
+void Spritesheet::AddToQueue(const std::string& animationName)
+{
+    animationQueue.push(animationName);
 }
 
 /**

@@ -14,6 +14,7 @@ Technology is prohibited.
 #include "Physics.h"
 #include "Transform.h"
 #include "GameObject.h"
+#include "ColliderComponent.h"
 #include <iostream>
 #include <cmath>
 
@@ -22,20 +23,18 @@ Technology is prohibited.
  */
 PhysicsComponent::PhysicsComponent(GameObject* owner, float m, bool static_)
     : IComponent(owner),
-    velocityX(0), velocityY(0),
-    mass(m), isStatic(static_), useGravity(true),
-    isGrounded(true), isJumping(false), wasGrounded(true)
+    velocity{ 0.0f, 0.0f },
+    mass(m), isStatic(static_), useGravity(true), isKinematic(false),
+    gravityAcceleration(ForceConstants::GRAVITY_ACCELERATION),
+    isGrounded(true), isJumping(false), wasGrounded(true),
+    isCollidingLeft(false), isCollidingRight(false),
+    isCollidingTop(false), isCollidingBottom(false),
+    leftCollisionLayer(CollisionLayer::Default),
+    rightCollisionLayer(CollisionLayer::Default),
+    topCollisionLayer(CollisionLayer::Default),
+    bottomCollisionLayer(CollisionLayer::Default)
 {
-    // Gravity is now a constant acceleration in Integrate(), not a force
-}
-
-/**
- * @brief Sets the velocity directly
- */
-void PhysicsComponent::SetVelocity(float x, float y)
-{
-    velocityX = x;
-    velocityY = y;
+    // Gravity is now a modifiable acceleration value
 }
 
 /**
@@ -49,8 +48,8 @@ std::unique_ptr<IComponent> PhysicsComponent::Clone(GameObject* NewClone) const
         this->isStatic
     );
 
-    clonedComponent->velocityX = this->velocityX;
-    clonedComponent->velocityY = this->velocityY;
+    clonedComponent->velocity = this->velocity;
+    clonedComponent->gravityAcceleration = this->gravityAcceleration;
 
     // Note: Forces are not deep-copied since they're time-dependent
     // If needed, implement force cloning logic here
@@ -61,12 +60,53 @@ std::unique_ptr<IComponent> PhysicsComponent::Clone(GameObject* NewClone) const
 }
 
 /**
- * @brief Gets the current velocity values
+ * @brief Adds to the current velocity
+ */
+void PhysicsComponent::AddVelocity(const vec2& deltaVel)
+{
+    velocity.x += deltaVel.x;
+    velocity.y += deltaVel.y;
+}
+
+/**
+ * @brief Sets the velocity of the object (legacy)
+ */
+void PhysicsComponent::SetVelocity(float x, float y)
+{
+    velocity = { x, y };
+}
+
+/**
+ * @brief Gets the current velocity values (legacy)
  */
 void PhysicsComponent::GetVelocity(float& x, float& y) const
 {
-    x = velocityX;
-    y = velocityY;
+    x = velocity.x;
+    y = velocity.y;
+}
+
+/**
+ * @brief Sets whether gravity is enabled
+ */
+void PhysicsComponent::SetGravity(bool useGrav)
+{
+    useGravity = useGrav;
+}
+
+/**
+ * @brief Sets the gravity acceleration value
+ */
+void PhysicsComponent::SetGravityValue(float gravityAccel)
+{
+    gravityAcceleration = gravityAccel;
+}
+
+/**
+ * @brief Gets the gravity acceleration value
+ */
+float PhysicsComponent::GetGravity() const
+{
+    return gravityAcceleration;
 }
 
 /**
@@ -74,7 +114,7 @@ void PhysicsComponent::GetVelocity(float& x, float& y) const
  */
 float PhysicsComponent::GetSpeed() const
 {
-    return std::sqrt(velocityX * velocityX + velocityY * velocityY);
+    return std::sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
 }
 
 /**
@@ -82,7 +122,7 @@ float PhysicsComponent::GetSpeed() const
  */
 float PhysicsComponent::GetDirection() const
 {
-    return std::atan2(velocityY, velocityX);
+    return std::atan2(velocity.y, velocity.x);
 }
 
 /**
@@ -90,8 +130,8 @@ float PhysicsComponent::GetDirection() const
  */
 void PhysicsComponent::SetDirection(float angle, float speed)
 {
-    velocityX = std::cos(angle) * speed;
-    velocityY = std::sin(angle) * speed;
+    velocity.x = std::cos(angle) * speed;
+    velocity.y = std::sin(angle) * speed;
 }
 
 /**
@@ -105,24 +145,23 @@ void PhysicsComponent::Integrate(float dt)
     forcesManager.ValidateAge(dt);
 
     // Calculate total acceleration from all forces
-    vec2 velocity = { velocityX, velocityY };
     vec2 accel = forcesManager.CalculateTotalAcceleration(mass, velocity);
 
-    // Add constant gravity acceleration if enabled
-    if (useGravity)
+    // Add gravity acceleration if enabled AND not grounded
+    if (useGravity && !isGrounded)
     {
-        accel.y += ForceConstants::GRAVITY_ACCELERATION;
+        accel.y += gravityAcceleration;
     }
 
     // Integrate velocity: v = v0 + a*dt
-    velocityX += accel.x * dt;
-    velocityY += accel.y * dt;
+    velocity.x += accel.x * dt;
+    velocity.y += accel.y * dt;
 
     // Integrate position: p = p0 + v*dt
     TransformComponent* transform = owner->GetComponent<TransformComponent>();
     if (transform)
     {
-        transform->Move(velocityX * dt, velocityY * dt);
+        transform->Move(velocity.x * dt, velocity.y * dt);
     }
 
     // Reset jump state if grounded

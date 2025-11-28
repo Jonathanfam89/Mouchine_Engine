@@ -63,7 +63,6 @@ namespace EnumConverters
         {
         case CollisionLayer::Player:   return "Player";
         case CollisionLayer::Ground:   return "Ground";
-        case CollisionLayer::Wall:     return "Wall";
         case CollisionLayer::Enemy:    return "Enemy";
         case CollisionLayer::Platform: return "Platform";
         default:                       return "Default";
@@ -80,7 +79,6 @@ namespace EnumConverters
     {
         if (s == "Player")   return CollisionLayer::Player;
         if (s == "Ground")   return CollisionLayer::Ground;
-        if (s == "Wall")     return CollisionLayer::Wall;
         if (s == "Enemy")    return CollisionLayer::Enemy;
         if (s == "Platform") return CollisionLayer::Platform;
         return CollisionLayer::Default;

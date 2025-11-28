@@ -108,7 +108,7 @@ namespace API
                              float width, float height,
                              const std::string &texturePath,
                              int rows, int columns,
-                             int startFrame, int endFrame,
+                             int startRow, int startCol, int endRow, int endCol,
                              float fps,
                              CollisionLayer layer,
                              bool hasPhysics,
@@ -116,6 +116,8 @@ namespace API
                              bool hasGravity)
     {
         auto &factory = GameObjectFactory::Instance();
+        int startFrame = startRow * columns + startCol;
+        int endFrame = endRow * columns + endCol;
         GameObject *obj = factory.CreateAnimatedImage(name, x, y, width, height, texturePath.c_str(),
                                                       rows, columns, startFrame, endFrame, fps, layer);
 
@@ -134,6 +136,21 @@ namespace API
 #pragma endregion
 
 #pragma region Graphics
+    vec4 GetColor(const std::string& objectName)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            auto* render = obj->GetComponent<RenderComponent>();
+            if (render)
+            {
+                return render->GetColor();
+            }
+        }
+        return vec4(0.0f, 0.0f, 0.0f, 1.0f); // Return black if not found
+    }
+
     void SetShapeType(const std::string &objectName, RenderComponent::ShapeType newShape)
     {
         auto &factory = GameObjectFactory::Instance();
@@ -278,6 +295,22 @@ namespace API
         }
     }
 
+    vec2 GetVelocity(const std::string& objectName)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            auto* physics = obj->GetComponent<PhysicsComponent>();
+            if (physics)
+            {
+                return vec2(physics->velocity.x, physics->velocity.y);
+            }
+        }
+        return vec2(0.0f, 0.0f); // Return a default value if not found
+    }
+
+
 #pragma endregion
 
 #pragma region Transform
@@ -291,6 +324,34 @@ namespace API
             if (transform)
             {
                 transform->SetPosition(x, y);
+            }
+        }
+    }
+
+    void SetScale(const std::string& objectName, float x, float y)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            auto* transform = obj->GetComponent<TransformComponent>();
+            if (transform)
+            {
+                transform->SetScale(x, y);
+            }
+        }
+    }
+
+    void SetScale(const std::string& objectName, float val)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            auto* transform = obj->GetComponent<TransformComponent>();
+            if (transform)
+            {
+                transform->SetScale(val);
             }
         }
     }
@@ -322,33 +383,59 @@ namespace API
         }
     }
 
-    void SetScale(const std::string &objectName, float val)
+
+
+    void GetPosition(const std::string& objectName, float* x, float* y)
     {
-        auto &factory = GameObjectFactory::Instance();
-        GameObject *obj = factory.FindGameObject(objectName);
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
         if (obj)
         {
-            auto *transform = obj->GetComponent<TransformComponent>();
+            auto* transform = obj->GetComponent<TransformComponent>();
             if (transform)
             {
-                transform->SetScale(val);
+                *x = transform->posX;
+                *y = transform->posY;
+                return;
             }
         }
+        *x = 0.0f;
+        *y = 0.0f;
     }
 
-    void SetScale(const std::string &objectName, float x, float y)
+    float GetRotation(const std::string& objectName)
     {
-        auto &factory = GameObjectFactory::Instance();
-        GameObject *obj = factory.FindGameObject(objectName);
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
         if (obj)
         {
-            auto *transform = obj->GetComponent<TransformComponent>();
+            auto* transform = obj->GetComponent<TransformComponent>();
             if (transform)
             {
-                transform->SetScale(x, y);
+                return transform->rotation;
             }
         }
+        return 0.0f; // Return a default value if not found
     }
+
+    void GetScale(const std::string& objectName, float* x, float* y)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            auto* transform = obj->GetComponent<TransformComponent>();
+            if (transform)
+            {
+                *x = transform->scaleX;
+                *y = transform->scaleY;
+                return;
+            }
+        }
+        *x = 0.0f;
+        *y = 0.0f;
+    }
+
 
 #pragma endregion
 
@@ -436,6 +523,36 @@ namespace API
 #pragma endregion
 
 #pragma region Collision
+    int GetCollisionLayer(const std::string& objectName)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            auto* collider = obj->GetComponent<ColliderComponent>();
+            if (collider)
+            {
+                return static_cast<int>(collider->GetLayer());
+            }
+        }
+        return -1; // Return -1 if not found
+    }
+
+    int GetCollisionShape(const std::string& objectName)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            auto* collider = obj->GetComponent<ColliderComponent>();
+            if (collider)
+            {
+                return static_cast<int>(collider->GetType());
+            }
+        }
+        return -1; // Return -1 if not found
+    }
+
     void SetColisionShape(const std::string &objectName, ColliderComponent::Type newShape)
     {
         auto &factory = GameObjectFactory::Instance();
@@ -507,6 +624,36 @@ namespace API
 #pragma endregion
 
 #pragma region Camera
+    vec2 GetCameraPosition()
+    {
+        auto& cam = CameraManager::Instance();
+        CameraComponent* camtemp = cam.GetActiveCamera();
+        if (!camtemp) {
+            return vec2(0.0f, 0.0f);
+        }
+        return camtemp->GetPosition();
+    }
+
+    float GetCameraZoom()
+    {
+        auto& cam = CameraManager::Instance();
+        CameraComponent* camtemp = cam.GetActiveCamera();
+        if (!camtemp) {
+            return 0.0f;
+        }
+        return camtemp->getZoom();
+    }
+
+    int GetCameraMode()
+    {
+        auto& cam = CameraManager::Instance();
+        CameraComponent* camtemp = cam.GetActiveCamera();
+        if (!camtemp) {
+            return -1;
+        }
+        return static_cast<int>(camtemp->GetMode());
+    }
+
 
     void setCameraPos(vec2 pos)
     {
@@ -538,6 +685,79 @@ namespace API
             return;
         }
         camtemp->SetMode(val);
+    }
+#pragma endregion
+
+#pragma region Animator
+    void PlayAnimation(const std::string& objectName, const std::string& animationName)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            auto* spritesheet = obj->GetComponent<Spritesheet>();
+            if (spritesheet)
+            {
+                spritesheet->PlayAnimation(animationName);
+            }
+        }
+    }
+
+    void AddAnimationToQueue(const std::string& objectName, const std::string& animationName)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            auto* spritesheet = obj->GetComponent<Spritesheet>();
+            if (spritesheet)
+            {
+                spritesheet->AddToQueue(animationName);
+            }
+        }
+    }
+
+    void RegisterAnimation(const std::string& objectName, const std::string& animationName, const std::string& texturePath, int rows, int cols, int startRow, int startCol, int endRow, int endCol, float fps)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            auto* spritesheet = obj->GetComponent<Spritesheet>();
+            if (spritesheet)
+            {
+                spritesheet->RegisterAnimation(animationName, texturePath, rows, cols, startRow, startCol, endRow, endCol, fps);
+            }
+        }
+    }
+
+    void SetAnimation(const std::string& objectName, int startFrame, int endFrame, float fps)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            auto* spritesheet = obj->GetComponent<Spritesheet>();
+            if (spritesheet)
+            {
+                spritesheet->SetAnimation(startFrame, endFrame, fps);
+            }
+        }
+    }
+
+    std::string GetCurrentAnimationName(const std::string& objectName)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            auto* spritesheet = obj->GetComponent<Spritesheet>();
+            if (spritesheet)
+            {
+                return spritesheet->GetCurrentAnimationName();
+            }
+        }
+        return ""; // Return empty string if not found
     }
 #pragma endregion
 

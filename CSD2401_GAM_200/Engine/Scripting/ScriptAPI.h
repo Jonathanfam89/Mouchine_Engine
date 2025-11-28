@@ -137,7 +137,7 @@ namespace API {
         float width, float height,
         const std::string& texturePath,
         int rows, int columns,
-        int startFrame, int endFrame,
+        int startRow, int startCol, int endRow, int endCol,
         float fps,
         CollisionLayer layer = CollisionLayer::Default,
         bool hasPhysics = false,
@@ -147,6 +147,8 @@ namespace API {
 #pragma endregion
 
 #pragma region Graphics
+    vec4 GetColor(const std::string& objectName);
+
     /**
      * @brief Sets the shape type for a GameObject's render component.
      * @param objectName The name of the GameObject.
@@ -193,7 +195,7 @@ namespace API {
      * @brief Gets the velocity of a GameObject.
      * @param objectName The name of the GameObject.
      */
-    void GetVelocity(const std::string&);
+    vec2 GetVelocity(const std::string&);
     
     /**
      * @brief Sets the velocity of a GameObject.
@@ -268,19 +270,14 @@ namespace API {
      * @brief Gets the rotation of a GameObject.
      * @param objectName The name of the GameObject.
      */
-    void GetRot(const std::string&);
-    
-    /**
-     * @brief Gets the position of a GameObject.
-     * @param objectName The name of the GameObject.
-     */
-    void GetPos(const std::string&);
-    
-    /**
-     * @brief Gets the scale of a GameObject.
-     * @param objectName The name of the GameObject.
-     */
-    void GetScale(const std::string&);
+        void GetPosition(const std::string&, float* x, float* y);
+        
+        /**
+         * @brief Gets the scale of a GameObject.
+         * @param objectName The name of the GameObject.
+         */
+        void GetScale(const std::string&, float* x, float* y);
+    float GetRotation(const std::string&);
 
 #pragma endregion
 
@@ -312,6 +309,9 @@ namespace API {
 #pragma endregion
 
 #pragma region Collision
+    int GetCollisionLayer(const std::string& objectName);
+    int GetCollisionShape(const std::string& objectName);
+
     /**
      * @brief Sets the collision shape type for a GameObject.
      * @param objectName The name of the GameObject.
@@ -360,6 +360,9 @@ namespace API {
 #pragma endregion
 
 #pragma region Camera
+    vec2 GetCameraPosition();
+    float GetCameraZoom();
+    int GetCameraMode();
     void setCameraPos(vec2);
     void setCameraZoom(float);
     void setCameraMode(CameraComponent::CameraMode);
@@ -367,9 +370,13 @@ namespace API {
 #pragma endregion
 
 #pragma region Animator
-    void setAnimation();
-    void playAnimation();
+    void PlayAnimation(const std::string& objectName, const std::string& animationName);
+    void AddAnimationToQueue(const std::string& objectName, const std::string& animationName);
+    void RegisterAnimation(const std::string& objectName, const std::string& animationName, const std::string& texturePath, int rows, int cols, int startRow, int startCol, int endRow, int endCol, float fps);
+    void SetAnimation(const std::string& objectName, int startFrame, int endFrame, float fps);
+    std::string GetCurrentAnimationName(const std::string& objectName);
 #pragma endregion
+
 
 #pragma region Misc
     int RandomNumberGen(int, int);
