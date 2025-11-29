@@ -523,8 +523,9 @@ void InputManager::Update(float dt)
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
-        KeyStateQuit = true;
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
+        //KeyStateQuit = true;
+        //glfwSetWindowShouldClose(window, GLFW_TRUE);
+        CORE->RequestSceneLoad("../Assets/Scenes/MainMenu.json", true);
     }
     /**
      * @brief Toggle on and off imgui
