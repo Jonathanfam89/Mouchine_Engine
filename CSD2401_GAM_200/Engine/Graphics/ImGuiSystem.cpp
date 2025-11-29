@@ -517,7 +517,7 @@ void ImGuiSystem::Viewport_ClickToSelect()
         {
             // if GO does NOT have a collider
             // Find general distance between object and cursor
-            float distance = std::sqrt(std::pow(viewportCursorPos.x - pos.x, 2) + std::pow(viewportCursorPos.y - pos.y, 2));
+            float distance = static_cast<float>(std::sqrt(std::pow(viewportCursorPos.x - pos.x, 2) + std::pow(viewportCursorPos.y - pos.y, 2)));
 
             if (distance < 50.f)                // if object is within 50 units (within general area)
             {
@@ -797,7 +797,7 @@ void ImGuiSystem::Hierarchy_Render()
     }
 }
 
-void ImGuiSystem::Hierarchy_GameObjectTree_Renderer(GameObject *obj, int depth, EntityID &selectedGameObjectID, GameObjectFactory &factory)
+void ImGuiSystem::Hierarchy_GameObjectTree_Renderer(GameObject *obj, int depth, EntityID &selectedGOID, GameObjectFactory &p_factory)
 {
     // Just commented this out in case want to revert, but now we can show inactive GOs but greyed out
     //if (!obj->IsActive())
@@ -807,7 +807,7 @@ void ImGuiSystem::Hierarchy_GameObjectTree_Renderer(GameObject *obj, int depth, 
 
     // Set tree node flags
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
-    if (selectedGameObjectID == id)
+    if (selectedGOID == id)
         flags |= ImGuiTreeNodeFlags_Selected;
 
     // Apply indentation based on depth
@@ -845,7 +845,7 @@ void ImGuiSystem::Hierarchy_GameObjectTree_Renderer(GameObject *obj, int depth, 
 
     ImGui::AlignTextToFramePadding();
     // if renaming, set the name of the tree node as an input text field
-    if (hierarchy_renameIndex == id)
+    if (hierarchy_renameIndex == (int)id)
     {
         ImGui::PushID(id);
         ImGuiTreeNodeFlags nameFlags = flags | ImGuiTreeNodeFlags_Leaf;
@@ -894,7 +894,7 @@ void ImGuiSystem::Hierarchy_GameObjectTree_Renderer(GameObject *obj, int depth, 
         flags |= ImGuiTreeNodeFlags_Leaf;
     }
 
-    if (selectedGameObjectID == id)
+    if (selectedGOID == id)
     {
         flags |= ImGuiTreeNodeFlags_Selected;
     }
@@ -918,19 +918,19 @@ void ImGuiSystem::Hierarchy_GameObjectTree_Renderer(GameObject *obj, int depth, 
             /*std::cout <<  obj->GetName() <<"'s GetFamilyTree() has: \n";
             for (auto const &r : familyTree)
             {
-                std::cout << factory.GetGameObject(r)->GetName() << std::endl;
+                std::cout << p_factory.GetGameObject(r)->GetName() << std::endl;
             }*/
 
             EntityID deliveredID = EntityID(std::stoi(draggedID));       // Convert payload data to EntityID
             auto check = std::find(familyTree.begin(), familyTree.end(), deliveredID);
 
             std::vector<EntityID> selfParentingTree{};
-            GetFamilyTree(factory.GetGameObject(deliveredID), selfParentingTree);
+            GetFamilyTree(p_factory.GetGameObject(deliveredID), selfParentingTree);
             auto checkSelfParenting = std::find(selfParentingTree.begin(), selfParentingTree.end(), obj->GetID());
 
             if (check == familyTree.end() && checkSelfParenting == selfParentingTree.end())
             {
-                GameObject *deliveredGO = factory.GetGameObject(deliveredID);
+                GameObject *deliveredGO = p_factory.GetGameObject(deliveredID);
                 std::cout << "[Hierarchy] Setting " << deliveredGO->GetName() << " to be child of " << obj->GetName() << std::endl;
                 deliveredGO->SetParent(obj);                                        // Set Dragged GO to be parent of receiver GO
 
@@ -976,7 +976,7 @@ void ImGuiSystem::Hierarchy_GameObjectTree_Renderer(GameObject *obj, int depth, 
         }
         if (ImGui::MenuItem("Clone"))
         {
-            factory.CloneGameObject(id);
+            p_factory.CloneGameObject(id);
         }
         // find way to unparent by drag and drop in the future
         if (obj->GetParent() && ImGui::MenuItem("Make Root"))
@@ -990,21 +990,21 @@ void ImGuiSystem::Hierarchy_GameObjectTree_Renderer(GameObject *obj, int depth, 
 
             // Record Undo Entries - Undo Delete
             LevelEditor* editor = CORE->GetLevelEditor();
-            GameObject* obj = factory.GetGameObject(id);
+            GameObject* Gameobj = p_factory.GetGameObject(id);
 
             {
-                GameObject* p = obj->GetParent();              
+                GameObject* p = Gameobj->GetParent();
                 if (p) {
                     auto kids = p->GetAllChildren();                  
                 }
             }
-            if (obj)
+            if (Gameobj)
             {             
                 EditorUndoCommand undocmd;
                 undocmd.action = EditorUndoCommand::ActionType::ObjectDeleted;
                 undocmd.entityID = id;
                 //cmd.beforeState = editor->SerialiseGameObject(obj);
-                undocmd.beforeJson = Serialization::SerializeGameObject(obj);
+                undocmd.beforeJson = Serialization::SerializeGameObject(Gameobj);
 
                 // Store Parent
                 GameObject* parent = obj->GetParent();
@@ -1023,15 +1023,15 @@ void ImGuiSystem::Hierarchy_GameObjectTree_Renderer(GameObject *obj, int depth, 
                 }
 
                 // Store Children
-                for (GameObject* c : obj->GetAllChildren())
+                for (GameObject* c : Gameobj->GetAllChildren())
                     undocmd.childIDs.push_back(c->GetID());
 
                 editor->RecordUndo(undocmd);
 
-                factory.DestroyAllRelatedGameObjects(id);  // handles cases for both individual GOs and parented GOs
+                p_factory.DestroyAllRelatedGameObjects(id);  // handles cases for both individual GOs and parented GOs
 
                 // Clear selection if it was selected
-                if (selectedGameObjectID == id)
+                if (selectedGOID == id)
                     ResetSelectedGameObject();
             }
         }
@@ -1044,7 +1044,7 @@ void ImGuiSystem::Hierarchy_GameObjectTree_Renderer(GameObject *obj, int depth, 
         // repeats loop again
         for (auto &childPtr : obj->GetAllChildren())
         {
-            Hierarchy_GameObjectTree_Renderer(childPtr, depth+1, selectedGameObjectID, factory);
+            Hierarchy_GameObjectTree_Renderer(childPtr, depth+1, selectedGOID, p_factory);
         }
         ImGui::TreePop();
     }
@@ -1422,7 +1422,7 @@ void ImGuiSystem::Viewport_ManageGizmos()
             editor->RecordUndo(cmd);
         }
 
-        if (ImGuizmo::IsUsing)
+        if (ImGuizmo::IsUsing())
         {
             vec3 trans{}, scale{}, rot{};
             DecomposeMatrix(mtx, trans.x, trans.y, scale.x, scale.y, rot.x);
@@ -1444,7 +1444,7 @@ void ImGuiSystem::Viewport_ManageGizmos()
 void ImGuiSystem::Viewport_RenderGizmoToolbar()
 {
     // On screen GUI settings
-    ImVec2 viewportPos = ImGui::GetWindowPos();
+    viewportPos = ImGui::GetWindowPos();
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
 
     ImGui::SetNextWindowBgAlpha(0.75f);
@@ -2366,7 +2366,7 @@ void ImGuiSystem::RenderPropertyEditor()
             for (auto& comp : AllComponents)
             {
                 // can use to sort by component type in the future when we got more components, and can add explanation text
-                ComponentType type      { std::get<0>(comp) };
+                //ComponentType type      { std::get<0>(comp) };
                 std::string& name       { std::get<1>(comp) };
                 ImTextureID& textureID  { std::get<2>(comp) };
                 auto& onclick           { std::get<3>(comp) };

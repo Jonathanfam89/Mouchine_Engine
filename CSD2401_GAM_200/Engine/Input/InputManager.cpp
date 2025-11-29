@@ -42,6 +42,12 @@ InputManager::InputManager(GLFWwindow *window, AudioEngine *audio) : window(wind
     {
         std::cout << "InputManager: WARNING - AudioEngine is NULL!" << std::endl;
     }
+	for (int i = 0; i < GLFW_KEY_LAST; ++i) {
+		m_keyStates[i] = KEY_STATE_RELEASE;
+	}
+	for (int i = 0; i < GLFW_MOUSE_BUTTON_LAST; ++i) {
+		m_mouseButtonStates[i] = KEY_STATE_RELEASE;
+	}
 }
 
 /**
@@ -66,6 +72,37 @@ std::string InputManager::GetName()
     return "InputSystem";
 }
 
+bool InputManager::IsKeyPressed(int key)
+{
+	return m_keyStates[key] == KEY_STATE_PRESS;
+}
+
+bool InputManager::IsKeyReleased(int key)
+{
+	return m_keyStates[key] == KEY_STATE_RELEASE;
+}
+
+bool InputManager::IsKeyHeld(int key)
+{
+	return m_keyStates[key] == KEY_STATE_HOLD;
+}
+
+bool InputManager::IsMouseButtonPressed(int button)
+{
+	return m_mouseButtonStates[button] == KEY_STATE_PRESS;
+}
+
+bool InputManager::IsMouseButtonReleased(int button)
+{
+	return m_mouseButtonStates[button] == KEY_STATE_RELEASE;
+}
+
+bool InputManager::IsMouseButtonHeld(int button)
+{
+	return m_mouseButtonStates[button] == KEY_STATE_HOLD;
+}
+
+
 /**
  * @brief Updates input handling, including key presses, mouse events,
  *        player movement, jumping, animations, and quitting logic.
@@ -73,6 +110,33 @@ std::string InputManager::GetName()
  */
 void InputManager::Update(float dt)
 {
+	for (auto& it : m_keyStates) {
+		if (glfwGetKey(window, it.first) == GLFW_PRESS) {
+			if (it.second == KEY_STATE_RELEASE) {
+				it.second = KEY_STATE_PRESS;
+			}
+			else {
+				it.second = KEY_STATE_HOLD;
+			}
+		}
+		else {
+			it.second = KEY_STATE_RELEASE;
+		}
+	}
+	for (auto& it : m_mouseButtonStates) {
+		if (glfwGetMouseButton(window, it.first) == GLFW_PRESS) {
+			if (it.second == KEY_STATE_RELEASE) {
+				it.second = KEY_STATE_PRESS;
+			}
+			else {
+				it.second = KEY_STATE_HOLD;
+			}
+		}
+		else {
+			it.second = KEY_STATE_RELEASE;
+		}
+	}
+
     glfwGetWindowSize(window, &width, &height);
     static bool wasLeftMousePressed = false;
     bool isLeftMousePressed = (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS);

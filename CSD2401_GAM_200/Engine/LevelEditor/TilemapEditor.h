@@ -142,6 +142,19 @@ public:
      */
     void ClearTilemap();
 
+    /**
+         * @brief Load a tilemap file and create GameObjects for rendering in the game
+         * This is a static helper function that can be called from anywhere to render a tilemap
+         * @param filepath Path to .tilemap file
+         * @param tilemapPosition World position where tilemap should be placed
+         * @param namePrefix Prefix for created GameObject names
+         * @return Vector of created GameObject pointers
+         */
+    static std::vector<class GameObject*> LoadAndCreateTilemapGameObjects(
+        const std::string& filepath,
+        const vec2& tilemapPosition = vec2(0.0f, 0.0f),
+        const std::string& namePrefix = "Tilemap");
+
 private:
     // Rendering functions
     void RenderTilesetPanel();

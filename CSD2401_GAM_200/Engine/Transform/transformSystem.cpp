@@ -16,8 +16,6 @@ Technology is prohibited.
 
 #include "transformSystem.h"
 
-float dt = CoreEngine::GetDeltaTime();
-float fps = CoreEngine::GetFPS();
 TransformSystem::TransformSystem() {
 
 }

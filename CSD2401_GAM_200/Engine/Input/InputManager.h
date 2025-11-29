@@ -28,6 +28,14 @@ Technology is prohibited.
 #include "imgui.h"
 #include <imgui_impl_glfw.h>
 #endif
+#include "audio.h"
+#include <map>
+
+enum KEY_STATE {
+	KEY_STATE_RELEASE,
+	KEY_STATE_PRESS,
+	KEY_STATE_HOLD,
+};
 
 /**
  * @class InputManager
@@ -69,7 +77,15 @@ public:
      * @return "Input System"
      */
     std::string GetName() override;
+	// Keyboard Input
+	bool IsKeyPressed(int key);
+	bool IsKeyReleased(int key);
+	bool IsKeyHeld(int key);
 
+	// Mouse Input
+	bool IsMouseButtonPressed(int button);
+	bool IsMouseButtonReleased(int button);
+	bool IsMouseButtonHeld(int button);
     // ------------------- Getters -------------------
 
     /**
@@ -140,6 +156,9 @@ private:
     // Mouse position / scroll
     double mouseX, mouseY;
     double scrollX, scrollY;
+
+	std::map<int, KEY_STATE> m_keyStates;
+	std::map<int, KEY_STATE> m_mouseButtonStates;
 
     // Movement and jump
     double movementspeed = 300.f;

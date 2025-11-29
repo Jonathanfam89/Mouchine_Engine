@@ -1,0 +1,27 @@
+{
+  "GameObjects": [
+    {
+      "name": "MainCamera",
+      "localID": 1,
+      "parentID": 4294967295,
+      "active": true,
+      "TransformComponent": {
+        "pos": [
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0
+        ],
+        "rotation": 0.0
+      },
+      "children": []
+    }
+  ],
+  "TilemapFile": "../Assets/Tiles/test.tilemap",
+  "AudioManager": {
+    "sounds": [],
+    "events": []
+  }
+}

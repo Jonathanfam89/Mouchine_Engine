@@ -17,6 +17,11 @@ Technology is prohibited.
 #include <iostream>
 #include <queue>
 #include <cstring>
+#include "factory.h"
+#include "GameObject.h"
+#include "RenderComponent.h"
+#include "transform.h"
+#include "GraphicsSystem.h"
 
 bool isTileMapFocused;
 
@@ -1195,5 +1200,185 @@ ImVec2 TilemapEditor::GetTileUV1(int tileID) const
     }
 
     return ImVec2(u1, v1);
+}
+
+/**
+ * @brief Load a tilemap file and create GameObjects for rendering
+ */
+std::vector<GameObject*> TilemapEditor::LoadAndCreateTilemapGameObjects(
+    const std::string& filepath,
+    const vec2& tilemapPosition,
+    const std::string& namePrefix)
+{
+    std::vector<GameObject*> createdObjects;
+
+    try
+    {
+        std::cout << "[TilemapEditor] Loading tilemap for game rendering: " << filepath << std::endl;
+
+        // Open and parse the tilemap file
+        std::ifstream file(filepath);
+        if (!file.is_open())
+        {
+            std::cerr << "[TilemapEditor] Failed to open tilemap file: " << filepath << std::endl;
+            return createdObjects;
+        }
+
+        json j;
+        file >> j;
+        file.close();
+
+        // Validate tilemap structure
+        if (!j.contains("width") || !j.contains("height") ||
+            !j.contains("tileset") || !j.contains("tiles"))
+        {
+            std::cerr << "[TilemapEditor] Invalid tilemap format! Missing required fields." << std::endl;
+            return createdObjects;
+        }
+
+        // Extract tilemap information
+        int width = j["width"];
+        int height = j["height"];
+        int numLayers = j.contains("numLayers") ? (int)j["numLayers"] : 1;
+        std::string tilesetPath = j["tileset"];
+        int tileWidth = j["tileWidth"];
+        int tileHeight = j["tileHeight"];
+
+        std::cout << "[TilemapEditor] Tilemap info:" << std::endl;
+        std::cout << "  Dimensions: " << width << "x" << height << std::endl;
+        std::cout << "  Tile size: " << tileWidth << "x" << tileHeight << std::endl;
+        std::cout << "  Layers: " << numLayers << std::endl;
+        std::cout << "  Tileset: " << tilesetPath << std::endl;
+
+        // Load the tileset texture
+        GLuint tilesetTexture = GraphicsSystem::LoadTexture(tilesetPath.c_str());
+        if (tilesetTexture == 0)
+        {
+            std::cerr << "[TilemapEditor] Failed to load tileset texture: " << tilesetPath << std::endl;
+            return createdObjects;
+        }
+
+        // Get texture dimensions to calculate tiles per row/column
+        int texWidth, texHeight;
+        glBindTexture(GL_TEXTURE_2D, tilesetTexture);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &texWidth);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &texHeight);
+
+        int tilesPerRow = texWidth / tileWidth;
+        int tilesPerColumn = texHeight / tileHeight;
+
+        std::cout << "[TilemapEditor] Tileset texture: " << texWidth << "x" << texHeight
+            << " = " << tilesPerRow << "x" << tilesPerColumn << " tiles" << std::endl;
+
+        // Get the factory to create GameObjects
+        auto& factory = GameObjectFactory::Instance();
+
+        // Create a GameObject for each tile
+        int tileCount = 0;
+        for (const auto& tileJson : j["tiles"])
+        {
+            int x = tileJson["x"];
+            int y = tileJson["y"];
+            int layer = tileJson.contains("layer") ? (int)tileJson["layer"] : 0;
+            int tileID = tileJson["id"];
+            bool isCollidable = tileJson.contains("collision") ? (bool)tileJson["collision"] : false;
+
+            // Skip empty/invalid tiles
+            if (tileID < 0)
+                continue;
+
+            // Calculate world position for this tile
+            float worldX = tilemapPosition.x + (x * tileWidth);
+            float worldY = tilemapPosition.y + ((height - 1 - y) * tileHeight);
+
+            // Create a unique name for this tile GameObject
+            std::string tileName = namePrefix + "_L" + std::to_string(layer) +
+                "_" + std::to_string(x) + "_" + std::to_string(y);
+
+            // Create the GameObject
+            GameObject* tileObj = factory.CreateGameObject(tileName);
+            if (!tileObj)
+            {
+                std::cerr << "[TilemapEditor] Failed to create GameObject for tile!" << std::endl;
+                continue;
+            }
+
+            // Add or get TransformComponent
+            auto* transform = tileObj->GetComponent<TransformComponent>();
+            if (!transform)
+            {
+                // TransformComponent doesn't exist, create it with position
+                transform = tileObj->AddComponent<TransformComponent>(worldX, worldY);
+            }
+            else
+            {
+                // TransformComponent exists, just set position
+                transform->SetPosition(worldX, worldY);
+            }
+
+            // Set scale
+            if (transform)
+            {
+                transform->SetScale(static_cast<float>(tileWidth),
+                    static_cast<float>(tileHeight));
+            }
+
+            // Get or add RenderComponent
+            auto* render = tileObj->GetComponent<RenderComponent>();
+            if (!render)
+            {
+                // Create new RenderComponent first, then set texture
+                render = tileObj->AddComponent<RenderComponent>();
+            }
+
+            if (render)
+            {
+                render->SetTextureID(tilesetTexture);
+                render->SetShapeType(RenderComponent::ShapeType::Square);
+                render->SetColor(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+                // Calculate which tile in the tileset
+                int col = tileID % tilesPerRow;
+                int row = tileID / tilesPerRow;
+
+                // Calculate UV scale (size of one tile)
+                float uv_width = 1.0f / tilesPerRow;
+                float uv_height = 1.0f / tilesPerColumn;
+
+                // Flip row because OPENGL IS THE WORST THING EVER
+                row = (tilesPerColumn - 1) - row;
+
+                // Calculate UV offset - matches Spritesheet exactly
+                float uv_x = uv_width * col;
+                float uv_y = uv_height * row;
+
+                // Set UV coordinates
+                render->SetUVScale(vec2(uv_width, uv_height));
+                render->SetUVOffset(vec2(uv_x, uv_y));
+
+                int renderLayer = -100 + (layer * 25);
+                render->SetLayer(renderLayer);
+            }
+
+            // Add to created objects list
+            createdObjects.push_back(tileObj);
+            tileCount++;
+
+            // Progress indicator for large tilemaps
+            if (tileCount % 100 == 0)
+            {
+                std::cout << "[TilemapEditor] Created " << tileCount << " tiles..." << std::endl;
+            }
+        }
+
+        std::cout << "[TilemapEditor] Successfully created " << tileCount
+            << " tile GameObjects!" << std::endl;
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "[TilemapEditor] Error loading tilemap: " << e.what() << std::endl;
+    }
+
+    return createdObjects;
 }
 #endif

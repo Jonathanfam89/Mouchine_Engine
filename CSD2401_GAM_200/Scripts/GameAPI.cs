@@ -596,6 +596,14 @@ namespace CSharpScript
         public static extern float GetFixed_Delta_Time();
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float GetFramesPerSecond();
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float MathfLerp(float a, float b, float t);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float MathfInverseLerp(float a, float b, float value);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float MathfClamp(float value, float min, float max);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int MathiClamp(int value, int min, int max);
     }
 
     public static class Input
@@ -635,11 +643,24 @@ namespace CSharpScript
             Menu = 348
         }
 
-            [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool IsKeyDown(int key);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool IsKeyPressed(int key);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool IsMouseButtonDown(int button);
+        private static extern bool IsKeyReleased(int key);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool IsKeyHeld(int key);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool IsMouseButtonPressed(int button);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool IsMouseButtonReleased(int button);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool IsMouseButtonHeld(int button);
+
 
         /// <summary>
         /// Gets the mouse X position in screen coordinates.
@@ -667,22 +688,60 @@ namespace CSharpScript
 
 
         /// <summary>
+        /// Checks if a specific key was pressed in the current frame.
+        /// </summary>
+        /// <param name="key">The KeyCode to check.</param>
+        /// <returns>True if the key was pressed in the current frame.</returns>
+        public static bool GetKeyPressed(KeyCode key)
+        {
+            return IsKeyPressed((int)key);
+        }
+
+        /// <summary>
+        /// Checks if a specific key was released in the current frame.
+        /// </summary>
+        /// <param name="key">The KeyCode to check.</param>
+        /// <returns>True if the key was released in the current frame.</returns>
+        public static bool GetKeyReleased(KeyCode key)
+        {
+            return IsKeyReleased((int)key);
+        }
+
+        /// <summary>
         /// Checks if a specific key is currently held down.
         /// </summary>
         /// <param name="key">The KeyCode to check.</param>
         /// <returns>True if the key is pressed.</returns>
-        public static bool GetKey(KeyCode key)
+        public static bool GetKeyHeld(KeyCode key)
         {
-            return IsKeyDown((int)key);
+            return IsKeyHeld((int)key);
+        }
+
+        /// <summary>
+        /// Checks if a mouse button was pressed in the current frame.
+        /// 0 = Left, 1 = Right, 2 = Middle.
+        /// </summary>
+        public static bool GetMouseButtonPressed(int button)
+        {
+            return IsMouseButtonPressed(button);
+        }
+
+        /// <summary>
+        /// Checks if a mouse button was released in the current frame.
+        /// 0 = Left, 1 = Right, 2 = Middle.
+        /// </summary>
+        public static bool GetMouseButtonReleased(int button)
+        {
+            return IsMouseButtonReleased(button);
         }
 
         /// <summary>
         /// Checks if a mouse button is held down.
         /// 0 = Left, 1 = Right, 2 = Middle.
         /// </summary>
-        public static bool GetMouseButton(int button)
+        public static bool GetMouseButtonHeld(int button)
         {
-            return IsMouseButtonDown(button);
+            return IsMouseButtonHeld(button);
         }
     }
 

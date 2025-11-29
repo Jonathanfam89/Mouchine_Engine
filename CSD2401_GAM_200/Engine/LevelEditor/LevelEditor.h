@@ -366,6 +366,24 @@ private:
      */
     void RestoreSceneState();
 
+    /**
+ * @brief Import a tilemap into the current level
+ * @param filepath Path to .tilemap file
+ * @return True if import succeeded
+ */
+    bool ImportTilemap(const std::string& filepath);
+
+    /**
+     * @brief Get the current tilemap path
+     * @return Path to currently loaded tilemap, or empty string
+     */
+    const std::string& GetCurrentTilemapPath() const { return currentTilemapPath; }
+
+    /**
+     * @brief Clear the current tilemap reference
+     */
+    void ClearTilemap();
+
     //// Helper functions
     ///**
     // * @brief Serialise a GameObject to GameObjectData structure
@@ -392,6 +410,11 @@ private:
     bool showLoadDialog;
     char saveFilepath[256];
     char loadFilepath[256];
+
+    // Tilemap data
+    std::string currentTilemapPath;     // path to currently loaded tilemap
+    bool showTilemapLoadDialog;         // flag for tilemap load dialog
+    char tilemapFilepath[256];
 
     std::vector<std::string> recentLevels;
     static constexpr int MAX_RECENT_LEVELS = 5;

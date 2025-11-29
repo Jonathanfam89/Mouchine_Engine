@@ -310,3 +310,43 @@ void DecomposeMatrix(mat4 const& m, float& x, float& y, float& w, float& h, floa
         rot += 3.14159265359f; // Add 180 degrees (pi radians)
     }
 }
+
+float MathfLerp(float a, float b, float t)
+{
+    return a + t * (b - a);
+}
+
+float MathfInverseLerp(float a, float b, float value)
+{
+    if (a == b)
+    {
+        return 0.0f;
+    }
+    return (value - a) / (b - a);
+}
+
+float MathfClamp(float value, float min, float max)
+{
+    if (value < min)
+    {
+        return min;
+    }
+    if (value > max)
+    {
+        return max;
+    }
+    return value;
+}
+
+int MathiClamp(int value, int min, int max)
+{
+    if (value < min)
+    {
+        return min;
+    }
+    if (value > max)
+    {
+        return max;
+    }
+    return value;
+}

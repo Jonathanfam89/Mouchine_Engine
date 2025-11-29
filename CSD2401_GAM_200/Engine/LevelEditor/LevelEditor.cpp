@@ -48,10 +48,13 @@ LevelEditor::LevelEditor()
     zoomSpeed(0.1f),
     minZoom(0.1f),
     maxZoom(5.0f),
-    zoomSmoothing(0.2f)
+    zoomSmoothing(0.2f),
+    currentTilemapPath(""),
+    showTilemapLoadDialog(false)
 {
     strcpy(saveFilepath, "");
     strcpy(loadFilepath, "../Assets/Scenes/Prefab_TestScene.json");
+    strcpy(tilemapFilepath, "");
 }
 
 /**
@@ -146,6 +149,58 @@ void LevelEditor::Update(float /*dt*/)
 
             ImGui::EndPopup();
         }
+    }
+    if (showTilemapLoadDialog)
+    {
+        ImGui::OpenPopup("Import Tilemap");
+        showTilemapLoadDialog = false;
+    }
+
+    // Tilemap Load Dialog
+    if (ImGui::BeginPopupModal("Import Tilemap", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("Enter tilemap filename:");
+        ImGui::InputText("##tilemapfilepath", tilemapFilepath, sizeof(tilemapFilepath));
+
+        ImGui::Spacing();
+        ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Path: ../Assets/Tiles/");
+
+        if (!currentTilemapPath.empty())
+        {
+            ImGui::Spacing();
+            size_t lastSlash = currentTilemapPath.find_last_of("/\\");
+            std::string currentFile = (lastSlash != std::string::npos)
+                ? currentTilemapPath.substr(lastSlash + 1)
+                : currentTilemapPath;
+            ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f), "Current: %s", currentFile.c_str());
+        }
+
+        ImGui::Spacing();
+
+        if (ImGui::Button("Import", ImVec2(120, 0)))
+        {
+            std::string filepath = std::string("../Assets/Tiles/") + tilemapFilepath;
+            if (!filepath.ends_with(".tilemap"))
+                filepath += ".tilemap";
+
+            if (ImportTilemap(filepath))
+            {
+                std::cout << "[LevelEditor] Tilemap imported: " << filepath << std::endl;
+            }
+            else
+            {
+                std::cerr << "[LevelEditor] Failed to import tilemap: " << filepath << std::endl;
+            }
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0)))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
     }
 }
 
@@ -517,6 +572,39 @@ void LevelEditor::RenderMenuBar()
 
     ImGui::Separator();
 
+    // Tilemap Management
+    ImGui::Text("Tilemap:");
+
+    if (!currentTilemapPath.empty())
+    {
+        size_t lastSlash = currentTilemapPath.find_last_of("/\\");
+        std::string filename = (lastSlash != std::string::npos)
+            ? currentTilemapPath.substr(lastSlash + 1)
+            : currentTilemapPath;
+
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.3f, 1.0f, 0.3f, 1.0f));
+        ImGui::TextWrapped("Loaded: %s", filename.c_str());
+        ImGui::PopStyleColor();
+
+        if (ImGui::Button("Clear Tilemap", ImVec2(200, 0)))
+        {
+            ClearTilemap();
+        }
+    }
+    else
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
+        ImGui::Text("No tilemap loaded");
+        ImGui::PopStyleColor();
+    }
+
+    if (ImGui::Button("Import Tilemap", ImVec2(200, 0)))
+    {
+        showTilemapLoadDialog = true;
+    }
+
+    ImGui::Separator();
+
     // save lvl
     ImGui::Text("Save Level:");
     ImGui::InputText("Filename", saveFilepath, sizeof(saveFilepath));
@@ -598,6 +686,12 @@ bool LevelEditor::SaveLevel(const std::string &filepath)
 
         json root;
         root["GameObjects"] = json::array();
+
+        if (!currentTilemapPath.empty())
+        {
+            root["TilemapFile"] = currentTilemapPath;
+            std::cout << "[SaveLevel] Saving tilemap reference: " << currentTilemapPath << std::endl;
+        }
 
         //// serialise all active game objects
         //auto &allObjects = factory.GetAllGameObjects();
@@ -824,6 +918,40 @@ bool LevelEditor::LoadLevel(const std::string& filepath)
 
         std::cout << "Level loaded from: " << filepath << "\n";
         std::cout << "Loaded " << factory.GetAllGameObjects().size() << " game objects\n";
+
+        currentTilemapPath = "";  // Clear any existing tilemap first
+
+        if (root.contains("TilemapFile"))
+        {
+            std::string tilemapPath = root["TilemapFile"];
+            std::cout << "[LoadLevel] Found tilemap reference: " << tilemapPath << std::endl;
+
+            if (ImportTilemap(tilemapPath))
+            {
+                std::cout << "[LoadLevel] Tilemap loaded successfully" << std::endl;
+            }
+            else
+            {
+                std::cerr << "[LoadLevel] Warning: Failed to load referenced tilemap" << std::endl;
+                std::cerr << "[LoadLevel] Expected path: " << tilemapPath << std::endl;
+            }
+        }
+        else
+        {
+            std::cout << "[LoadLevel] No tilemap reference found in level file" << std::endl;
+        }
+        if (!currentTilemapPath.empty())
+        {
+            std::cout << "[LoadLevel] Creating tilemap rendering..." << std::endl;
+
+            auto tiles = TilemapEditor::LoadAndCreateTilemapGameObjects(
+                currentTilemapPath,
+                vec2(0.0f, 0.0f),
+                "Tilemap"
+            );
+
+            std::cout << "[LoadLevel] Created " << tiles.size() << " tile objects" << std::endl;
+        }
 
         // any fresh load invalidates the previous save-state snapshot
         hasValidSaveState = false;
@@ -1543,6 +1671,69 @@ void LevelEditor::PerformUndo() {
 
 void LevelEditor::ClearUndoStack() {
     undoStack.clear();
+}
+
+/**
+ * @brief Import a tilemap into the current level
+ */
+bool LevelEditor::ImportTilemap(const std::string& filepath)
+{
+    try
+    {
+        // Open the tilemap file
+        std::ifstream file(filepath);
+        if (!file.is_open())
+        {
+            std::cerr << "[LevelEditor] Failed to open tilemap file: " << filepath << std::endl;
+            return false;
+        }
+
+        // Parse JSON
+        json tilemapData;
+        file >> tilemapData;
+        file.close();
+
+        // Validate tilemap structure
+        if (!tilemapData.contains("width") ||
+            !tilemapData.contains("height") ||
+            !tilemapData.contains("tileset") ||
+            !tilemapData.contains("tiles"))
+        {
+            std::cerr << "[LevelEditor] Invalid tilemap format! Missing required fields." << std::endl;
+            return false;
+        }
+
+        // Store the tilemap reference
+        currentTilemapPath = filepath;
+
+        std::cout << "[LevelEditor] Tilemap imported successfully:" << std::endl;
+        std::cout << "  File: " << filepath << std::endl;
+        std::cout << "  Dimensions: " << tilemapData["width"] << "x" << tilemapData["height"] << std::endl;
+        std::cout << "  Tileset: " << tilemapData["tileset"].get<std::string>() << std::endl;
+        std::cout << "  Tile count: " << tilemapData["tiles"].size() << std::endl;
+        std::cout << "  Layers: " << tilemapData["numLayers"] << std::endl;
+
+        hasUnsavedChanges = true;
+        return true;
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "[LevelEditor] Error importing tilemap: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+/**
+ * @brief Clear the current tilemap reference
+ */
+void LevelEditor::ClearTilemap()
+{
+    if (!currentTilemapPath.empty())
+    {
+        currentTilemapPath = "";
+        hasUnsavedChanges = true;
+        std::cout << "[LevelEditor] Tilemap reference cleared." << std::endl;
+    }
 }
 
 /*  Audio Management */

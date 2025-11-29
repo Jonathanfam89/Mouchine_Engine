@@ -524,13 +524,21 @@ void GraphicsSystem::Update(float)
         bool isCircle = (rend->GetShapeType() == RenderComponent::ShapeType::Circle);
         int layer = rend->GetLayer(); // For draw order sorting
 
-        // Gather UV data for spritesheets/animation
+        // Gather UV data for spritesheets/animation/tiles
         vec2 uvScale = vec2(1.0f);
         vec2 uvOffset = vec2(0.0f);
+
         if (auto* animator = obj->GetComponent<Spritesheet>())
         {
+            // Animator takes priority (for animated sprites)
             uvScale = animator->GetUVScale();
             uvOffset = animator->GetUVOffset();
+        }
+        else if (auto* renderComp = obj->GetComponent<RenderComponent>())
+        {
+            // Use RenderComponent UV (for tiles/static sprites)
+            uvScale = renderComp->GetUVScale();
+            uvOffset = renderComp->GetUVOffset();
         }
 
         // Find an existing batch that matches the criteria (TextureID, ShapeType, Layer)

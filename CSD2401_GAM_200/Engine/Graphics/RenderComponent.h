@@ -57,7 +57,7 @@ public:
     };
 
     RenderComponent(GameObject *owner)
-        : IComponent(owner), shape(ShapeType::Square), textureID(0), color(1.0f, 0.0f, 0.0f, 1.0f), line(), point(), layer(0)
+        : IComponent(owner), shape(ShapeType::Square), textureID(0), color(1.0f, 0.0f, 0.0f, 1.0f), line(), point(), layer(0), uvScale(1.0f, 1.0f), uvOffset(0.0f, 0.0f)
     {
     }
     /*! @brief Constructor for a textured object
@@ -65,7 +65,7 @@ public:
         @param texID OpenGL texture ID
     */
     RenderComponent(GameObject *owner, GLuint texID)
-        : IComponent(owner), shape(ShapeType::Square), textureID(texID), color(1.0f), line(), point(), layer(0)
+        : IComponent(owner), shape(ShapeType::Square), textureID(texID), color(1.0f), line(), point(), layer(0), uvScale(1.0f, 1.0f), uvOffset(0.0f, 0.0f)
     {
     }
 
@@ -75,7 +75,7 @@ public:
         @param color Shape color
     */
     RenderComponent(GameObject *owner, ShapeType type, const vec4 &color)
-        : IComponent(owner), shape(type), textureID(0), color(color), line(), point(), layer(0)
+        : IComponent(owner), shape(type), textureID(0), color(color), line(), point(), layer(0), uvScale(1.0f, 1.0f), uvOffset(0.0f, 0.0f)
     {
     }
 
@@ -176,13 +176,20 @@ public:
     void SetTexturePath(const std::string &path) { texturePath = path; }
     std::string GetTexturePath() const { return texturePath; }
 
+    void SetUVScale(const vec2& scale) { uvScale = scale; }
+    vec2 GetUVScale() const { return uvScale; }
+
+    void SetUVOffset(const vec2& offset) { uvOffset = offset; }
+    vec2 GetUVOffset() const { return uvOffset; }
+
 private:
     ShapeType shape;  /*!< Shape type of this component */
     GLuint textureID; /*!< OpenGL texture ID */
     vec4 color; /*!< Color of the shape */
     int layer;
     std::string texturePath;
-
+    vec2 uvScale;   // Size of the UV region
+    vec2 uvOffset;
     LineData line;   /*!< Line data if ShapeType::Line */
     PointData point; /*!< Point data if ShapeType::Point */
 };

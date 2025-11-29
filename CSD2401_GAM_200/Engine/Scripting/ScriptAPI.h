@@ -38,6 +38,7 @@ Technology is prohibited.
 #include "CameraComponent.h"
 #include "CameraManager.h"
 #include <functional>
+#include "MathLib.h"
 
     using TimerCallback = std::function<void()>;
     using TimerID = unsigned int;
@@ -383,10 +384,16 @@ namespace API {
 
 
 #pragma region Misc
+    double GetDelta_Time();
+    double GetFixedDelta_time();
+    double GetFramePerSecond();
+
     int RandomNumberGen(int, int);
-    float GetDelta_Time();
-    float GetFixedDelta_time();
-    float GetFramePerSecond();
+    float fLerp(float a, float b, float t);
+    float fInverseLerp(float a, float b, float value);
+    float fClamp(float value, float min, float max);
+    int iClamp(int value, int min, int max);
+
 #pragma endregion
 
 #pragma region Scripting
@@ -394,8 +401,12 @@ namespace API {
 #pragma endregion
 
 #pragma region Input
-    bool IsKeyDown(int key);
-    bool IsMouseButtonDown(int button);
+    bool IsKeyPressed(int key);
+    bool IsKeyReleased(int key);
+    bool IsKeyHeld(int key);
+    bool IsMouseButtonPressed(int button);
+    bool IsMouseButtonReleased(int button);
+    bool IsMouseButtonHeld(int button);
     float GetMouseX();
     float GetMouseY();
     float GetMouseWorldX();

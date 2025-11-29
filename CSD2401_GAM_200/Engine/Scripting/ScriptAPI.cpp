@@ -713,6 +713,7 @@ bool Raycast(float x, float y, float dx, float dy, float distance, MonoString* s
 
 
 #pragma endregion
+
 #pragma region Camera
     vec2 GetCameraPosition()
     {
@@ -858,17 +859,33 @@ bool Raycast(float x, float y, float dx, float dy, float distance, MonoString* s
         int result = rand() % range + min;
         return result;
     }
-    float GetDelta_Time()
+    double GetDelta_Time()
     {
         return CORE->GetDeltaTime();
     }
-    float GetFixedDelta_time()
+    double GetFixedDelta_time()
     {
         return CORE->GetFixedDeltaTime();
     }
-    float GetFramePerSecond() {
+    double GetFramePerSecond() {
         return CORE->GetFPS();
     }
+    float fLerp(float a, float b, float t)
+    {
+		return (a, b, t);
+	}
+    float fInverseLerp(float a, float b, float value)
+    {
+		return MathfInverseLerp(a, b, value);
+	}
+    float fClamp(float value, float min, float max)
+    {
+		return MathfClamp(value, min, max);
+	}
+    int iClamp(int value, int min, int max)
+    {
+		return MathiClamp(value, min, max);
+	}
 #pragma endregion
 
 #pragma region Audio
@@ -1046,22 +1063,62 @@ bool Raycast(float x, float y, float dx, float dy, float distance, MonoString* s
 #pragma endregion
 
 #pragma region Input
-    bool IsKeyDown(int key)
+    bool IsKeyPressed(int key)
     {
-        GLFWwindow* window = CORE->GetGraphicsSystem()->getWindow();
-        if (window)
+        InputManager* input = CORE->GetInputManager();
+        if (input)
         {
-            return glfwGetKey(window, key) == GLFW_PRESS;
+            return input->IsKeyPressed(key);
         }
         return false;
     }
 
-    bool IsMouseButtonDown(int button)
+    bool IsKeyReleased(int key)
     {
-        GLFWwindow* window = CORE->GetGraphicsSystem()->getWindow();
-        if (window)
+        InputManager* input = CORE->GetInputManager();
+        if (input)
         {
-            return glfwGetMouseButton(window, button) == GLFW_PRESS;
+            return input->IsKeyReleased(key);
+        }
+        return false;
+    }
+
+    bool IsKeyHeld(int key)
+    {
+        InputManager* input = CORE->GetInputManager();
+        if (input)
+        {
+            return input->IsKeyHeld(key);
+        }
+        return false;
+    }
+
+    bool IsMouseButtonPressed(int button)
+    {
+        InputManager* input = CORE->GetInputManager();
+        if (input)
+        {
+            return input->IsMouseButtonPressed(button);
+        }
+        return false;
+    }
+
+    bool IsMouseButtonReleased(int button)
+    {
+        InputManager* input = CORE->GetInputManager();
+        if (input)
+        {
+            return input->IsMouseButtonReleased(button);
+        }
+        return false;
+    }
+
+    bool IsMouseButtonHeld(int button)
+    {
+        InputManager* input = CORE->GetInputManager();
+        if (input)
+        {
+            return input->IsMouseButtonHeld(button);
         }
         return false;
     }

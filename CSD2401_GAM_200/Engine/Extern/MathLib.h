@@ -14,6 +14,7 @@ Technology is prohibited.
 
 #ifndef MATH_LIB_H
 #define MATH_LIB_H
+#define MATH_LIB_H
 
 #include <cmath>
 #include <cstdint>
@@ -194,4 +195,12 @@ inline float* value_ptr(mat4 const& mat)
 
 void DecomposeMatrix(mat4 const& m, float& x, float& y, float& w, float& h, float& rot);
 
-#endif // MATH_LIB
+float MathfLerp(float a, float b, float t);
+float MathfInverseLerp(float a, float b, float value);
+float MathfClamp(float value, float min, float max);
+int MathiClamp(int value, int min, int max);
+
+
+
+
+#endif // MATH_LIB_H
