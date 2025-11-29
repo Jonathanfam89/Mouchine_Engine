@@ -477,7 +477,7 @@ void GraphicsSystem::Update(float)
         if (InputManager::ShowFPS){
 #endif
             textFPS->SetEnabled(true);
-            textFPS->SetText(std::to_string(static_cast<int>(CORE->GetFPS())));
+            textFPS->SetText("FPS: "+std::to_string(static_cast<int>(CORE->GetFPS())));
         }
         else {
             textFPS->SetText("FPS");
