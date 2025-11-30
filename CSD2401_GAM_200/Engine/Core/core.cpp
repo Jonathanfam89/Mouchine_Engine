@@ -224,6 +224,8 @@ void CoreEngine::GameLoop()
             {
                 pauseMenuLogicSystem->Initialize();
                 std::cout << "[CoreEngine] Pause menu system reset" << std::endl;
+                // Set current scene path after initialize so it doesn't get cleared
+                pauseMenuLogicSystem->SetCurrentScene(m_pendingScene);
             }
 
             // Reset game timer system
@@ -238,6 +240,8 @@ void CoreEngine::GameLoop()
             {
                 winLoseLogicSystem->Initialize();
                 std::cout << "[CoreEngine] Win zone logic system reset" << std::endl;
+                // Set current scene path after initialize so it doesn't get cleared
+                winLoseLogicSystem->SetCurrentScene(m_pendingScene);
             }
 
             // ===== AUTO-ENTER PLAY MODE IF REQUESTED =====

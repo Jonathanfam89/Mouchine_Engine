@@ -24,6 +24,22 @@
         "volume": 0.800000011920929,
         "pitch": 1.0,
         "category": "sfx"
+      },
+      {
+        "name": "victory",
+        "filepath": "../Assets/Audio/victory.wav",
+        "loop": false,
+        "volume": 0.3,
+        "pitch": 1.0,
+        "category": "sfx"
+      },
+      {
+        "name": "gameover",
+        "filepath": "../Assets/Audio/gameover.wav",
+        "loop": false,
+        "volume": 0.4,
+        "pitch": 1.0,
+        "category": "sfx"
       }
     ],
     "events": [

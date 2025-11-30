@@ -15,7 +15,7 @@ public:
 
     std::string GetName() override { return "WinLoseLogicSystem"; }
 
-    void SetCurrentScene(const std::string& scenePath) { currentScenePath = scenePath; }
+    void SetCurrentScene(const std::string& scenePath);
     bool IsWinScreenActive() const { return hasCreatedWinScreen; }
     bool IsLoseScreenActive() const { return hasCreatedLoseScreen; }
     void TriggerLose();

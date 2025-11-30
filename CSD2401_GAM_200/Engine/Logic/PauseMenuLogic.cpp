@@ -192,9 +192,9 @@ void PauseMenuLogicSystem::CreatePauseMenuUI()
     GameObject* overlay = factory.CreateGameObject("PauseOverlay");
     auto* overlayTransform = overlay->AddComponent<TransformComponent>();
     overlayTransform->posX = 0.0f;
-    overlayTransform->posY = 215.0f;
+    overlayTransform->posY = 0.0f;
     overlayTransform->scaleX = 1980.0f;
-    overlayTransform->scaleY = 942.0f;
+    overlayTransform->scaleY = 1100.0f;
     auto* overlayRender = overlay->AddComponent<RenderComponent>();
     overlayRender->SetColor(vec4(0.0f, 0.0f, 0.0f, 0.7f)); // dark semi-transparent
     overlayRender->SetLayer(100);

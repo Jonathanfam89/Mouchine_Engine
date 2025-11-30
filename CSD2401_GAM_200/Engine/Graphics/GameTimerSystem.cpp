@@ -13,6 +13,55 @@ void GameTimerSystem::Initialize()
 
 void GameTimerSystem::Update(float dt)
 {
+    auto& factory = GameObjectFactory::Instance();
+    GameObject* timerGO = factory.FindGameObject(timerObjectName);
+
+    // Check if we're in the main menu and hide/stop timer
+    // Main menu has a "Title" GameObject
+    GameObject* mainMenuCheck = factory.FindGameObject("Title");
+    if (mainMenuCheck && mainMenuCheck->IsActive())
+    {
+        if (timerGO)
+        {
+            timerGO->SetActive(false);
+        }
+        // Reset timer when in main menu to prevent lose condition from triggering
+        if (remainingTime != 30.0f)
+        {
+            remainingTime = 30.0f;
+            lastDisplayedSeconds = -1;
+            hasTriggeredTimeUp = false;
+        }
+        return;
+    }
+
+    // Check if win/lose screen is active and hide timer (but keep visible during pause menu)
+    WinLoseLogicSystem* winLoseLogic = CORE ? CORE->GetWinLoseLogic() : nullptr;
+    if (winLoseLogic)
+    {
+        if (winLoseLogic->IsWinScreenActive() || winLoseLogic->IsLoseScreenActive())
+        {
+            // Hide timer during win/lose screens
+            if (timerGO)
+            {
+                timerGO->SetActive(false);
+            }
+            return;
+        }
+    }
+
+    // Show timer when game is active (including during pause menu)
+    if (timerGO)
+    {
+        timerGO->SetActive(true);
+    }
+
+    // Check if game is paused (pause menu or win/lose) - stop counting but keep visible if pause menu
+    if (CORE && CORE->IsGamePaused())
+    {
+        return;
+    }
+
 #ifdef USE_IMGUI
     LevelEditor* editor = CORE ? CORE->GetLevelEditor() : nullptr;
     if (!editor)
@@ -35,8 +84,8 @@ void GameTimerSystem::Update(float dt)
         return;
     }
 
-    // keep timer frozen
-    if (mode == EditorMode::Pause || CORE->IsGamePaused())
+    // keep timer frozen in pause mode
+    if (mode == EditorMode::Pause)
     {
         return;
     }
@@ -45,6 +94,7 @@ void GameTimerSystem::Update(float dt)
     if (mode == EditorMode::Play)
     {
 #endif
+        /*std::cout << "[GameTimer] Decreasing time by " << dt << std::endl;*/
         remainingTime -= dt;
 
         // check for lose condition aka time ran out
@@ -54,12 +104,19 @@ void GameTimerSystem::Update(float dt)
             UpdateText(0);
             hasTriggeredTimeUp = true;
 
-            // LOSE CONDITION - trigger lose screen
-            std::cout << "TIME'S UP! Triggering lose screen..." << std::endl;
-            WinLoseLogicSystem* winLoseLogic = CORE->GetWinLoseLogic();
-            if (winLoseLogic)
+            // Only trigger lose screen if NOT in main menu
+            GameObject* mainMenuCheck = factory.FindGameObject("Title");
+            bool isInMainMenu = mainMenuCheck && mainMenuCheck->IsActive();
+
+            if (!isInMainMenu)
             {
-                winLoseLogic->TriggerLose();
+                // LOSE CONDITION - trigger lose screen
+                //std::cout << "TIME'S UP! Triggering lose screen..." << std::endl;
+                WinLoseLogicSystem* winLoseLogic = CORE->GetWinLoseLogic();
+                if (winLoseLogic)
+                {
+                    winLoseLogic->TriggerLose();
+                }
             }
             return;
         }

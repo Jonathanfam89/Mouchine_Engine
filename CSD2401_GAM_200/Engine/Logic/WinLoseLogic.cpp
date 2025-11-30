@@ -19,6 +19,11 @@ void WinLoseLogicSystem::Initialize()
     pendingScenePath = "";
 }
 
+void WinLoseLogicSystem::SetCurrentScene(const std::string& scenePath)
+{
+    currentScenePath = scenePath;
+}
+
 void WinLoseLogicSystem::Update(float dt)
 {
     static int totalFrames = 0;
@@ -220,6 +225,16 @@ void WinLoseLogicSystem::CheckWinCondition()
 // ============ WIN ============
 void WinLoseLogicSystem::TriggerWin()
 {
+    // pause the game immediately to stop timer and gameplay
+    CORE->SetGamePaused(true);
+
+    // Play victory sound
+    AudioManager* audioManager = CORE->GetAudioManager();
+    if (audioManager)
+    {
+        audioManager->PlaySound("victory", "victory_channel");
+    }
+
     //std::cout << "you win!!!" << std::endl;
     auto& factory = GameObjectFactory::Instance();
     vec2 camPos = CameraManager::Instance().GetCameraPosition();
@@ -273,7 +288,6 @@ void WinLoseLogicSystem::TriggerWin()
     noRender->SetLayer(102);
 
     hasCreatedWinScreen = true;
-    CORE->SetGamePaused(true);
 }
 
 void WinLoseLogicSystem::HandleWinScreenButtons()
@@ -314,7 +328,7 @@ void WinLoseLogicSystem::HandleWinScreenButtons()
         hoveredButtonName = currentHover;
     }
 
-    if (isClicked && !hoveredButtonName.empty() && !pendingSceneChange)
+    if (isClicked && !hoveredButtonName.empty())
     {
         AudioManager* audioManager = CORE->GetAudioManager();
         if (audioManager)
@@ -324,20 +338,21 @@ void WinLoseLogicSystem::HandleWinScreenButtons()
 
         if (hoveredButtonName == "WinYesButton")
         {
-            std::cout << "[WinZone] Yes clicked - Restarting level" << std::endl;
-
             if (!currentScenePath.empty())
             {
-                CORE->RequestSceneLoad(currentScenePath, true);
+                std::string sceneToLoad = currentScenePath;
+                DestroyWinScreen();
+                CORE->SetGamePaused(false);
+                CORE->RequestSceneLoad(sceneToLoad, true);
+                return;
             }
-            pendingSceneChange = true;
         }
         else if (hoveredButtonName == "WinNoButton")
         {
-            std::cout << "[WinZone] No clicked - Going to main menu" << std::endl;
-
+            DestroyWinScreen();
+            CORE->SetGamePaused(false);
             CORE->RequestSceneLoad("../Assets/Scenes/MainMenu.json", true);
-            pendingSceneChange = true;
+            return;
         }
     }
 }
@@ -416,6 +431,16 @@ void WinLoseLogicSystem::SetButtonTexture(std::string buttonName, bool isHovered
 
 void WinLoseLogicSystem::TriggerLose()
 {
+    // pause the game immediately to stop timer and gameplay
+    CORE->SetGamePaused(true);
+
+    // Play game over sound
+    AudioManager* audioManager = CORE->GetAudioManager();
+    if (audioManager)
+    {
+        audioManager->PlaySound("gameover", "gameover_channel");
+    }
+
     std::cout << "[WinLoseLogic] YOU LOSE!" << std::endl;
 
     auto& factory = GameObjectFactory::Instance();
@@ -470,7 +495,6 @@ void WinLoseLogicSystem::TriggerLose()
     noRender->SetLayer(102);
 
     hasCreatedLoseScreen = true;
-    CORE->SetGamePaused(true);
 }
 
 void WinLoseLogicSystem::HandleLoseScreenButtons()
@@ -511,7 +535,7 @@ void WinLoseLogicSystem::HandleLoseScreenButtons()
         hoveredButtonName = currentHover;
     }
 
-    if (isClicked && !hoveredButtonName.empty() && !pendingSceneChange)
+    if (isClicked && !hoveredButtonName.empty())
     {
         AudioManager* audioManager = CORE->GetAudioManager();
         if (audioManager)
@@ -525,16 +549,21 @@ void WinLoseLogicSystem::HandleLoseScreenButtons()
 
             if (!currentScenePath.empty())
             {
-                CORE->RequestSceneLoad(currentScenePath, true);
+                std::string sceneToLoad = currentScenePath;
+                DestroyLoseScreen();
+                CORE->SetGamePaused(false);
+                CORE->RequestSceneLoad(sceneToLoad, true);
+                return;
             }
-            pendingSceneChange = true;
         }
         else if (hoveredButtonName == "LoseNoButton")
         {
             std::cout << "[WinLoseLogic] No clicked - Going to main menu" << std::endl;
 
+            DestroyLoseScreen();
+            CORE->SetGamePaused(false);
             CORE->RequestSceneLoad("../Assets/Scenes/MainMenu.json", true);
-            pendingSceneChange = true;
+            return;
         }
     }
 }
