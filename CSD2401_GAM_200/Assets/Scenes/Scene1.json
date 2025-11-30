@@ -569,6 +569,36 @@
         "rotation": 0.0
       },
       "children": []
+    },
+    {
+      "name": "Text FPS",
+      "TransformComponent": {
+        "pos": [
+          100,
+          100
+        ],
+        "scale": [
+          1,
+          1
+        ],
+        "rotation": 0.0
+      },
+      "RenderComponent": {
+        "shapeType": "Square"
+      },
+      "TextComponent": {
+        "fontPath": "../Assets/FrederickatheGreat-Regular.ttf",
+        "fontSize": 50,
+        "text": "FPS",
+        "color": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "scale": 1.0,
+        "screenSpace": true
+      }
     }
   ]
 }
