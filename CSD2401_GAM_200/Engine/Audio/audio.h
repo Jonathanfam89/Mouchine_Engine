@@ -128,6 +128,12 @@ public:
 	 */
 	void pauseSound(const std::string& channelName, bool pause);
 
+	/**
+	 * @brief Pauses or resumes all active channels
+	 * @param pause True to pause all, false to resume all
+	 */
+	void pauseAllSound(bool pause);
+
 	/*  Volume and effects controls  */
 	/**
 	 * @brief Sets the volume for a specific channel
@@ -141,6 +147,11 @@ public:
 	 * @param volume Volume level (0.0 to 1.0)
 	 */
 	void masterVolume(float volume);
+
+	/**
+	 * @brief Toggles mute for all audio (master channel group)
+	 */
+	void masterMute();
 
 	/**
 	 * @brief Checks if a channel is currently playing

@@ -93,18 +93,18 @@ int main()
         //        std::cerr << "ERROR: Failed to attach 'TestGameObject'!" << std::endl;
         //    }
 
-        //    // 2. Attach the second script (Blue Square, Green Rotating Square)
-        //    if (scriptSys->AttachScript(squareSpawner, "TestGameObjects2"))
-        //    {
-        //        std::cout << "Attached 'TestGameObjects2' to SquareSpawner" << std::endl;
-        //    }
-        //    else
-        //    {
-        //        std::cerr << "ERROR: Failed to attach 'TestGameObjects2'!" << std::endl;
-        //    }
-        //    std::cout << "Calling OnStart for all scripts on SquareSpawner..." << std::endl;
-        //    scriptSys->CallOnStart(squareSpawner);
-        //}
+            // 2. Attach the second script (Blue Square, Green Rotating Square)
+            /*if (scriptSys->AttachScript(squareSpawner, "TestGameObjects2"))
+            {
+                std::cout << "Attached 'TestGameObjects2' to SquareSpawner" << std::endl;
+            }
+            else
+            {
+                std::cerr << "ERROR: Failed to attach 'TestGameObjects2'!" << std::endl;
+            }*/
+        //     std::cout << "Calling OnStart for all scripts on SquareSpawner..." << std::endl;
+        //     scriptSys->CallOnStart(squareSpawner);
+        // }
 
         // Initialise Game State Manager (Level1)
         GameManager::Instance().ChangeState(std::make_unique<Level1>());

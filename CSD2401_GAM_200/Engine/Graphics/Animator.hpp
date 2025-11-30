@@ -1,8 +1,10 @@
 /* Start Header ************************************************************************/
 /*!
 \file       Animator.hpp
-\author     Muhammad Ashfer [100% - 40 lines]
+\author     Muhammad Ashfer [51% - 40 lines]
+			Jonathan Fam [49% - 39 lines]
 \par        m.binafzalkhan@digipen.edu
+			Fam.q@digipen.edu
 \date       October, 3, 2025
 Copyright (C) 2025 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents

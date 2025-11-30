@@ -171,6 +171,38 @@ private:
     float footstepTimer = 0.0f;
     float footstepInterval = 0.4f; // time between footstep sounds
     EntityID cachedPlayerID = 0;
+
+    // ===== ABILITY SYSTEM VARIABLES =====
+    // Wall Kick
+    bool isWallKicking = false;
+    float wallKickTimer = 0.0f;
+    float wallKickCooldownTimer = 0.0f;
+    bool wallKickKeyPressed = false;
+
+    // Ground Pound
+    bool isGroundPounding = false;
+    float groundPoundPauseTimer = 0.0f;
+    bool groundPoundKeyPressed = false;
+
+    // Roll
+    bool isRolling = false;
+    float rollTimer = 0.0f;
+    bool rollKeyPressed = false;
+
+    // Glide
+    bool isGliding = false;
+    float glideCooldownTimer = 0.0f;
+    bool glideKeyPressed = false;
+
+    // Wall Slide
+    bool isWallSliding = false;
+
+    // Double Jump
+    int numberOfJumpsUsed = 0;
+    int maxJumps = 2; // Allow double jump
+
+    // Facing Direction
+    bool isFacingRight = true; // Track which way player is facing
 };
 
 #endif

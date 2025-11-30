@@ -303,6 +303,26 @@ public:
     void GetVelocity(float& x, float& y) const;
 
     /**
+    * @brief Sets the friction coefficient value
+    * @param frictionCoeff New friction coefficient
+    */
+    void SetFrictionCoefficient(float frictionCoeff) {
+        // Find the friction force if it exists
+        int frictionIndex = forcesManager.FindForceByType(ForceType::Friction);
+
+        if (frictionIndex != -1) {
+            // Get the friction force and update its coefficient
+            Force* force = forcesManager.GetForce(frictionIndex);
+            if (force) {
+                FrictionForce* frictionForce = dynamic_cast<FrictionForce*>(force);
+                if (frictionForce) {
+                    frictionForce->frictionCoefficient = frictionCoeff;
+                }
+            }
+        }
+    }
+
+    /**
      * @brief Sets the grounded state
      * @param grounded Whether object is on ground
      */

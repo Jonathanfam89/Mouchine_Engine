@@ -59,7 +59,7 @@ TilemapEditor::TilemapEditor()
     //std::memset(tilesetPath, 0, sizeof(tilesetPath));
     strcpy(tilesetPath, "<empty>");
 
-    // Initialize layer names - 3 layers: Background (0), Main (1), Foreground (2)
+    // Initialize layer names, 3 layers: Background, Main, Foreground
     layerNames = { "Background", "Main", "Foreground" };
     layerVisibility = { true, true, true };
     maxLayers = 3;
@@ -67,7 +67,6 @@ TilemapEditor::TilemapEditor()
     // Create initial tilemap
     CreateNewTilemap(tilemapWidth, tilemapHeight);
 
-    // No auto-load - user must load tileset manually via File -> Load Tileset
     std::cout << "[TilemapEditor] Initialized. Use File -> Load Tileset to load a tileset." << std::endl;
 }
 
@@ -100,7 +99,7 @@ void TilemapEditor::Render()
         // Main content area with two columns
         ImGui::Columns(2, "TilemapColumns", true);
 
-        // Left column - Canvas (80% width)
+        // Left column - Canvas
         static bool init = true;
         if (init)
         {
@@ -123,7 +122,7 @@ void TilemapEditor::Render()
     }
     ImGui::End();
 
-    // Sync visibility state (handle window close button)
+    // Sync visibility state
     isVisible = windowOpen;
 
     // Handle dialogs
@@ -336,7 +335,7 @@ void TilemapEditor::RenderTilemapCanvas()
     // Reserve space for the entire tilemap to enable scrolling
     ImGui::Dummy(ImVec2(totalWidth, totalHeight));
 
-    // Draw tilemap background (gray rectangle exactly the size of the tilemap)
+    // Draw tilemap background
     drawList->AddRectFilled(
         ImVec2(canvasPos.x + canvasOffset.x, canvasPos.y + canvasOffset.y),
         ImVec2(canvasPos.x + canvasOffset.x + totalWidth, canvasPos.y + canvasOffset.y + totalHeight),
@@ -363,7 +362,7 @@ void TilemapEditor::RenderTilemapCanvas()
         isPanning = false;
     }
 
-    // Draw tiles - layer by layer from background to foreground for proper depth
+    // Draw tiles
     for (int layer = 0; layer < maxLayers; ++layer)
     {
         // Skip if layer is not visible
@@ -470,13 +469,12 @@ void TilemapEditor::RenderTilemapCanvas()
                 }
             }
 
-            // Eyedropper on left click - pick tile from canvas
+            // Eyedropper on left click
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && currentTool == Tool::Eyedropper)
             {
                 if (tilemap[currentLayer][gridY][gridX].tileID >= 0)
                 {
                     selectedTileID = tilemap[currentLayer][gridY][gridX].tileID;
-                    // Stay in eyedropper mode so you can pick multiple tiles
                 }
             }
 
@@ -581,7 +579,7 @@ void TilemapEditor::RenderTilesetPanel()
         ImDrawList* drawList = ImGui::GetWindowDrawList();
         ImVec2 palettePos = ImGui::GetCursorScreenPos();
 
-        int tileSize = 24;  // Display size for palette tiles (compact view)
+        int tileSize = 24;  // Display size for palette tiles
         int padding = 2;    // Padding between tiles
 
         // Use the actual tileset grid dimensions (like Tiled does)
@@ -610,7 +608,7 @@ void TilemapEditor::RenderTilesetPanel()
                 ImVec2 tileEnd(tilePos.x + tileSize, tilePos.y + tileSize);
 
                 // Draw actual tile texture or colored placeholder
-                // Draw actual tile from tileset (tileset is always loaded in this function)
+                // Draw actual tile from tileset
                 ImVec2 uv0 = GetTileUV0(tileID);
                 ImVec2 uv1 = GetTileUV1(tileID);
                 drawList->AddImage((void*)(intptr_t)currentTileset.textureID,
@@ -734,7 +732,7 @@ void TilemapEditor::RenderLayersPanel()
         ImGui::Separator();
 
         // Draw layers in reverse order so they appear bottom-to-top visually
-        // but still render in the correct order (0=background on bottom)
+        // but still render in the correct order
         for (int i = maxLayers - 1; i >= 0; --i)
         {
             ImGui::PushID(i);
@@ -761,7 +759,7 @@ void TilemapEditor::RenderLayersPanel()
 
             ImGui::SameLine(ImGui::GetContentRegionAvail().x - 20);
 
-            // Visibility checkbox (eye icon)
+            // Visibility checkbox
             bool visible = layerVisibility[i];
             const char* eyeIcon = visible ? "[O]" : "[X]";
             ImGui::PushStyleColor(ImGuiCol_Text, visible ? ImVec4(0.3f, 0.8f, 0.3f, 1.0f) : ImVec4(0.8f, 0.3f, 0.3f, 1.0f));
@@ -881,8 +879,6 @@ bool TilemapEditor::LoadTileset(const std::string& filepath)
     }
 
 
-    // Use the filepath as the resource name to avoid caching conflicts
-    // This allows switching between different tilesets
     TextureResource* tex = ResourceManager::Instance().LoadTexture(filepath, filepath);
     if (!tex || !tex->IsLoaded())
     {
@@ -1149,7 +1145,7 @@ bool TilemapEditor::IsValidGridPos(int gridX, int gridY) const
 }
 
 /**
- * @brief Get UV0 for a tile (top-left corner in texture space)
+ * @brief Get UV0 for a tile
  */
 ImVec2 TilemapEditor::GetTileUV0(int tileID) const
 {
@@ -1166,7 +1162,7 @@ ImVec2 TilemapEditor::GetTileUV0(int tileID) const
     float v0 = static_cast<float>(row) / currentTileset.tilesPerColumn;
     float v1 = static_cast<float>(row + 1) / currentTileset.tilesPerColumn;
 
-    // Always flip individual tiles to keep them right-side up when default (unchecked)
+    // Always flip individual tiles to keep them right-side up when default
     if (!flipTilesetVertical)
     {
         return ImVec2(u0, v1);
@@ -1176,14 +1172,14 @@ ImVec2 TilemapEditor::GetTileUV0(int tileID) const
 }
 
 /**
- * @brief Get UV1 for a tile (bottom-right corner in texture space)
+ * @brief Get UV1 for a tile
  */
 ImVec2 TilemapEditor::GetTileUV1(int tileID) const
 {
     int col = tileID % currentTileset.tilesPerRow;
     int row = tileID / currentTileset.tilesPerRow;
 
-    // Flip row order when NOT enabled (inverted logic - flip is the default correct behavior)
+    // Flip row order when NOT enabled
     if (!flipTilesetVertical)
     {
         row = currentTileset.tilesPerColumn - 1 - row;
@@ -1193,7 +1189,7 @@ ImVec2 TilemapEditor::GetTileUV1(int tileID) const
     float v0 = static_cast<float>(row) / currentTileset.tilesPerColumn;
     float v1 = static_cast<float>(row + 1) / currentTileset.tilesPerColumn;
 
-    // Always flip individual tiles to keep them right-side up when default (unchecked)
+    // Always flip individual tiles to keep them right-side up when default
     if (!flipTilesetVertical)
     {
         return ImVec2(u1, v0);

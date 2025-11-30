@@ -21,6 +21,24 @@ namespace GameScripts
     {
         public void OnStart()
         {
+            // Create the animated player object
+            CSharpScript.GameObject.CreateAnimatedImage(
+                "Hero",
+                0, 0,
+                100, 100,
+                "../Assets/Mouch_idle.png",
+                1, 2,
+                0, 0, 0, 1,
+                12.0f,
+                (int)CSharpScript.CollisionLayer.Player,
+                true,
+                false,
+                true
+            );
+
+            // Attach the player movement script to the Hero
+            CSharpScript.Scripting.AttachScript("Hero", "PlayerMovement");
+
             // Create the red square
             CSharpScript.GameObject.CreateShape(
                 "RedSquare",
@@ -43,38 +61,25 @@ namespace GameScripts
                 false, false, false
             );
 
+            // Create the ground object
+            CSharpScript.GameObject.CreateShape(
+                "Ground",
+                (int)CSharpScript.ShapeType.Square,
+                0, -200,
+                1000, 50,
+                0.5f, 0.5f, 0.5f, 1.0f,
+                (int)CSharpScript.CollisionLayer.Ground,
+                true, true, false
+            );
+            Components.AddCollisionComponent("Hero");
+
             // Attach the RaycastTest script to the RedSquare
             CSharpScript.Scripting.AttachScript("RedSquare", "RaycastTest");
         }
 
         public void OnUpdate(float deltaTime)
         {
-            if (Input.GetKeyPressed(Input.KeyCode.K))
-            {
-                CSharpScript.Debug.Log("button Pressed");
-            }
-            else if (Input.GetKeyReleased(Input.KeyCode.K))
-            {
-                CSharpScript.Debug.Log("Key Have Been Released");
-            }
-            else if (Input.GetKeyHeld(Input.KeyCode.K))
-            {
-                CSharpScript.Debug.Log("Key Have Been holding");
-            }
-            if (Input.GetKeyPressed(Input.KeyCode.J))
-            {
-				float lerpResult = Utils.MathfLerp(0.0f, 10.0f, 0.5f);
-				CSharpScript.Debug.Log("Lerp(0, 10, 0.5) = " + lerpResult);
-
-				float inverseLerpResult = Utils.MathfInverseLerp(0.0f, 10.0f, 5.0f);
-				CSharpScript.Debug.Log("InverseLerp(0, 10, 5) = " + inverseLerpResult);
-
-				float floatClampResult = Utils.MathfClamp(15.0f, 0.0f, 10.0f);
-				CSharpScript.Debug.Log("FloatClamp(15, 0, 10) = " + floatClampResult);
-
-				int intClampResult = Utils.MathiClamp(15, 0, 10);
-				CSharpScript.Debug.Log("IntClamp(15, 0, 10) = " + intClampResult);
-			}
+ 
         }
 
         public void OnDestroy()

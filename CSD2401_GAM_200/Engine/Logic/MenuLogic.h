@@ -20,6 +20,9 @@ Technology is prohibited.
 #include "transform.h"
 #include "MathLib.h"
 #include "GraphicsSystem.h"
+#include "LevelEditor.h"
+
+class LevelEditor;
 class GraphicsSystem;
 /**
  * @brief System responsible for handling menu logic and button interactions.

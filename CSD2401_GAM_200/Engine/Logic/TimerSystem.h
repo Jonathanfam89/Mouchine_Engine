@@ -1,4 +1,18 @@
-#pragma once
+/* Start Header ************************************************************************/
+/*!
+\file       TimerSystem.h
+\author     Jonathan Fam Qian Wei [100% - 38 lines]
+\par        Fam.q@digipen.edu
+\date       Novenber, 15, 2025
+
+Copyright (C) 2025 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+/* End Header **************************************************************************/
+
+
 #pragma once
 #include "System.h"
 #include <vector>

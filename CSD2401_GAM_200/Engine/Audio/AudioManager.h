@@ -50,6 +50,8 @@ public:
     void SetSoundPitch(const std::string& soundName, float pitch);
     void StopSound(const std::string& channelName);
     void StopAllSounds();
+    void PauseAllSounds(bool pause); // Pause or resume all sounds
+    void ToggleMute(); // Toggle mute for all audio
     void ReloadSound(const std::string& soundName);
 
     void ToggleMasterMute();

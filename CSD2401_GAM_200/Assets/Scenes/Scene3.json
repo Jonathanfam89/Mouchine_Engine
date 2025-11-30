@@ -122,6 +122,94 @@
             "endRow": 12,
             "endCol": 7,
             "fps": 16.0
+          },
+          {
+            "name": "Glide_L",
+            "filepath": "../Assets/spritesheet_L.png",
+            "rows": 13,
+            "cols": 10,
+            "startRow": 2,
+            "startCol": 0,
+            "endRow": 2,
+            "endCol": 2,
+            "fps": 8.0
+          },
+          {
+            "name": "Glide_R",
+            "filepath": "../Assets/spritesheet_R.png",
+            "rows": 13,
+            "cols": 10,
+            "startRow": 2,
+            "startCol": 0,
+            "endRow": 2,
+            "endCol": 2,
+            "fps": 8.0
+          },
+          {
+            "name": "Roll_L",
+            "filepath": "../Assets/spritesheet_L.png",
+            "rows": 13,
+            "cols": 10,
+            "startRow": 9,
+            "startCol": 0,
+            "endRow": 9,
+            "endCol": 5,
+            "fps": 12.0
+          },
+          {
+            "name": "Roll_R",
+            "filepath": "../Assets/spritesheet_R.png",
+            "rows": 13,
+            "cols": 10,
+            "startRow": 9,
+            "startCol": 0,
+            "endRow": 9,
+            "endCol": 5,
+            "fps": 12.0
+          },
+          {
+            "name": "GroundPound_L",
+            "filepath": "../Assets/spritesheet_L.png",
+            "rows": 13,
+            "cols": 10,
+            "startRow": 10,
+            "startCol": 4,
+            "endRow": 10,
+            "endCol": 9,
+            "fps": 10.0
+          },
+          {
+            "name": "GroundPound_R",
+            "filepath": "../Assets/spritesheet_R.png",
+            "rows": 13,
+            "cols": 10,
+            "startRow": 10,
+            "startCol": 4,
+            "endRow": 10,
+            "endCol": 9,
+            "fps": 10.0
+          },
+          {
+            "name": "Dash_L",
+            "filepath": "../Assets/spritesheet_L.png",
+            "rows": 13,
+            "cols": 10,
+            "startRow": 4,
+            "startCol": 0,
+            "endRow": 4,
+            "endCol": 2,
+            "fps": 10.0
+          },
+          {
+            "name": "Dash_R",
+            "filepath": "../Assets/spritesheet_R.png",
+            "rows": 13,
+            "cols": 10,
+            "startRow": 4,
+            "startCol": 0,
+            "endRow": 4,
+            "endCol": 2,
+            "fps": 10.0
           }
         ]
       },
@@ -526,6 +614,29 @@
       "children": []
     },
     {
+      "name": "LevelTimerText",
+      "localID": 10,
+      "parentID": -1,
+      "active": true,
+
+      "TextComponent": {
+        "fontPath": "../Assets/FrederickatheGreat-Regular.ttf",
+        "fontSize":48,
+        "text": "00:00",
+        "color": [0.0, 0.0, 0.0, 1.0],
+        "scale": 1.0,
+        "screenSpace": true
+      },
+
+      "TransformComponent": {
+        "pos": [50, 630],
+        "scale": [1, 1],
+        "rotation": 0.0
+      },
+
+      "children": []
+    },
+    {
       "name": "Text FPS",
       "TransformComponent": {
         "pos": [100, 100],
@@ -543,13 +654,34 @@
         "scale": 1.0,
         "screenSpace": true
       }
+    },
+    {
+      "name": "WinZone",
+      "localID": 11,
+      "parentID": 4294967295,
+      "active": true,
+      "TransformComponent": {
+        "pos": [900.0, 200.0],
+        "scale": [100.0, 100.0],
+        "rotation": 0.0
+      },
+      "RenderComponent": {
+        "shapeType": "Square",
+        "texturePath": "",
+        "color": [0.0, 1.0, 0.0, 0.8]
+      },
+      "ColliderComponent": {
+        "shape": "Square",
+        "layer": "Default"
+      },
+      "children": []
     }
   ],
   "AudioManager": {
     "sounds": [
       {
         "name": "bgm",
-        "filepath": "../Assets/audio/level_1.wav",
+        "filepath": "../Assets/audio/sneaky_bgm.wav",
         "loop": true,
         "volume": 0.20000000298023224,
         "pitch": 1.0,

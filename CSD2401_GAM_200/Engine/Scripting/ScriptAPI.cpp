@@ -1,7 +1,7 @@
 /* Start Header ************************************************************************/
 /*!
 \file       ScriptAPI.cpp
-\author     Jonathan Fam Qian Wei [100% - 386 lines]
+\author     Jonathan Fam Qian Wei [100% - 1,153 lines]
 \par        Fam.q@digipen.edu
 \date       Novenber, 7, 2025
 
@@ -310,6 +310,38 @@ namespace API
         return vec2(0.0f, 0.0f); // Return a default value if not found
     }
 
+    void SetFriction(const std::string& objectName, float val)
+    {
+        auto& factory = GameObjectFactory::Instance();
+
+        GameObject* obj = factory.FindGameObject(objectName);
+
+        if (obj)
+        {
+            auto* physics = obj->GetComponent<PhysicsComponent>();
+            if (physics)
+            {
+                physics->SetFrictionCoefficient(val);
+            }
+        }
+    }
+
+    void SetMass(const std::string&objectName, float val)
+    {
+        auto& factory = GameObjectFactory::Instance();
+
+        GameObject* obj = factory.FindGameObject(objectName);
+
+        if (obj)
+        {
+            auto* physics = obj->GetComponent<PhysicsComponent>();
+            if (physics)
+            {
+                physics->SetMass(val);
+            }
+        }
+    }
+
 
 #pragma endregion
 
@@ -439,6 +471,124 @@ namespace API
 
 #pragma endregion
 
+#pragma region Text
+    void SetText(const std::string& objectName, const std::string& text)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            auto* textComp = obj->GetComponent<TextComponent>();
+            if (textComp)
+            {
+                textComp->SetText(text);
+            }
+        }
+    }
+
+    std::string GetText(const std::string& objectName)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            auto* textComp = obj->GetComponent<TextComponent>();
+            if (textComp)
+            {
+                return textComp->GetText();
+            }
+        }
+        return "";
+    }
+
+    void SetTextColor(const std::string& objectName, vec4 color)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            auto* textComp = obj->GetComponent<TextComponent>();
+            if (textComp)
+            {
+                textComp->SetColor(color);
+            }
+        }
+    }
+
+    vec4 GetTextColor(const std::string& objectName)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            auto* textComp = obj->GetComponent<TextComponent>();
+            if (textComp)
+            {
+                return textComp->GetColor();
+            }
+        }
+        return vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    }
+
+    void SetTextScale(const std::string& objectName, float scale)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            auto* textComp = obj->GetComponent<TextComponent>();
+            if (textComp)
+            {
+                textComp->SetScale(scale);
+            }
+        }
+    }
+
+    float GetTextScale(const std::string& objectName)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            auto* textComp = obj->GetComponent<TextComponent>();
+            if (textComp)
+            {
+                return textComp->GetScale();
+            }
+        }
+        return 1.0f;
+    }
+
+    void SetTextScreenSpace(const std::string& objectName, bool screenSpace)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            auto* textComp = obj->GetComponent<TextComponent>();
+            if (textComp)
+            {
+                textComp->SetScreenSpace(screenSpace);
+            }
+        }
+    }
+
+    bool GetTextScreenSpace(const std::string& objectName)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            auto* textComp = obj->GetComponent<TextComponent>();
+            if (textComp)
+            {
+                return textComp->isScreenSpace();
+            }
+        }
+        return true;
+    }
+#pragma endregion
+
 #pragma region Components
 
     void AddTransformComponent(const std::string &objectName)
@@ -521,6 +671,23 @@ namespace API
         }
     }
 
+    void AddTextComponent(const std::string& objectName, const std::string& fontPath, unsigned int fontSize, const std::string& text, vec4 color, bool screenSpace)
+    {
+        auto& factory = GameObjectFactory::Instance();
+        GameObject* obj = factory.FindGameObject(objectName);
+        if (obj)
+        {
+            if (!obj->GetComponent<TextComponent>())
+            {
+                obj->AddComponent<TextComponent>(fontPath.c_str(), fontSize, text, color, screenSpace);
+            }
+            else
+            {
+                throw std::runtime_error("Attempted to add duplicate TextComponent to GameObject: " + objectName);
+            }
+        }
+    }
+
     void SetComponentActive(const std::string& objectName, const std::string& componentName, bool active)
     {
         auto& factory = GameObjectFactory::Instance();
@@ -542,6 +709,10 @@ namespace API
             else if (componentName == "Collider")
             {
                 if (auto* comp = obj->GetComponent<ColliderComponent>()) comp->SetEnabled(active);
+            }
+            else if (componentName == "Text")
+            {
+                if (auto* comp = obj->GetComponent<TextComponent>()) comp->SetEnabled(active);
             }
             else
             {
@@ -571,6 +742,10 @@ namespace API
             else if (componentName == "Collider")
             {
                 obj->RemoveComponent<ColliderComponent>();
+            }
+            else if (componentName == "Text")
+            {
+                obj->RemoveComponent<TextComponent>();
             }
             else
             {

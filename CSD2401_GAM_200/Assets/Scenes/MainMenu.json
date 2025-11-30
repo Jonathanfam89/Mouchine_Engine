@@ -18,7 +18,7 @@
       },
       "RenderComponent": {
         "shapeType": "Square",
-        "texturePath": "../Assets/MenuBackground.png",
+        "texturePath": "../Assets/Menu_No_Title.png",
         "color": [
           1.0,
           1.0,
@@ -27,7 +27,53 @@
         ],
         "layer": 0
       },
-      "children": []
+      "children": [
+        {
+          "name": "Title_GameObject",
+          "localID": 4,
+          "parentID": 3,
+          "active": true,
+          "TransformComponent": {
+            "pos": [
+              0.0,
+              300.0
+            ],
+            "scale": [
+              900.0,
+              900.0
+            ],
+            "rotation": 0.0
+          },
+          "RenderComponent": {
+            "shapeType": "Square",
+            "texturePath": "../Assets/title_spritesheet.png",
+            "color": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "layer": 0
+          },
+          "Spritesheet": {
+            "defaultAnimation": "Title_Animation",
+            "animations": [
+              {
+                "name": "Title_Animation",
+                "filepath": "../Assets/title_spritesheet.png",
+                "rows": 3,
+                "cols": 4,
+                "startRow": 0,
+                "startCol": 0,
+                "endRow": 2,
+                "endCol": 3,
+                "fps": 6.0
+              }
+            ]
+          },
+          "children": []
+        }
+      ]
     },
     {
       "name": "MainCamera",
@@ -50,8 +96,14 @@
     {
       "name": "Text FPS",
       "TransformComponent": {
-        "pos": [100, 100],
-        "scale": [1, 1],
+        "pos": [
+          100,
+          100
+        ],
+        "scale": [
+          1,
+          1
+        ],
         "rotation": 0.0
       },
       "RenderComponent": {
@@ -61,7 +113,12 @@
         "fontPath": "../Assets/FrederickatheGreat-Regular.ttf",
         "fontSize": 50,
         "text": "FPS",
-        "color": [1.0, 1.0, 1.0, 1.0],
+        "color": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
         "scale": 1.0,
         "screenSpace": true
       }
@@ -382,7 +439,7 @@
     "sounds": [
       {
         "name": "MainMenuBGM",
-        "filepath": "../Assets/audio/menu_loop.wav",
+        "filepath": "../Assets/audio/jazz_bgm.wav",
         "loop": true,
         "volume": 0.5,
         "pitch": 1.0,

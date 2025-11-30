@@ -182,7 +182,8 @@ void ImGuiSystem::Initialize()
     // TODO make this serialisable, so it remembers which one to load
     std::string layoutPath = LayoutsFilePath + "DefaultLayout.ini";
     ImGuiIO &io = ImGui::GetIO();
-    io.IniFilename = layoutPath.c_str();
+    //io.IniFilename = layoutPath.c_str();
+    io.IniFilename = nullptr;
     ImGui::LoadIniSettingsFromDisk(layoutPath.c_str());
 
     // Imgui flags
@@ -954,6 +955,10 @@ void ImGuiSystem::Hierarchy_GameObjectTree_Renderer(GameObject *obj, int depth, 
         SetSelectedGameObject(id);
     }
 
+    EntityID deleteID{0};                                                        // fast check if game object should be deleted
+    if (isHoveringOverViewport && selectedGameObjectID != 0 && ImGui::IsKeyPressed(ImGuiKey_Delete))
+        deleteID = selectedGameObjectID;
+
     // Right Click event (for specific GO in hierarchy)
     if (ImGui::BeginPopupContextItem())
     {
@@ -985,57 +990,58 @@ void ImGuiSystem::Hierarchy_GameObjectTree_Renderer(GameObject *obj, int depth, 
         }
 
         if (ImGui::MenuItem("Delete"))
-        {
-            // TODO - block out the deleting of main camera - crashes the game
+            deleteID = id;
 
-            // Record Undo Entries - Undo Delete
-            LevelEditor* editor = CORE->GetLevelEditor();
-            GameObject* Gameobj = p_factory.GetGameObject(id);
-
-            {
-                GameObject* p = Gameobj->GetParent();
-                if (p) {
-                    auto kids = p->GetAllChildren();                  
-                }
-            }
-            if (Gameobj)
-            {             
-                EditorUndoCommand undocmd;
-                undocmd.action = EditorUndoCommand::ActionType::ObjectDeleted;
-                undocmd.entityID = id;
-                //cmd.beforeState = editor->SerialiseGameObject(obj);
-                undocmd.beforeJson = Serialization::SerializeGameObject(Gameobj);
-
-                // Store Parent
-                GameObject* parent = obj->GetParent();
-                undocmd.parentID = parent ? parent->GetID() : 0;
-
-                if (parent) // Get child order
-                {
-                    for (GameObject* c : parent->GetAllChildren()) 
-                        undocmd.siblingOrderIDs.push_back(c->GetID()); // Order of children
-                }
-                else { // Get root order
-                    auto& allObjs = GameObjectFactory::Instance().GetAllGameObjects();
-                    for (auto& u : allObjs) {
-                        undocmd.rootOrderIDs.push_back(u->GetID()); // Order of root objects
-                    }
-                }
-
-                // Store Children
-                for (GameObject* c : Gameobj->GetAllChildren())
-                    undocmd.childIDs.push_back(c->GetID());
-
-                editor->RecordUndo(undocmd);
-
-                p_factory.DestroyAllRelatedGameObjects(id);  // handles cases for both individual GOs and parented GOs
-
-                // Clear selection if it was selected
-                if (selectedGOID == id)
-                    ResetSelectedGameObject();
-            }
-        }
         ImGui::EndPopup();
+    }
+
+    if (deleteID)
+    {
+        // TODO - block out the deleting of main camera - crashes the game
+
+        // Record Undo Entries - Undo Delete
+        if (factory.GetGameObject(deleteID)->GetName() == "MainCamera")
+            return;
+
+        LevelEditor* editor = CORE->GetLevelEditor();
+        GameObject* gameObj = factory.GetGameObject(deleteID);
+
+        if (gameObj)
+        {       
+            EditorUndoCommand undocmd;
+            undocmd.action = EditorUndoCommand::ActionType::ObjectDeleted;
+            undocmd.entityID = deleteID;
+            //cmd.beforeState = editor->SerialiseGameObject(obj);
+            undocmd.beforeJson = Serialization::SerializeGameObject(gameObj);
+
+            // Store Parent
+            GameObject* parent = gameObj->GetParent();
+            undocmd.parentID = parent ? parent->GetID() : 0;
+
+            if (parent) // Get child order
+            {
+                for (GameObject* c : parent->GetAllChildren())
+                    undocmd.siblingOrderIDs.push_back(c->GetID()); // Order of children
+            }
+            else { // Get root order
+                auto& allObjs = GameObjectFactory::Instance().GetAllGameObjects();
+                for (auto& u : allObjs) {
+                    undocmd.rootOrderIDs.push_back(u->GetID()); // Order of root objects
+                }
+            }
+
+            // Store Children
+            for (GameObject* c : gameObj->GetAllChildren())
+                undocmd.childIDs.push_back(c->GetID());
+
+            editor->RecordUndo(undocmd);
+
+            factory.DestroyAllRelatedGameObjects(deleteID);  // handles cases for both individual GOs and parented GOs
+
+            // Clear selection if it was selected
+            if (selectedGameObjectID == deleteID)
+                ResetSelectedGameObject();
+        }
     }
 
     // Render all children of opened parent GO
@@ -2266,7 +2272,6 @@ void ImGuiSystem::RenderPropertyEditor()
         }
     }
 
-    // Collider component
     // Collider component
     if (auto* collider = obj->GetComponent<ColliderComponent>())
     {
