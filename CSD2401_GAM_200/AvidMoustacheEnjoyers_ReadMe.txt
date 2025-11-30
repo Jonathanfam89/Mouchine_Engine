@@ -22,20 +22,26 @@ Copyright (c) 2025 DigiPen Institute of Technology
 Player Controls
 
 - Movement
+  W			Glide (Hold and is the air)
   A                    	Walk Left
   D                   	Walk Right
   Spacebar             	Jump
+  J			Dash
+  K			Roll
+  L			Wall Kick
 
 System
 
 - IMGUI
   Left click     	Control IMGUI Windows
-  P			Turn on/off IMGUI Windows
+  Ctrl + T		Tile Map Visibility 
+  
 
 - Debug
   F1                    Toggle on/off debug mode
   F2			Able/Disable step by step mode
   F3			When in step mode, advances frame by frame
+  F4			FPS counter in game 
 
 - Batch Rendering
   1                  	Spawn 2500 entities on screen
@@ -46,12 +52,13 @@ System
 
 - Game State
   ESC			Quit the game
+  P/Esc                 Pause Menu
 
 ===========================================================================================================
 
 Required folders and files :
 
-Folders : Build, Assets, Engine, Extern, Game, Logs, Shaders, cmake, CMakeFiles
+Folders : Assets, Engine, Extern, Game, Logs, Shaders, cmake, CMakeFiles
 Files 	: config
 
 Once you verified you possess all the required folders and files, run the "script_build_and_run" batch file.

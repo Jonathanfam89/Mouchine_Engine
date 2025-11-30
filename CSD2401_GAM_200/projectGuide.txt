@@ -1,0 +1,50 @@
+Engine
+FreeType
+Game 
+glm
+imgui
+libglew_shared
+libglew_static
+stb_image
+Mono
+
+we have 8 project in the solution and we touched Game and Engine project and GameScripts while the rest is the library that are Pre-Complied
+we first need to make sure we have the Assets,Logs,Engine,Game,cmake,Shaders,extern, scripts and Mono are present before running the script_build.
+after running cmake/ build.bat file set game as the set up project and build the project accordingly 
+or you can use the script_run to run the debug build .exe
+
+as you edit any .cs files you just need to build the project again for the c# project to take affect the cmake and the .csproj will add the c# dll to the engine
+
+===========================================================================================================
+
+Player Controls
+
+- Movement
+  A                    	Walk Left
+  D                   	Walk Right
+  Spacebar             	Jump
+
+System
+
+- IMGUI
+  Left click     	Control IMGUI Windows
+  P			Turn on/off IMGUI Windows
+
+- Debug
+  F1                    Toggle on/off debug mode
+  F2			Stops the Game Frame and start of step by step framing / end the step by step frame
+  F3			Takes the next step in the physics frame
+
+- Batch Rendering
+  1                  	Spawn 2500 entities on screen
+  2                   	Destroy all entities
+
+- Audio
+  M			Pause the BGM sound
+
+- Game State
+  ESC			Quit the game
+
+===========================================================================================================
+
+we set the warning level to 4 via cmake as well for both the engine and game project
