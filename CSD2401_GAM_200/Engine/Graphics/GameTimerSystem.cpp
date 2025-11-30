@@ -13,6 +13,7 @@ void GameTimerSystem::Initialize()
 
 void GameTimerSystem::Update(float dt)
 {
+#ifdef USE_IMGUI
     LevelEditor* editor = CORE ? CORE->GetLevelEditor() : nullptr;
     if (!editor)
     {
@@ -43,6 +44,7 @@ void GameTimerSystem::Update(float dt)
     // only decrease time in play mode
     if (mode == EditorMode::Play)
     {
+#endif
         remainingTime -= dt;
 
         // check for lose condition aka time ran out
@@ -68,7 +70,9 @@ void GameTimerSystem::Update(float dt)
             lastDisplayedSeconds = totalSeconds;
             UpdateText(totalSeconds);
         }
+#ifdef USE_IMGUI
     }
+#endif
 }
 
 void GameTimerSystem::ResetTimer()

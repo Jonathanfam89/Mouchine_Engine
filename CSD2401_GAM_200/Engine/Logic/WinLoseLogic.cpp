@@ -46,6 +46,7 @@ void WinLoseLogicSystem::Update(float dt)
     }
 
     // check if in play mode
+#ifdef USE_IMGUI
     LevelEditor* editor = CORE ? CORE->GetLevelEditor() : nullptr;
     if (!editor)
     {
@@ -61,6 +62,7 @@ void WinLoseLogicSystem::Update(float dt)
             std::cout << "[WinZone] Not in Play mode. Current mode: " << (int)mode << std::endl;
         return;
     }
+#endif
 
     if (isWaitingForWin)
     {

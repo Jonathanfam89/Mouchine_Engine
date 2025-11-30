@@ -162,8 +162,9 @@ public:
 	 * @brief Sets a pointer to the LevelEditor instance for camera control.
 	 * @param editor Pointer to the LevelEditor object.
 	 */
+#ifdef USE_IMGUI
 	void SetLevelEditor(class LevelEditor* editor) { levelEditor = editor; }
-
+#endif
 	/**
 	 * @brief Executes all draw calls for the accumulated render batches.
 	 * Uploads vertex and index data and issues GL_TRIANGLES draw calls.
@@ -261,8 +262,9 @@ private:
 	mat4 vp;								// Current view-projection matrix (camera transform).
 	bool debugMode = false;					// Flag to control rendering of debug shapes (lines, outlines).
 	bool editorMode;						// Flag to indicate if rendering should target the FBO (true) or the screen (false).
+#ifdef USE_IMGUI
 	class LevelEditor* levelEditor = nullptr; // Pointer to the level editor for camera manipulation when in editor mode.
-
+#endif
 	GLFWcursor* normalCursor = nullptr;
 	GLFWcursor* clickCursor = nullptr;
 

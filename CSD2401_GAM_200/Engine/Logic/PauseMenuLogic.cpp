@@ -14,6 +14,7 @@ void PauseMenuLogicSystem::Initialize()
 void PauseMenuLogicSystem::Update(float dt)
 {
     // check if we're in play mode
+#ifdef USE_IMGUI
     LevelEditor* editor = CORE ? CORE->GetLevelEditor() : nullptr;
     if (!editor || editor->GetEditorMode() != EditorMode::Play)
     {
@@ -24,7 +25,7 @@ void PauseMenuLogicSystem::Update(float dt)
         }
         return;
     }
-
+#endif
     // update pause menu position to follow camera
     if (isPauseMenuActive || hasCreatedUI)
     {
