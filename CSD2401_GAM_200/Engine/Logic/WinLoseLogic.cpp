@@ -1,3 +1,17 @@
+/* Start Header ************************************************************************/
+/*!
+\file       WinLoseLogic.cpp
+\author     Leck Xin Yee [100% - 463 lines]
+\par        xinyee.leck@digipen.edu
+\date       November, 29, 2025
+
+Copyright (C) 2025 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+/* End Header **************************************************************************/
+
 #include "WinLoseLogic.h"
 #include "LevelEditor.h"
 #include "CameraManager.h"
@@ -7,6 +21,9 @@
 #include "MathLib.h"
 #include <iostream>
 
+/**
+ * @brief Initializes all win/lose state variables.
+ */
 void WinLoseLogicSystem::Initialize()
 {
     hasPlayerWon = false;
@@ -24,6 +41,9 @@ void WinLoseLogicSystem::SetCurrentScene(const std::string& scenePath)
     currentScenePath = scenePath;
 }
 
+/**
+ * @brief Updates the win/lose logic, UI screens, and button interactions.
+ */
 void WinLoseLogicSystem::Update(float dt)
 {
     static int totalFrames = 0;
@@ -152,6 +172,9 @@ void WinLoseLogicSystem::Update(float dt)
     CheckWinCondition();
 }
 
+/**
+ * @brief Checks whether the player has collided with the win zone.
+ */
 void WinLoseLogicSystem::CheckWinCondition()
 {
     auto& factory = GameObjectFactory::Instance();
@@ -223,6 +246,9 @@ void WinLoseLogicSystem::CheckWinCondition()
 }
 
 // ============ WIN ============
+/**
+ * @brief Creates win UI elements and pauses the game.
+ */
 void WinLoseLogicSystem::TriggerWin()
 {
     // pause the game immediately to stop timer and gameplay
@@ -290,6 +316,9 @@ void WinLoseLogicSystem::TriggerWin()
     hasCreatedWinScreen = true;
 }
 
+/**
+ * @brief Handles hover and click states for win screen buttons.
+ */
 void WinLoseLogicSystem::HandleWinScreenButtons()
 {
     double mouseX = InputManager::GetMouseWorldX();
@@ -357,6 +386,9 @@ void WinLoseLogicSystem::HandleWinScreenButtons()
     }
 }
 
+/**
+ * @brief Deletes win UI elements and resets win state.
+ */
 void WinLoseLogicSystem::DestroyWinScreen()
 {
     if (!hasCreatedWinScreen)
@@ -389,6 +421,9 @@ void WinLoseLogicSystem::DestroyWinScreen()
     std::cout << "[WinZone] Win screen destroyed and state reset" << std::endl;
 }
 
+/**
+ * @brief Checks if mouse cursor is overlapping a UI button.
+ */
 bool WinLoseLogicSystem::IsMouseOver(GameObject* button, double mouseX, double mouseY)
 {
     if (!button) return false;
@@ -400,6 +435,9 @@ bool WinLoseLogicSystem::IsMouseOver(GameObject* button, double mouseX, double m
     return IsAreaClicked(tx->posX, tx->posY, tx->scaleX, tx->scaleY, mouseX, mouseY);
 }
 
+/**
+ * @brief Changes button texture depending on hover state.
+ */
 void WinLoseLogicSystem::SetButtonTexture(std::string buttonName, bool isHovered)
 {
     auto& factory = GameObjectFactory::Instance();
@@ -428,7 +466,9 @@ void WinLoseLogicSystem::SetButtonTexture(std::string buttonName, bool isHovered
 }
 
 // ============ LOSE ============
-
+/**
+ * @brief Creates lose UI elements and pauses the game.
+ */
 void WinLoseLogicSystem::TriggerLose()
 {
     // pause the game immediately to stop timer and gameplay
@@ -497,6 +537,9 @@ void WinLoseLogicSystem::TriggerLose()
     hasCreatedLoseScreen = true;
 }
 
+/**
+ * @brief Handles hover and click states for lose screen buttons.
+ */
 void WinLoseLogicSystem::HandleLoseScreenButtons()
 {
     double mouseX = InputManager::GetMouseWorldX();
@@ -568,6 +611,9 @@ void WinLoseLogicSystem::HandleLoseScreenButtons()
     }
 }
 
+/**
+ * @brief Deletes lose UI elements and resets lose state.
+ */
 void WinLoseLogicSystem::DestroyLoseScreen()
 {
     if (!hasCreatedLoseScreen)

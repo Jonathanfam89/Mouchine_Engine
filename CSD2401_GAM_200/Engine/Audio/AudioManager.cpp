@@ -1,3 +1,17 @@
+/* Start Header ************************************************************************/
+/*!
+\file       AudioManager.cpp
+\author     Leck Xin Yee [100% - 308 lines]
+\par        xinyee.leck@digipen.edu
+\date       November, 29, 2025
+
+Copyright (C) 2025 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+/* End Header **************************************************************************/
+
 #include "AudioManager.h"
 #include "Message.h"
 
@@ -21,6 +35,9 @@ namespace
     }
 }
 
+/**
+ * @brief Constructor that sets default category volumes.
+ */
 AudioManager::AudioManager(AudioEngine* engine) : audioEngine(engine), m_isMuted(false)
 {
     // default category volumes
@@ -30,16 +47,25 @@ AudioManager::AudioManager(AudioEngine* engine) : audioEngine(engine), m_isMuted
     categoryVolumes["ambient"] = 1.0f;
 }
 
+/**
+ * @brief Destructor that stops all sounds.
+ */
 AudioManager::~AudioManager()
 {
     StopAllSounds();
 }
 
+/**
+ * @brief Returns whether the AudioManager is currently muted.
+ */
 bool AudioManager::IsMuted() const
 {
     return m_isMuted;
 }
 
+/**
+ * @brief Loads a single sound after validating extension.
+ */
 bool AudioManager::LoadSound(const SoundData& sound) 
 {
     if (!audioEngine) 
@@ -65,6 +91,9 @@ bool AudioManager::LoadSound(const SoundData& sound)
     return success;
 }
 
+/**
+ * @brief Loads every sound stored in the sound database.
+ */
 bool AudioManager::LoadAllSounds() 
 {
     if (!audioEngine) 
@@ -94,6 +123,9 @@ bool AudioManager::LoadAllSounds()
     return allSuccessful;
 }
 
+/**
+ * @brief Triggers an audio event mapped to a sound.
+ */
 void AudioManager::TriggerEvent(const std::string& eventName) 
 {
     auto it = eventToSoundMap.find(eventName);
@@ -107,6 +139,9 @@ void AudioManager::TriggerEvent(const std::string& eventName)
     }
 }
 
+/**
+ * @brief Plays a sound and applies category volume + pitch + mute rules.
+ */
 void AudioManager::PlaySound(const std::string& soundName, const std::string& channelName) 
 {
     if (!audioEngine) 
@@ -145,6 +180,9 @@ void AudioManager::PlaySound(const std::string& soundName, const std::string& ch
     audioEngine->setPitch(channel, sound.pitch <= 0.0f ? 1.0f : sound.pitch);
 }
 
+/**
+ * @brief Sets base volume for a sound and applies category scaling.
+ */
 void AudioManager::SetSoundVolume(const std::string& soundName, float volume)
 {
     auto it = soundDatabase.find(soundName);
@@ -165,6 +203,9 @@ void AudioManager::SetSoundVolume(const std::string& soundName, float volume)
     audioEngine->setVolume(channel, finalVolume);
 }
 
+/**
+ * @brief Sets volume for an entire category and updates active channels.
+ */
 void AudioManager::SetCategoryVolume(const std::string& category, float volume) 
 {
     float clampedVolume = std::max(0.0f, std::min(1.0f, volume));
@@ -195,6 +236,9 @@ void AudioManager::SetCategoryVolume(const std::string& category, float volume)
     }
 }
 
+/**
+ * @brief Toggles master mute and restores previous category volumes.
+ */
 void AudioManager::ToggleMasterMute()
 {
     m_isMuted = !m_isMuted;
@@ -243,6 +287,9 @@ void AudioManager::ToggleMasterMute()
     }
 }
 
+/**
+ * @brief Updates the pitch of a sound and its active channel.
+ */
 void AudioManager::SetSoundPitch(const std::string& soundName, float pitch)
 {
     auto it = soundDatabase.find(soundName);
@@ -262,8 +309,9 @@ void AudioManager::SetSoundPitch(const std::string& soundName, float pitch)
     audioEngine->setPitch(channel, pitch);
 }
 
-
-
+/**
+ * @brief Stops a specific channel.
+ */
 void AudioManager::StopSound(const std::string& channelName) 
 {
     if (audioEngine) 
@@ -272,6 +320,9 @@ void AudioManager::StopSound(const std::string& channelName)
     }
 }
 
+/**
+ * @brief Stops all sound channels.
+ */
 void AudioManager::StopAllSounds()
 {
     if (audioEngine)
@@ -280,6 +331,9 @@ void AudioManager::StopAllSounds()
     }
 }
 
+/**
+ * @brief Pauses or resumes all sound channels.
+ */
 void AudioManager::PauseAllSounds(bool pause)
 {
     if (audioEngine)
@@ -288,6 +342,9 @@ void AudioManager::PauseAllSounds(bool pause)
     }
 }
 
+/**
+ * @brief Directly toggles FMOD master mute.
+ */
 void AudioManager::ToggleMute()
 {
     if (audioEngine)
@@ -296,6 +353,9 @@ void AudioManager::ToggleMute()
     }
 }
 
+/**
+ * @brief Reloads a sound from disk (loop flag safe).
+ */
 void AudioManager::ReloadSound(const std::string& soundName)
 {
     if (!audioEngine)
@@ -322,11 +382,17 @@ void AudioManager::ReloadSound(const std::string& soundName)
     audioEngine->loadSound(sound.name, sound.filepath, sound.loop);
 }
 
+/**
+ * @brief Handles message to play sound.
+ */
 void AudioManager::HandleMessage(const PlaySoundMessage& msg) 
 {
     PlaySound(msg.soundName);
 }
 
+/**
+ * @brief Handles message to pause sound.
+ */
 void AudioManager::HandleMessage(const PauseSoundMessage& msg) 
 {
     if (audioEngine) 
@@ -335,7 +401,9 @@ void AudioManager::HandleMessage(const PauseSoundMessage& msg)
     }
 }
 
-// TO BE REMOVED CAUSE JUST FOR DEBUGGING
+/**
+ * @brief Prints sounds, categories, and events for debugging.
+ */
 void AudioManager::PrintConfig() const {
     std::cout << "\n=== Audio Manager Configuration ===" << std::endl;
 
@@ -358,16 +426,25 @@ void AudioManager::PrintConfig() const {
     }
 }
 
+/**
+ * @brief Adds or replaces a sound in the database.
+ */
 void AudioManager::AddSound(const SoundData& sound) 
 {
     soundDatabase[sound.name] = sound;
 }
 
+/**
+ * @brief Adds an event mapping.
+ */
 void AudioManager::AddEventMapping(const std::string& eventName, const std::string& soundName) 
 {
     eventToSoundMap[eventName] = soundName;
 }
 
+/**
+ * @brief Removes sound and all event associations.
+ */
 void AudioManager::RemoveSound(const std::string& soundName)
 {
     // stop the default channel for this sound
@@ -392,6 +469,9 @@ void AudioManager::RemoveSound(const std::string& soundName)
     std::cout << "[AudioManager] Removed sound: " << soundName << std::endl;
 }
 
+/**
+ * @brief Clears sound database and event mappings.
+ */
 void AudioManager::Clear() 
 {
     soundDatabase.clear();

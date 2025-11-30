@@ -1,7 +1,8 @@
 /* Start Header ************************************************************************/
 /*!
 \file       LevelEditor.h
-\author     Leck Xin Yee [100% - 150 lines]
+\author     Leck Xin Yee [100% - 152 lines]
+            Hwee Min [5% - 15 lines]
 \par        xinyee.leck@digipen.edu
 \date       November, 7, 2025
 

@@ -1,8 +1,25 @@
+/* Start Header ************************************************************************/
+/*!
+\file       PauseMenuLogic.cpp
+\author     Leck Xin Yee [100% - 309 lines]
+\par        xinyee.leck@digipen.edu
+\date       November, 28, 2025
+
+Copyright (C) 2025 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+/* End Header **************************************************************************/
+
 #include "PauseMenuLogic.h"
 #include "core.h"
 #include "LevelEditor.h"
 #include <iostream>
 
+/**
+ * @brief Initializes all pause menu state variables.
+ */
 void PauseMenuLogicSystem::Initialize()
 {
     isPauseMenuActive = false;
@@ -11,6 +28,9 @@ void PauseMenuLogicSystem::Initialize()
     pendingSceneChange = false;
 }
 
+/**
+ * @brief Main update loop handling pause menu activation, UI movement, hover/click logic, and delayed scene actions.
+ */
 void PauseMenuLogicSystem::Update(float dt)
 {
     // check if we're in play mode
@@ -181,6 +201,9 @@ void PauseMenuLogicSystem::Update(float dt)
     }
 }
 
+/**
+ * @brief Creates all UI elements for the pause menu.
+ */
 void PauseMenuLogicSystem::CreatePauseMenuUI()
 {
     if (hasCreatedUI)
@@ -282,6 +305,9 @@ void PauseMenuLogicSystem::CreatePauseMenuUI()
     SetPauseMenuVisible(false);
 }
 
+/**
+ * @brief Destroys all pause menu UI elements.
+ */
 void PauseMenuLogicSystem::DestroyPauseMenuUI()
 {
     if (!hasCreatedUI)
@@ -313,6 +339,9 @@ void PauseMenuLogicSystem::DestroyPauseMenuUI()
     std::cout << "[PauseMenu] UI destroyed" << std::endl;
 }
 
+/**
+ * @brief Shows or hides pause menu UI elements.
+ */
 void PauseMenuLogicSystem::SetPauseMenuVisible(bool show)
 {
     auto& factory = GameObjectFactory::Instance();
@@ -337,6 +366,9 @@ void PauseMenuLogicSystem::SetPauseMenuVisible(bool show)
     }
 }
 
+/**
+ * @brief Toggles the pause menu open or closed and pauses/unpauses the game.
+ */
 void PauseMenuLogicSystem::TogglePauseMenu()
 {
     // create ui on first toggle if not created
@@ -355,6 +387,9 @@ void PauseMenuLogicSystem::TogglePauseMenu()
     std::cout << "[PauseMenu] Pause menu " << (isPauseMenuActive ? "opened" : "closed") << std::endl;
 }
 
+/**
+ * @brief Checks whether the mouse overlaps a UI button area.
+ */
 bool PauseMenuLogicSystem::IsMouseOver(GameObject* button, double mouseX, double mouseY)
 {
     if (!button) return false;
@@ -366,6 +401,9 @@ bool PauseMenuLogicSystem::IsMouseOver(GameObject* button, double mouseX, double
     return IsAreaClicked(tx->posX, tx->posY, tx->scaleX, tx->scaleY, mouseX, mouseY);
 }
 
+/**
+ * @brief Updates button texture based on hover state.
+ */
 void PauseMenuLogicSystem::SetButtonTexture(std::string buttonName, bool isHovered)
 {
     auto& factory = GameObjectFactory::Instance();
