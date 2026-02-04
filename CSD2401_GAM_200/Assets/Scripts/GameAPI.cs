@@ -199,6 +199,12 @@ namespace CSharpScript
             bool hasPhysics,
             bool isStatic,
             bool hasGravity);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern string FindGameObjectByName(string name);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern string FindGameObjectByID(int id);
     }
 
     /// <summary>
@@ -480,6 +486,9 @@ namespace CSharpScript
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int GetCollisionShape(string objectName);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern bool CheckColliderLayer(int layer1, int layer2);
     }
 
     /// <summary>

@@ -2154,7 +2154,12 @@ void ImGuiSystem::RenderPropertyEditor()
             }
             else
             {
-                static bool isTransformEnabled = transform->IsEnabled();
+                bool isTransformEnabled = transform->IsEnabled();
+                if (ImGui::Checkbox("Component Enabled ##Transform", &isTransformEnabled))
+                {
+                    transform->SetEnabled(isTransformEnabled);
+                }
+
                 // Record Undo Entries - Undo Transform
                 LevelEditor* editor = CORE->GetLevelEditor();
 
@@ -2270,7 +2275,7 @@ void ImGuiSystem::RenderPropertyEditor()
             else
             {
 
-                static bool isRenderEnabled = render->IsEnabled();
+                bool isRenderEnabled = render->IsEnabled();
                 if (ImGui::Checkbox("Component Enabled ##Render", &isRenderEnabled))
                 {
                     render->SetEnabled(isRenderEnabled);
@@ -2362,7 +2367,7 @@ void ImGuiSystem::RenderPropertyEditor()
             else
             {
                 // Physics sliders with respective functions
-                static bool isPhysEnabled = physics->IsEnabled();
+                bool isPhysEnabled = physics->IsEnabled();
                 if (ImGui::Checkbox("Phsyics Enabled##Physics", &isPhysEnabled))
                 {
                     physics->SetEnabled(isPhysEnabled);
@@ -2407,7 +2412,7 @@ void ImGuiSystem::RenderPropertyEditor()
             else
             {
                 // Editable Collider Type Dropdown
-                static bool isColEnabled = collider->IsEnabled();
+                bool isColEnabled = collider->IsEnabled();
                 if (ImGui::Checkbox("Component Enabled##Collider", &isColEnabled))
                 {
                     collider->SetEnabled(isColEnabled);
@@ -2503,7 +2508,7 @@ if (auto* script = obj->GetComponent<ScriptComponent>())
         }
         else
         {
-            static bool isScriptEnabled = script->IsEnabled();
+            bool isScriptEnabled = script->IsEnabled();
             if (ImGui::Checkbox("Component Enabled ##Script", &isScriptEnabled))
             {
                 script->SetEnabled(isScriptEnabled);

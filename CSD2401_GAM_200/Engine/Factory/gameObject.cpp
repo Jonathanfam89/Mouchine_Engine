@@ -120,6 +120,11 @@ void GameObject::SetActive(bool active)
 
     isActive = active; 
 
+    // Enable/disable all components
+    for (auto& [type, component] : components) {
+        component->SetEnabled(active);
+    }
+
     if (active)
     {
         EventSystem::Raise(EventType::OnEnable, this, nullptr);

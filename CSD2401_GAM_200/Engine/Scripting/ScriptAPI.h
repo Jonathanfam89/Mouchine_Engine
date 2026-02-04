@@ -404,6 +404,7 @@ namespace API {
     bool OnTriggerEnter(const std::string, const std::string);
     bool OnTriggerExit(const std::string, const std::string);
     bool OnTriggerStay(const std::string, const std::string);
+    bool CheckColliderLayer(int, int);
 
 #pragma endregion
 
@@ -463,6 +464,9 @@ namespace API {
     float fInverseLerp(float a, float b, float value);
     float fClamp(float value, float min, float max);
     int iClamp(int value, int min, int max);
+
+    const char* FindGameObjectByName(const std::string& name);
+    const char* FindGameObjectByID(int id);
 
 #pragma endregion
 
