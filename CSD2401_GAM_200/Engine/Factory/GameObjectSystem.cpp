@@ -68,7 +68,7 @@ Technology is prohibited.
      std::cout << "[GameObjectSystem] Received CreateObjectMessage for "
          << msg.name << " (Type: " << static_cast<int>(msg.type) << ")\n";
 
-     GameObjectFactory& factory = GameObjectFactory::Instance();
+     //GameObjectFactory& factory = GameObjectFactory::Instance();
      GameObject* go = nullptr;
 
      switch (msg.type)
@@ -119,7 +119,13 @@ Technology is prohibited.
          //go->AddComponent<PhysicsComponent>();
 
          // --- Collider ---
-         go->AddComponent<ColliderComponent>();
+         auto* collider = go->AddComponent<ColliderComponent>();
+         if (collider) 
+         {
+             collider->setColliShape(msg.colType);
+             collider->SetSize(msg.colSize[0], msg.colSize[1]);
+             collider->SetLayer(msg.colLayer);
+         }
 
          break;
      }

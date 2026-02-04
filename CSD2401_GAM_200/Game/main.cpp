@@ -13,6 +13,7 @@ Technology is prohibited.
 
 #include "main.h"
 
+
 namespace CrashHandler
 {
     std::string GetStackTrace();
@@ -73,38 +74,99 @@ int main()
 
         CameraManager::Instance().SetActiveCamera(mainCamera);
 
-        // CORE->GetGraphicsSystem()->DrawRectOutline(0, 0, -300, 300, { 0, 1, 0, 1 });
+        GameObject* testObj = GameObjectFactory::Instance().CreateShape(
+            "MyTestSquare",                  // <--- NAME MUST MATCH C#
+            RenderComponent::ShapeType::Square,
+            -200.0f, 400.0f,                      // Center of screen
+            100.0f, 100.0f,                  // Size
+            vec4(1.0f, 1.0f, 1.0f, 1.0f)     // White (Script will change this to Yellow)
+        );
 
-        //std::cout << "\n--- Attaching C# Scripts ---" << std::endl;
+        // 2. Add the ScriptComponent
+        if (testObj)
+        {
+            ScriptComponent* scriptComp = testObj->AddComponent<ScriptComponent>();
 
-        //ScriptSystem *scriptSys = engine.GetScriptSystem();
-
-        //GameObject *squareSpawner = GameObjectFactory::Instance().CreateGameObject("SquareSpawner");
-
-        //if (scriptSys && squareSpawner)
-        //{
-        //    // 1. Attach the first script (Red Square, Ground, Animation)
-        //    if (scriptSys->AttachScript(squareSpawner, "TestGameObject"))
-        //    {
-        //        std::cout << "Attached 'TestGameObject' to SquareSpawner" << std::endl;
-        //    }
-        //    else
-        //    {
-        //        std::cerr << "ERROR: Failed to attach 'TestGameObject'!" << std::endl;
-        //    }
-
-            // 2. Attach the second script (Blue Square, Green Rotating Square)
-            /*if (scriptSys->AttachScript(squareSpawner, "TestGameObjects2"))
+            if (scriptComp)
             {
-                std::cout << "Attached 'TestGameObjects2' to SquareSpawner" << std::endl;
+                // 3. Attach the script "SpinningSquare"
+                // Ensure the namespace in C# is "GameScripts"
+                scriptComp->AddScript("SpinningSquare");
+
+                std::cout << "[Main] Created 'MyTestSquare' and attached 'SpinningSquare'.\n";
             }
-            else
+        }
+
+        GameObject* Hero = GameObjectFactory::Instance().CreateAnimatedImage(
+            "Hero",
+            0, 0,
+            100, 100,
+            "../Assets/Mouch_idle.png", 1, 2, 0, 7, 2.0f, CollisionLayer::Player);
+
+        if (Hero)
+        {
+            ColliderComponent* colComp = Hero->AddComponent<ColliderComponent>();
+            PhysicsComponent* phyComp = Hero->AddComponent<PhysicsComponent>();
+
+            if (colComp && phyComp)
             {
-                std::cerr << "ERROR: Failed to attach 'TestGameObjects2'!" << std::endl;
-            }*/
-        //     std::cout << "Calling OnStart for all scripts on SquareSpawner..." << std::endl;
-        //     scriptSys->CallOnStart(squareSpawner);
-        // }
+                colComp->SetSize(100.0f, 100.0f);
+            }
+
+            ScriptComponent* scriptComp = Hero->AddComponent<ScriptComponent>();
+
+            if (scriptComp)
+            {
+                // 3. Attach the script "SpinningSquare"
+                // Ensure the namespace in C# is "GameScripts"
+                scriptComp->AddScript("PlayerMovement");
+                scriptComp->AddScript("PlayerMovementStats");
+
+                std::cout << "[Main] Created 'PlayerMovement' and attached 'Hero_cs'.\n";
+            }
+        }
+
+        GameObject* Platform = GameObjectFactory::Instance().CreateShape(
+            "Platform",                  // <--- NAME MUST MATCH C#
+            RenderComponent::ShapeType::Square,
+            0.0f, -200.0f,                      // Center of screen
+            10000.0f, 100.0f,                  // Size
+            vec4(1.0f, 1.0f, 1.0f, 0.6f)     // White (Script will change this to Yellow)
+        );
+
+        if (Platform)
+        {
+            ColliderComponent* colComp = Platform->AddComponent<ColliderComponent>();
+            PhysicsComponent* phyComp = Platform->AddComponent<PhysicsComponent>();
+
+            if (colComp && phyComp)
+            {
+                phyComp->SetStatic(true);
+                colComp->SetSize(10000.0f, 100.0f);
+                colComp->SetLayer(CollisionLayer::Ground);
+            }
+        }
+
+        GameObject* Wall = GameObjectFactory::Instance().CreateShape(
+            "Platform",                  // <--- NAME MUST MATCH C#
+            RenderComponent::ShapeType::Square,
+            -200.0f, 0.0f,                      // Center of screen
+            100.0f, 1000.0f,                  // Size
+            vec4(1.0f, 1.0f, 1.0f, 0.6f)     // White (Script will change this to Yellow)
+        );
+
+        if (Wall)
+        {
+            ColliderComponent* colComp = Wall->AddComponent<ColliderComponent>();
+            PhysicsComponent* phyComp = Wall->AddComponent<PhysicsComponent>();
+
+            if (colComp && phyComp)
+            {
+                phyComp->SetStatic(true);
+                colComp->SetSize(100.0f, 1000.0f);
+                colComp->SetLayer(CollisionLayer::Ground);
+            }
+        }
 
         // Initialise Game State Manager (Level1)
         GameManager::Instance().ChangeState(std::make_unique<Level1>());

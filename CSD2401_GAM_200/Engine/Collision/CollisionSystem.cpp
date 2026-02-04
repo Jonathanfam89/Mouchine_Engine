@@ -1,7 +1,7 @@
 /* Start Header ************************************************************************/
 /*!
 \file       CollisionSystem.cpp
-\author     Khalil Belabadia [96% - 156 lines]
+\author     Khalil Belabadia [96% - 275 lines]
             Lee Hwee Min [4% - 5 lines]
 \par        khalil.b@digipen.edu
 \date       October, 2, 2025
@@ -199,6 +199,17 @@ void CollisionSystem::Update(float deltaTime)
             }
             else
             {
+                if (JustStopped(obj1.get(), obj2)) {
+                    auto RaiseIfNeeded = [&](GameObject* receiver, GameObject* other)
+                        {
+                            if (receiver->GetComponent<EventComponent>())
+                                EventSystem::Raise(EventType::OnCollisionExit, receiver, other);
+                        };
+
+                    RaiseIfNeeded(obj1.get(), obj2);
+                    RaiseIfNeeded(obj2, obj1.get());
+                }
+
                 // Remove from active collisions
                 activeCollisions.erase(
                     std::remove_if(activeCollisions.begin(), activeCollisions.end(),
@@ -230,6 +241,18 @@ void CollisionSystem::Update(float deltaTime)
             if (AreColliding(obj1.get(), obj2)) {
                 std::string key = GetCollisionKey(obj1.get(), obj2);
                 currentCollisions.insert(key);
+
+                if (StillColliding(obj1.get(), obj2)) {
+                    auto RaiseIfNeeded = [&](GameObject* receiver, GameObject* other)
+                        {
+                            if (receiver->GetComponent<EventComponent>())
+                                EventSystem::Raise(EventType::OnCollisionStay, receiver, other);
+                        };
+
+                    RaiseIfNeeded(obj1.get(), obj2);
+                    RaiseIfNeeded(obj2, obj1.get());
+                }
+
             }
         }
     }

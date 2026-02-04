@@ -1,0 +1,39 @@
+{  "AudioManager": {
+    "events": [
+      {
+        "event": "PlayerJump",
+        "sound": "jump_sfx"
+      },
+      {
+        "event": "PlayerLand",
+        "sound": "footstep_sfx"
+      }
+    ],
+    "sounds": [
+      {
+        "category": "music",
+        "filepath": "../Assets/audio/level_1.wav",
+        "loop": true,
+        "name": "bgm",
+        "pitch": 1.0,
+        "volume": 0.20000000298023224
+      },
+      {
+        "category": "sfx",
+        "filepath": "../Assets/audio/footstep.wav",
+        "loop": false,
+        "name": "footstep_sfx",
+        "pitch": 0.5,
+        "volume": 0.6000000238418579
+      },
+      {
+        "category": "sfx",
+        "filepath": "../Assets/audio/jump.wav",
+        "loop": false,
+        "name": "jump_sfx",
+        "pitch": 1.0,
+        "volume": 0.800000011920929
+      }
+    ]
+  }
+}

@@ -42,6 +42,10 @@ void DebugSystem::DrawPoint(const vec2& ppos, vec4 color) {
 	shapes.push_back({ DebugShape::POINT, ppos, {}, 0.0f, color, 0 });
 }
 
+void DebugSystem::Clear() {
+	shapes.clear();
+}
+
 std::string DebugSystem::GetName() {
 	// Return the system name
 	return "Debug System";

@@ -1,7 +1,7 @@
 /* Start Header ************************************************************************/
 /*!
 \file       Serialization.cpp
-\author     Lee Hwee Min [100% - ? lines]
+\author     Lee Hwee Min [100% - 402 lines]
 \par        l.hweemin@digipen.edu
 \date       November, 3, 2025
 Copyright (C) 2025 DigiPen Institute of Technology.
@@ -270,7 +270,7 @@ GameObject* Serialization::LoadPrefabWithReturn(const std::string& filename)
  */
 void Serialization::SaveScene(const std::string &scenePath)
 {
-	GameObjectFactory& factory = GameObjectFactory::Instance();
+	//GameObjectFactory& factory = GameObjectFactory::Instance();
 	std::string path = SceneFilePath + scenePath + ".json";
 	json j;
 	j["GameObjects"] = json::array();

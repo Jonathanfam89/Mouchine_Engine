@@ -25,6 +25,11 @@ Technology is prohibited.
 #include "EnumConverters.h"
 #include "Serialization.h"
 #include "logic.h"
+#include "TilemapEditor.h" 
+
+class TilemapDataHolder;
+class ScriptComponent;
+
 
 class Spritesheet;
 using json = nlohmann::ordered_json;
@@ -48,6 +53,8 @@ namespace ComponentSerialization
     void SerializeText(json& j, TextComponent* tc);
     void SerializeCamera(json& j, CameraComponent* cam);
     void SerializeEvent(json& j, EventComponent* ec);
+    void SerializeTilemap(json& j, TilemapDataHolder* tilemap);
+    void SerializeScript(json& j, ScriptComponent* sc);
 
     // ----------- Deserialize Individual Components ----------------
     void DeserializeTransform(const json& j, GameObject* go);
@@ -58,6 +65,8 @@ namespace ComponentSerialization
     void DeserializeText(const json& j, GameObject* go);
     void DeserializeCamera(const json& j, GameObject* go);
     void DeserializeEvent(const json& j, GameObject* go);
+    void DeserializeTilemap(const json& j, GameObject* go);
+    void DeserializeScript(const json& j, GameObject* go);
 
     // ----------- Convenience Wrappers ------------------------------
     void SerializeAllComponents(GameObject* go, json& j);

@@ -15,6 +15,7 @@ Technology is prohibited.
 #include "ResourceManager.h"
 #include "GraphicsSystem.h"
 #include "audio.h"
+#include "glslshader.h"
 
 // Texture Resource Implementation
 TextureResource::~TextureResource()
@@ -25,16 +26,16 @@ TextureResource::~TextureResource()
 /**
  * @brief Loads a texture from file using GraphicsSystem
  */
-bool TextureResource::Load(const std::string &filepath)
+bool TextureResource::Load(const std::string &fpath)
 {
     if (loaded)
     {
-        std::cout << "Texture already loaded: " << filepath << std::endl;
+        std::cout << "Texture already loaded: " << fpath << std::endl;
         return true;
     }
 
 
-    this->filepath = filepath;
+    this->filepath = fpath;
 
     textureID = GraphicsSystem::LoadTexture(filepath.c_str());
 
@@ -73,11 +74,11 @@ AudioResource::~AudioResource()
 /**
  * @brief Loads an audio file through the AudioEngine
  */
-bool AudioResource::Load(const std::string &filepath)
+bool AudioResource::Load(const std::string &fpath)
 {
     if (loaded)
     {
-        std::cout << "Audio already loaded: " << filepath << std::endl;
+        std::cout << "Audio already loaded: " << fpath << std::endl;
         return true;
     }
 
@@ -87,7 +88,7 @@ bool AudioResource::Load(const std::string &filepath)
         return false;
     }
 
-    this->filepath = filepath;
+    this->filepath = fpath;
 
     // Use audio engine load sound
     bool success = audioEngine->loadSound(name, filepath, loop);
@@ -125,19 +126,19 @@ FontResource::~FontResource()
 /**
  * @brief Loads a font from file using default size
  */
-bool FontResource::Load(const std::string& filepath)
+bool FontResource::Load(const std::string& fpath)
 {
-    return Load(filepath, 48);
+    return Load(fpath, 48);
 }
 
 /**
  * @brief Loads a font from file with specified size
  */
-bool FontResource::Load(const std::string& filepath, GLuint size)
+bool FontResource::Load(const std::string& fpath, GLuint size)
 {
     if (loaded)
     {
-        std::cout << "Font already loaded: " << filepath << std::endl;
+        std::cout << "Font already loaded: " << fpath << std::endl;
         return true;
     }
 
@@ -148,7 +149,7 @@ bool FontResource::Load(const std::string& filepath, GLuint size)
         return false;
     }
 
-    this->filepath = filepath;
+    this->filepath = fpath;
     this->fontSize = size;
 
     FT_Face face;
@@ -231,6 +232,100 @@ void FontResource::Unload()
         loaded = false;
         std::cout << "Font unloaded: " << filepath << std::endl;
     }
+}
+
+// Shader Resource Implementation
+ShaderResource::ShaderResource() : shader(std::make_unique<GLSLShader>())
+{}
+
+ShaderResource::~ShaderResource()
+{
+    Unload();
+}
+
+// loads a shader assuming vertex and fragment shader with .vert and .frag
+bool ShaderResource::Load(const std::string& fpath)
+{
+    if (loaded)
+    {
+        std::cout << "Shader already loaded: " << fpath << std::endl;
+        return true;
+    }
+
+    // Assume the filepath is the base path, and we'll append .vert and .frag
+    std::string vertexPath = fpath + ".vert";
+    std::string fragmentPath = fpath + ".frag";
+
+    return LoadShaderPair(vertexPath, fragmentPath);
+}
+
+// loads a shader from vertex and fragment shader files with explicit paths
+bool ShaderResource::LoadShaderPair(const std::string& vertexPath, const std::string& fragmentPath)
+{
+    if (loaded)
+    {
+        std::cout << "Shader already loaded" << std::endl;
+        return true;
+    }
+
+    std::vector<std::pair<GLenum, std::string>> shaderFiles;
+    shaderFiles.push_back(std::make_pair(GL_VERTEX_SHADER, vertexPath));
+    shaderFiles.push_back(std::make_pair(GL_FRAGMENT_SHADER, fragmentPath));
+
+    return LoadShaderFiles(shaderFiles);
+}
+
+// loads a shader from multiple shader files
+bool ShaderResource::LoadShaderFiles(const std::vector<std::pair<GLenum, std::string>>& shaderFiles)
+{
+    if (loaded)
+    {
+        std::cout << "Shader already loaded" << std::endl;
+        return true;
+    }
+
+    if (!shader)
+    {
+        std::cerr << "Shader object not initialized" << std::endl;
+        return false;
+    }
+
+    if (!shader->CompileLinkValidate(shaderFiles))
+    {
+        std::cerr << "Failed to compile, link, and validate shader: " << shader->GetLog() << std::endl;
+        return false;
+    }
+
+    // Store the first file path as the filepath
+    if (!shaderFiles.empty())
+    {
+        this->filepath = shaderFiles[0].second;
+    }
+
+    loaded = true;
+    std::cout << "Shader loaded successfully: " << name << " from " << filepath << std::endl;
+    return true;
+}
+
+// unloads the shader and deletes shader program
+void ShaderResource::Unload()
+{
+    if (loaded && shader)
+    {
+        shader->DeleteShaderProgram();
+        loaded = false;
+        std::cout << "Shader unloaded: " << filepath << std::endl;
+    }
+}
+
+// gets the shader program handle
+GLuint ShaderResource::GetProgramHandle() const
+{
+    if (shader)
+    {
+        return shader->GetHandle();
+    }
+    return 0;
 }
 
 // Resource Manager Implementation
@@ -458,6 +553,71 @@ void ResourceManager::UnloadFont(const std::string& name)
     }
 }
 
+// loads a shader resource or returns existing one if already loaded
+ShaderResource* ResourceManager::LoadShader(const std::string& name, const std::string& vertexPath, const std::string& fragmentPath)
+{
+    auto it = shaders.find(name);
+    if (it != shaders.end())
+    {
+        std::cout << "Shader '" << name << "' already loaded, returning existing resource" << std::endl;
+        return it->second.get();
+    }
+
+    auto shader = std::make_unique<ShaderResource>();
+    shader->SetName(name);
+
+    if (!shader->LoadShaderPair(vertexPath, fragmentPath))
+    {
+        std::cerr << "Failed to load shader: " << name << " from " << vertexPath << " and " << fragmentPath << std::endl;
+        return nullptr;
+    }
+
+    ShaderResource* ptr = shader.get();
+    shaders[name] = std::move(shader);
+    return ptr;
+}
+
+// loads a shader resource from multiple shader files
+ShaderResource* ResourceManager::LoadShaderFiles(const std::string& name, const std::vector<std::pair<GLenum, std::string>>& shaderFiles)
+{
+    auto it = shaders.find(name);
+    if (it != shaders.end())
+    {
+        std::cout << "Shader '" << name << "' already loaded, returning existing resource" << std::endl;
+        return it->second.get();
+    }
+
+    auto shader = std::make_unique<ShaderResource>();
+    shader->SetName(name);
+
+    if (!shader->LoadShaderFiles(shaderFiles))
+    {
+        std::cerr << "Failed to load shader: " << name << std::endl;
+        return nullptr;
+    }
+
+    ShaderResource* ptr = shader.get();
+    shaders[name] = std::move(shader);
+    return ptr;
+}
+
+// retrieves a loaded shader resource by name
+ShaderResource* ResourceManager::GetShader(const std::string& name)
+{
+    return GetResource<ShaderResource>(name, shaders);
+}
+
+// unloads a specific shader resource from the manager
+void ResourceManager::UnloadShader(const std::string& name)
+{
+    auto it = shaders.find(name);
+    if (it != shaders.end())
+    {
+        shaders.erase(it);
+        std::cout << "Shader '" << name << "' unloaded from resource manager" << std::endl;
+    }
+}
+
 /**
  * @brief Unloads all textures and audio resources
  */
@@ -467,6 +627,7 @@ void ResourceManager::UnloadAll()
     UnloadAllTextures();
     UnloadAllAudio();
     UnloadAllFonts();
+    UnloadAllShaders();
 }
 
 /**
@@ -496,6 +657,13 @@ void ResourceManager::UnloadAllFonts()
     fonts.clear();
 }
 
+// unloads all shader resources and clears the shader map
+void ResourceManager::UnloadAllShaders()
+{
+    std::cout << "Unloading " << shaders.size() << " shaders" << std::endl;
+    shaders.clear();
+}
+
 /**
  * @brief Prints detailed information about all loaded resources
  */
@@ -522,6 +690,14 @@ void ResourceManager::PrintLoadedResources() const
     {
         std::cout << "  - " << pair.second->GetName()
             << " (Size: " << pair.second->GetFontSize() << ")"
+            << " -> " << pair.second->GetFilePath() << std::endl;
+    }
+
+    std::cout << "Shaders (" << shaders.size() << "):" << std::endl;
+    for (const auto& pair : shaders)
+    {
+        std::cout << "  - " << pair.first
+            << " (Handle: " << pair.second->GetProgramHandle() << ")"
             << " -> " << pair.second->GetFilePath() << std::endl;
     }
 }

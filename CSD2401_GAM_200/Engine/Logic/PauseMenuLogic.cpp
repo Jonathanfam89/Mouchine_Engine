@@ -33,6 +33,13 @@ void PauseMenuLogicSystem::Initialize()
  */
 void PauseMenuLogicSystem::Update(float dt)
 {
+    // Update audio fade
+    AudioManager* audioManager = CORE->GetAudioManager();
+    if (audioManager)
+    {
+        audioManager->UpdateFade(dt);
+    }
+
     // check if we're in play mode
 #ifdef USE_IMGUI
     LevelEditor* editor = CORE ? CORE->GetLevelEditor() : nullptr;
@@ -55,7 +62,6 @@ void PauseMenuLogicSystem::Update(float dt)
         std::vector<std::string> uiElements = {
             "PauseOverlay",
             "PauseBoard",
-            "PauseTitle",
             "PauseResumeButton",
             "PauseRestartButton",
             "PauseSettingsButton",
@@ -118,6 +124,15 @@ void PauseMenuLogicSystem::Update(float dt)
             else if (hoveredButtonName == "PauseMainMenuButton")
             {
                 std::cout << "[PauseMenu] Main Menu clicked" << std::endl;
+
+                // Start audio fade out before going to main menu
+                AudioManager* audioManager = CORE->GetAudioManager();
+                if (audioManager)
+                {
+                    audioManager->FadeOutCategory("music", 0.5f);
+                    std::cout << "[PauseMenu] Started music fade out" << std::endl;
+                }
+
                 // close menu first
                 if (isPauseMenuActive)
                 {
@@ -216,88 +231,94 @@ void PauseMenuLogicSystem::CreatePauseMenuUI()
     auto* overlayTransform = overlay->AddComponent<TransformComponent>();
     overlayTransform->posX = 0.0f;
     overlayTransform->posY = 0.0f;
-    overlayTransform->scaleX = 1980.0f;
-    overlayTransform->scaleY = 1100.0f;
+    overlayTransform->scaleX = 5000.0f;
+    overlayTransform->scaleY = 5000.0f;
     auto* overlayRender = overlay->AddComponent<RenderComponent>();
-    overlayRender->SetColor(vec4(0.0f, 0.0f, 0.0f, 0.7f)); // dark semi-transparent
-    overlayRender->SetLayer(100);
+
+    // check if we're in main menu - use medium grey, otherwise use dark overlay
+    bool isMainMenu = (currentScenePath.find("MainMenu") != std::string::npos);
+    if (isMainMenu)
+    {
+        overlayRender->SetColor(vec4(0.5f, 0.5f, 0.5f, 1.0f)); // medium grey solid background
+        overlayRender->SetLayer(500); // very high layer to cover main menu elements
+    }
+    else
+    {
+        overlayRender->SetColor(vec4(0.0f, 0.0f, 0.0f, 0.7f)); // dark semi-transparent for in-game
+        overlayRender->SetLayer(100); // normal layer for in-game
+    }
 
     // pause board background
     GameObject* board = factory.CreateGameObject("PauseBoard");
     auto* boardTransform = board->AddComponent<TransformComponent>();
     boardTransform->posX = 0.0f;
     boardTransform->posY = 0.0f;
-    boardTransform->scaleX = 1500.0f;
-    boardTransform->scaleY = 1000.0f;
+    boardTransform->scaleX = 1920.0f;
+    boardTransform->scaleY = 1080.0f;
     auto* boardRender = board->AddComponent<RenderComponent>();
-    boardRender->SetTextureID(GraphicsSystem::LoadTexture("../Assets/pause_board.png"));
+    boardRender->SetTextureID(GraphicsSystem::LoadTexture("../Assets/Sprites/Pause_Menu_New.png"));
     boardRender->SetColor(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-    boardRender->SetLayer(101);
+    boardRender->SetLayer(501); // above overlay
 
-    // pause title text
-    GameObject* title = factory.CreateGameObject("PauseTitle");
-    auto* titleTransform = title->AddComponent<TransformComponent>();
-    titleTransform->posX = 0.0f;
-    titleTransform->posY = 110.0f;
-    titleTransform->scaleX = 400.0f;
-    titleTransform->scaleY = 0.0f;
-    auto* titleText = title->AddComponent<TextComponent>("../Assets/FrederickatheGreat-Regular.ttf", 80, "PAUSED", vec4(0.0f, 0.0f, 0.0f, 1.0f), false);
-
-    // resume button
-    GameObject* resumeBtn = factory.CreateGameObject("PauseResumeButton");
-    auto* resumeTransform = resumeBtn->AddComponent<TransformComponent>();
-    resumeTransform->posX = 0.0f;
-    resumeTransform->posY = 0.0f;
-    resumeTransform->scaleX = 350.0f;
-    resumeTransform->scaleY = 80.0f;
-    auto* resumeRender = resumeBtn->AddComponent<RenderComponent>();
-    resumeRender->SetTextureID(GraphicsSystem::LoadTexture("../Assets/blankbtnL.png"));
-    resumeRender->SetColor(vec4(1.0f, 1.0f, 1.0f, 1.0f)); // white tint
-    resumeRender->SetLayer(102);
-    auto* resumeText = resumeBtn->AddComponent<TextComponent>(
-        "../Assets/FrederickatheGreat-Regular.ttf", 32, "Resume", vec4(0.0f, 0.0f, 0.0f, 1.0f), false);
+    // paused button
+    GameObject* pausedBtn = factory.CreateGameObject("PauseResumeButton");
+    auto* pausedTransform = pausedBtn->AddComponent<TransformComponent>();
+    pausedTransform->posX = 650.0f;
+    pausedTransform->posY = -275.0f;
+    pausedTransform->scaleX = 200.0f;
+    pausedTransform->scaleY = 175.0f;
+    auto* pausedRender = pausedBtn->AddComponent<RenderComponent>();
+    pausedRender->SetTextureID(GraphicsSystem::LoadTexture("../Assets/Sprites/Icons/paused_button.png"));
+    pausedRender->SetColor(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+    pausedRender->SetLayer(502);
 
     // restart button
     GameObject* restartBtn = factory.CreateGameObject("PauseRestartButton");
     auto* restartTransform = restartBtn->AddComponent<TransformComponent>();
     restartTransform->posX = 0.0f;
-    restartTransform->posY = -100.0f;
-    restartTransform->scaleX = 350.0f;
-    restartTransform->scaleY = 80.0f;
+    restartTransform->posY = -80.0f;
+    restartTransform->scaleX = 420.0f;
+    restartTransform->scaleY = 100.0f;
     auto* restartRender = restartBtn->AddComponent<RenderComponent>();
-    restartRender->SetTextureID(GraphicsSystem::LoadTexture("../Assets/blankbtnL.png"));
+    restartRender->SetTextureID(GraphicsSystem::LoadTexture("../Assets//Sprites/Icons/blankbtnL.png"));
     restartRender->SetColor(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-    restartRender->SetLayer(102);
-    auto* restartText = restartBtn->AddComponent<TextComponent>(
-        "../Assets/FrederickatheGreat-Regular.ttf", 32, "Restart", vec4(0.0f, 0.0f, 0.0f, 1.0f), false);
+    restartRender->SetLayer(502);
+    restartBtn->AddComponent<TextComponent>(
+        "../Assets/FrederickatheGreat-Regular.ttf", 38, "Restart", vec4(0.0f, 0.0f, 0.0f, 1.0f), false);
+    //auto* restartText = restartBtn->AddComponent<TextComponent>(
+    //    "../Assets/FrederickatheGreat-Regular.ttf", 32, "Restart", vec4(0.0f, 0.0f, 0.0f, 1.0f), false);
 
     // settings button
     GameObject* settingsBtn = factory.CreateGameObject("PauseSettingsButton");
     auto* settingsTransform = settingsBtn->AddComponent<TransformComponent>();
     settingsTransform->posX = 0.0f;
-    settingsTransform->posY = -200.0f;
-    settingsTransform->scaleX = 350.0f;
-    settingsTransform->scaleY = 80.0f;
+    settingsTransform->posY = 40.0f;
+    settingsTransform->scaleX = 420.0f;
+    settingsTransform->scaleY = 100.0f;
     auto* settingsRender = settingsBtn->AddComponent<RenderComponent>();
-    settingsRender->SetTextureID(GraphicsSystem::LoadTexture("../Assets/blankbtnL.png"));
+    settingsRender->SetTextureID(GraphicsSystem::LoadTexture("../Assets/Sprites/Icons/blankbtnL.png"));
     settingsRender->SetColor(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-    settingsRender->SetLayer(102);
-    auto* settingsText = settingsBtn->AddComponent<TextComponent>(
-        "../Assets/FrederickatheGreat-Regular.ttf", 32, "Settings", vec4(0.0f, 0.0f, 0.0f, 1.0f), false);
+    settingsRender->SetLayer(502);
+    settingsBtn->AddComponent<TextComponent>(
+        "../Assets/FrederickatheGreat-Regular.ttf", 38, "Settings", vec4(0.0f, 0.0f, 0.0f, 1.0f), false);
+    //auto* settingsText = settingsBtn->AddComponent<TextComponent>(
+    //    "../Assets/FrederickatheGreat-Regular.ttf", 32, "Settings", vec4(0.0f, 0.0f, 0.0f, 1.0f), false);
 
-    // main menu button
+    // quit button
     GameObject* mainMenuBtn = factory.CreateGameObject("PauseMainMenuButton");
     auto* mainMenuTransform = mainMenuBtn->AddComponent<TransformComponent>();
     mainMenuTransform->posX = 0.0f;
-    mainMenuTransform->posY = -300.0f;
-    mainMenuTransform->scaleX = 350.0f;
-    mainMenuTransform->scaleY = 80.0f;
+    mainMenuTransform->posY = -200.0f;
+    mainMenuTransform->scaleX = 420.0f;
+    mainMenuTransform->scaleY = 100.0f;
     auto* mainMenuRender = mainMenuBtn->AddComponent<RenderComponent>();
-    mainMenuRender->SetTextureID(GraphicsSystem::LoadTexture("../Assets/blankbtnL.png"));
+    mainMenuRender->SetTextureID(GraphicsSystem::LoadTexture("../Assets/Sprites/Icons/blankbtnL.png"));
     mainMenuRender->SetColor(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-    mainMenuRender->SetLayer(102);
-    auto* mainMenuText = mainMenuBtn->AddComponent<TextComponent>(
-        "../Assets/FrederickatheGreat-Regular.ttf", 32, "Main Menu", vec4(0.0f, 0.0f, 0.0f, 1.0f), false);
+    mainMenuRender->SetLayer(502);
+    mainMenuBtn->AddComponent<TextComponent>(
+        "../Assets/FrederickatheGreat-Regular.ttf", 38, "Quit", vec4(0.0f, 0.0f, 0.0f, 1.0f), false);
+    //auto* mainMenuText = mainMenuBtn->AddComponent<TextComponent>(
+    //    "../Assets/FrederickatheGreat-Regular.ttf", 32, "Main Menu", vec4(0.0f, 0.0f, 0.0f, 1.0f), false);
 
     hasCreatedUI = true;
 
@@ -319,7 +340,6 @@ void PauseMenuLogicSystem::DestroyPauseMenuUI()
     std::vector<std::string> uiElements = {
         "PauseOverlay",
         "PauseBoard",
-        "PauseTitle",
         "PauseResumeButton",
         "PauseRestartButton",
         "PauseSettingsButton",
@@ -349,7 +369,6 @@ void PauseMenuLogicSystem::SetPauseMenuVisible(bool show)
     std::vector<std::string> uiElements = {
         "PauseOverlay",
         "PauseBoard",
-        "PauseTitle",
         "PauseResumeButton",
         "PauseRestartButton",
         "PauseSettingsButton",
@@ -362,6 +381,32 @@ void PauseMenuLogicSystem::SetPauseMenuVisible(bool show)
         if (obj)
         {
             obj->SetActive(show);
+        }
+    }
+
+    // update overlay color and layer based on current scene when showing
+    if (show)
+    {
+        GameObject* overlay = factory.FindGameObject("PauseOverlay");
+        if (overlay)
+        {
+            auto* overlayRender = overlay->GetComponent<RenderComponent>();
+            if (overlayRender)
+            {
+                // check if in main menu
+                bool isMainMenu = (currentScenePath.find("MainMenu") != std::string::npos);
+                std::cout << "[PauseMenu] Current scene: " << currentScenePath << ", isMainMenu: " << isMainMenu << std::endl;
+                if (isMainMenu)
+                {
+                    overlayRender->SetColor(vec4(0.5f, 0.5f, 0.5f, 1.0f)); // medium grey solid background
+                    overlayRender->SetLayer(500); // high layer to cover main menu elements
+                }
+                else
+                {
+                    overlayRender->SetColor(vec4(0.0f, 0.0f, 0.0f, 0.3f)); // semi-transparent for in-game
+                    overlayRender->SetLayer(100); // normal layer
+                }
+            }
         }
     }
 }
@@ -398,7 +443,7 @@ bool PauseMenuLogicSystem::IsMouseOver(GameObject* button, double mouseX, double
     auto* tx = button->GetComponent<TransformComponent>();
     if (!tx) return false;
 
-    return IsAreaClicked(tx->posX, tx->posY, tx->scaleX, tx->scaleY, mouseX, mouseY);
+    return IsAreaClicked(tx->posX, tx->posY, tx->scaleX, tx->scaleY, static_cast<float>(mouseX), static_cast<float>(mouseY));
 }
 
 /**
@@ -414,7 +459,16 @@ void PauseMenuLogicSystem::SetButtonTexture(std::string buttonName, bool isHover
     if (!rc) return;
 
     // swap between normal and hover button textures
-    std::string texturePath = isHovered ? "../Assets/hoveringbtnL.png" : "../Assets/blankbtnL.png";
+    std::string texturePath;
+
+    if (buttonName == "PauseResumeButton")
+    {
+        texturePath = isHovered ? "../Assets/Sprites/Icons/playing_button.png" : "../Assets/Sprites/Icons/paused_button.png";
+    }
+    else
+    {
+        texturePath = isHovered ? "../Assets/Sprites/Icons/hoveringbtnL.png" : "../Assets/Sprites/Icons/blankbtnL.png";
+    }
 
     unsigned int newtex = GraphicsSystem::LoadTexture(texturePath.c_str());
     rc->SetTextureID(newtex);

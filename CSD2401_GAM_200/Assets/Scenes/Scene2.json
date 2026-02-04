@@ -614,7 +614,7 @@
       "TextComponent": {
         "fontPath": "../Assets/FrederickatheGreat-Regular.ttf",
         "fontSize":48,
-        "text": "00:00",
+        "text": "00:30",
         "color": [0.0, 0.0, 0.0, 1.0],
         "scale": 1.0,
         "screenSpace": true

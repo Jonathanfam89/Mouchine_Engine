@@ -1,0 +1,265 @@
+{
+  "GameObjects": [
+    {
+      "name": "MainCamera",
+      "localID": 1,
+      "parentID": 4294967295,
+      "active": true,
+      "TransformComponent": {
+        "pos": [
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0
+        ],
+        "rotation": 0.0
+      },
+      "children": []
+    },
+    {
+      "name": "SquareSpawner",
+      "localID": 2,
+      "parentID": 4294967295,
+      "active": true,
+      "children": []
+    },
+    {
+      "name": "Hero",
+      "localID": 3,
+      "parentID": 4294967295,
+      "active": true,
+      "TransformComponent": {
+        "pos": [
+          0.0,
+          0.0
+        ],
+        "scale": [
+          100.0,
+          100.0
+        ],
+        "rotation": 0.0
+      },
+      "RenderComponent": {
+        "shapeType": "Square",
+        "texturePath": "",
+        "color": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "layer": 0
+      },
+      "Spritesheet": {
+        "defaultAnimation": "",
+        "animations": []
+      },
+      "PhysicsComponent": {
+        "mass": 1.0,
+        "isStatic": false,
+        "useGravity": true,
+        "isGrounded": false,
+        "velocity": [
+          0.0,
+          0.0
+        ]
+      },
+      "ColliderComponent": {
+        "shape": "Square",
+        "layer": "Default"
+      },
+      "children": []
+    },
+    {
+      "name": "RedSquare",
+      "localID": 4,
+      "parentID": 4294967295,
+      "active": true,
+      "TransformComponent": {
+        "pos": [
+          500.0,
+          300.0
+        ],
+        "scale": [
+          50.0,
+          50.0
+        ],
+        "rotation": 0.0
+      },
+      "RenderComponent": {
+        "shapeType": "Square",
+        "texturePath": "",
+        "color": [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "layer": 0
+      },
+      "ColliderComponent": {
+        "shape": "Square",
+        "layer": "Default"
+      },
+      "children": []
+    },
+    {
+      "name": "GreenSquare",
+      "localID": 5,
+      "parentID": 4294967295,
+      "active": true,
+      "TransformComponent": {
+        "pos": [
+          -300.0,
+          300.0
+        ],
+        "scale": [
+          50.0,
+          50.0
+        ],
+        "rotation": 0.0
+      },
+      "RenderComponent": {
+        "shapeType": "Square",
+        "texturePath": "",
+        "color": [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ],
+        "layer": 0
+      },
+      "ColliderComponent": {
+        "shape": "Square",
+        "layer": "Default"
+      },
+      "children": []
+    },
+    {
+      "name": "Ground",
+      "localID": 6,
+      "parentID": 4294967295,
+      "active": true,
+      "TransformComponent": {
+        "pos": [
+          0.0,
+          -200.0
+        ],
+        "scale": [
+          1000.0,
+          50.0
+        ],
+        "rotation": 0.0
+      },
+      "RenderComponent": {
+        "shapeType": "Square",
+        "texturePath": "",
+        "color": [
+          0.5,
+          0.5,
+          0.5,
+          1.0
+        ],
+        "layer": 0
+      },
+      "PhysicsComponent": {
+        "mass": 1.0,
+        "isStatic": true,
+        "useGravity": true,
+        "isGrounded": false,
+        "velocity": [
+          0.0,
+          0.0
+        ]
+      },
+      "ColliderComponent": {
+        "shape": "Square",
+        "layer": "Ground"
+      },
+      "children": []
+    },
+    {
+      "name": "Debugline",
+      "localID": 7,
+      "parentID": 4294967295,
+      "active": true,
+      "TransformComponent": {
+        "pos": [
+          1.0,
+          1.0
+        ],
+        "scale": [
+          5.0,
+          10.0
+        ],
+        "rotation": 0.0
+      },
+      "RenderComponent": {
+        "shapeType": "Square",
+        "texturePath": "",
+        "color": [
+          0.0,
+          0.0,
+          1.0,
+          1.0
+        ],
+        "layer": 0
+      },
+      "ColliderComponent": {
+        "shape": "Square",
+        "layer": "Default"
+      },
+      "children": []
+    },
+    {
+      "name": "Game Object",
+      "localID": 8,
+      "parentID": 4294967295,
+      "active": true,
+      "TransformComponent": {
+        "pos": [
+          -267.9999694824219,
+          65.10001373291016
+        ],
+        "scale": [
+          50.0,
+          2457.4267578125
+        ],
+        "rotation": 0.0
+      },
+      "RenderComponent": {
+        "shapeType": "Square",
+        "texturePath": "",
+        "color": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "layer": 0
+      },
+      "PhysicsComponent": {
+        "mass": 1.0,
+        "isStatic": true,
+        "useGravity": false,
+        "isGrounded": false,
+        "velocity": [
+          0.0,
+          0.0
+        ]
+      },
+      "ColliderComponent": {
+        "shape": "Square",
+        "layer": "Ground"
+      },
+      "children": []
+    }
+  ],
+  "AudioManager": {
+    "sounds": [],
+    "events": []
+  }
+}

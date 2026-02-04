@@ -40,11 +40,13 @@ const std::string AudioPayloadID("Audio_Filepath");
 const std::string ScenePayloadID{ "Scene_Name" };
 const std::string SpritePayloadID{ "Sprite_Name" };
 const std::string TilesetPayloadID{ "Tileset_Name" };
+const std::string ScriptPayloadID{ "Script_Filepath" };
 
 // ASSET MANAGER/ DIRECTORY NAVIGATOR VARIABLES
 // Vars for ImGui::ImageButton
 inline const char* icon_folder = "../Assets/Editor_Icons/Folder.png";
 inline const char* icon_file = "../Assets/Editor_Icons/File_Generic.png";
+inline const char* icon_sprite = "../Assets/Editor_Icons/File_Sprite.png";
 inline const char* icon_plus = "../Assets/Editor_Icons/Plus.png";
 inline const char* icon_prefab = "../Assets/Editor_Icons/Cube.png";
 inline const char* icon_audio = "../Assets/Editor_Icons/File_Audio.png";
@@ -59,6 +61,7 @@ inline const char* icon_inactive = "../Assets/Editor_Icons/Eye-Inactive.png";
 
 extern GLuint icon_folder_ui;
 extern GLuint icon_file_ui;
+extern GLuint icon_sprite_ui;
 extern GLuint icon_plus_ui;
 extern GLuint icon_prefab_ui;
 extern GLuint icon_audio_ui;
@@ -197,7 +200,9 @@ public:
 
     void Viewport_HighlightGO();
 
-    void RenderEventComponent(GameObject* obj);
+    void RenderEventComponent(EventComponent* ec,GameObject* obj);
+
+    void RenderAnimationPreviewer();
 
 private:
     /**
@@ -241,6 +246,8 @@ enum ComponentType {
     Transform = 0,
     Render,
     Camera,
+    Event,
+    Script,
     Misc
 };
 extern std::vector < std::tuple<ComponentType, std::string, ImTextureID, std::function<void(GameObject*)>>>  AllComponents;
@@ -266,8 +273,6 @@ void GOCreationMenu_Render();
  * @brief Spawns specified GO in menu ^
  */
 void GOCreationMenu_Spawn();
-
-void StressTest_Spawn();
 
 /**
   * @brief 1/2 functions for drag and drop operations within asset browser. This one is for sending. Sends a payload with data + leaves a trailing text for users to see what file is being moved.
@@ -322,11 +327,6 @@ void EditorLayout_LoadPopUp();
  * @param displayText     text to display when hovering
  */
 void CreateHintText(std::string const& displayText);
-
-/**
- * @brief Handles the management of the spawning 1000 Gos
- */
-void M2_RenderStressTest();
 
 void AudioAssetsPanel_Render();
 

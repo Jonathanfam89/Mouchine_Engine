@@ -1,0 +1,45 @@
+{
+  "GameObjects": [
+    {
+      "name": "SpinningSquare",
+      "active": true,
+      "TransformComponent": {
+        "pos": [
+          0.0,
+          0.0
+        ],
+        "scale": [
+          100.0,
+          100.0
+        ],
+        "rotation": 0.0
+      },
+      "RenderComponent": {
+        "shapeType": "Square",
+        "texturePath": "",
+        "color": [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ],
+        "layer": 0
+      },
+      "ScriptComponent": {
+        "scripts": [
+          "SpinningSquare"
+        ]
+      },
+      "PhysicsComponent": {
+        "mass": 1.0,
+        "isStatic": false,
+        "useGravity": true
+      },
+      "ColliderComponent": {
+        "shape": "Box",
+        "size": [ 100.0, 100.0 ],
+        "layer": "Default"
+      }
+    }
+  ]
+}

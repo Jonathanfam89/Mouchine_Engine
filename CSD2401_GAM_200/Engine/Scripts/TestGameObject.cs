@@ -1,6 +1,6 @@
 using GameEngine;
 
-namespace GameScripts
+namespace CSharpScript
 {
     /// <summary>
     /// Simple script that creates two static square objects on start.

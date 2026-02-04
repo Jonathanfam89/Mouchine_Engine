@@ -1,7 +1,7 @@
 /* Start Header ************************************************************************/
 /*!
 \file       Collision.cpp
-\author     Khalil Belabadia [100% - 68 lines]
+\author     Khalil Belabadia [100% - 131 lines]
 \par        khalil.b@digipen.edu
 \date       October, 2, 2025
 Copyright (C) 2025 DigiPen Institute of Technology.

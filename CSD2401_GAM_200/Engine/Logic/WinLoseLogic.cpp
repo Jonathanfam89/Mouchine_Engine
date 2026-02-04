@@ -56,6 +56,13 @@ void WinLoseLogicSystem::Update(float dt)
 
     totalFrames++;
 
+    // Update audio fade
+    AudioManager* audioManager = CORE->GetAudioManager();
+    if (audioManager)
+    {
+        audioManager->UpdateFade(dt);
+    }
+
     if (pendingSceneChange)
     {
         pendingSceneTimer -= dt;
@@ -378,10 +385,18 @@ void WinLoseLogicSystem::HandleWinScreenButtons()
         }
         else if (hoveredButtonName == "WinNoButton")
         {
-            DestroyWinScreen();
-            CORE->SetGamePaused(false);
-            CORE->RequestSceneLoad("../Assets/Scenes/MainMenu.json", true);
-            return;
+            std::cout << "[WinZone] No clicked - Going to main menu" << std::endl;
+
+            // Start audio fade out before going to main menu
+            if (audioManager)
+            {
+                audioManager->FadeOutCategory("music", 0.5f);
+                std::cout << "[WinZone] Started music fade out" << std::endl;
+            }
+
+            pendingSceneTimer = 0.5f;  // Delay for fade
+            pendingScenePath = "../Assets/Scenes/MainMenu.json";
+            pendingSceneChange = true;
         }
     }
 }
@@ -432,7 +447,7 @@ bool WinLoseLogicSystem::IsMouseOver(GameObject* button, double mouseX, double m
     auto* tx = button->GetComponent<TransformComponent>();
     if (!tx) return false;
 
-    return IsAreaClicked(tx->posX, tx->posY, tx->scaleX, tx->scaleY, mouseX, mouseY);
+    return IsAreaClicked(tx->posX, tx->posY, tx->scaleX, tx->scaleY, static_cast<float>(mouseX), static_cast<float>(mouseY));
 }
 
 /**
@@ -603,10 +618,17 @@ void WinLoseLogicSystem::HandleLoseScreenButtons()
         {
             std::cout << "[WinLoseLogic] No clicked - Going to main menu" << std::endl;
 
-            DestroyLoseScreen();
-            CORE->SetGamePaused(false);
-            CORE->RequestSceneLoad("../Assets/Scenes/MainMenu.json", true);
-            return;
+            // Start audio fade out before going to main menu
+            AudioManager* audioManager = CORE->GetAudioManager();
+            if (audioManager)
+            {
+                audioManager->FadeOutCategory("music", 0.5f);
+                std::cout << "[WinLoseLogic] Started music fade out" << std::endl;
+            }
+
+            pendingSceneTimer = 0.5f;  // Delay for fade
+            pendingScenePath = "../Assets/Scenes/MainMenu.json";
+            pendingSceneChange = true;
         }
     }
 }

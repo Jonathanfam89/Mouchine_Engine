@@ -106,6 +106,19 @@ public:
     */
     void SetTextureID(GLuint newID) { textureID = newID; }
 
+    /*! @brief Gets the resolution of the texture image.
+    @param mip_level The scaling of resolution to world size. Val of 0 is 1-1 resolution to world space. Nice tested value is around 2-3!
+    */
+    vec2 GetTextureResolution(int mip_level)
+    {
+        int x{}, y{};
+        glBindTexture(GL_TEXTURE_2D, textureID);            // bind
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, mip_level, GL_TEXTURE_WIDTH, &x);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, mip_level, GL_TEXTURE_HEIGHT, &y);
+        glBindTexture(GL_TEXTURE_2D, 0);                    // unbind
+        return { float(x),float(y) };
+    }
+
     /*! @brief Get shape type
         @return ShapeType of this component
     */

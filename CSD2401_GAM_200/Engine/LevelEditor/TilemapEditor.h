@@ -1,7 +1,7 @@
 /* Start Header ************************************************************************/
 /*!
 \file       TilemapEditor.h
-\author     Khalil Belabadia
+\author     Khalil Belabadia [100% - 112 lines]
 \par        khalil.b@digipen.edu
 \date       November, 22, 2025
 Copyright (C) 2025 DigiPen Institute of Technology.
@@ -143,17 +143,17 @@ public:
     void ClearTilemap();
 
     /**
-         * @brief Load a tilemap file and create GameObjects for rendering in the game
-         * This is a static helper function that can be called from anywhere to render a tilemap
-         * @param filepath Path to .tilemap file
-         * @param tilemapPosition World position where tilemap should be placed
-         * @param namePrefix Prefix for created GameObject names
-         * @return Vector of created GameObject pointers
-         */
-    static std::vector<class GameObject*> LoadAndCreateTilemapGameObjects(
+     * @brief Load a tilemap and create a SINGLE GameObject (not thousands)
+     */
+    static GameObject* LoadTilemapAsGameObject(
         const std::string& filepath,
         const vec2& tilemapPosition = vec2(0.0f, 0.0f),
-        const std::string& namePrefix = "Tilemap");
+        const std::string& name = "Tilemap");
+
+    /**
+     * @brief Render a tilemap GameObject
+     */
+    static void RenderTilemapGameObject(GameObject* tilemapObj);
 
 private:
     // Rendering functions
@@ -178,6 +178,11 @@ private:
     // Tileset UV calculation
     ImVec2 GetTileUV0(int tileID) const;
     ImVec2 GetTileUV1(int tileID) const;
+
+    // Helper functions for undo/redo
+    void RecordTileEdit(int layer, int x, int y, const TileData& oldTile, const TileData& newTile);
+    void PerformUndo();
+    void PerformRedo();
 
 private:
     bool isVisible;
@@ -237,6 +242,97 @@ private:
     bool showNewTilemapDialog;
     int tempMapWidth;
     int tempMapHeight;
+
+    // Layer highlighting
+    bool highlightCurrentLayer;
+
+    // Undo/Redo system
+    struct TileEditAction
+    {
+        int layer;
+        int x;
+        int y;
+        TileData oldTile;  // Tile state before the edit
+        TileData newTile;  // Tile state after the edit
+    };
+
+    std::vector<TileEditAction> undoStack;
+    std::vector<TileEditAction> redoStack;
+    static constexpr int MAX_UNDO_STACK_SIZE = 100;
+};
+
+/**
+ * @struct LoadedTilemapData
+ * @brief Stores complete tilemap information for efficient rendering
+ */
+struct LoadedTilemapData {
+    std::string filepath;
+    int width;
+    int height;
+    int tileWidth;
+    int tileHeight;
+    int numLayers;
+
+    std::string tilesetPath;
+    GLuint tilesetTexture;
+    int tilesPerRow;
+    int tilesPerColumn;
+
+    // All tile data: [layer][y][x]
+    std::vector<std::vector<std::vector<TileData>>> tiles;
+
+    LoadedTilemapData()
+        : width(0), height(0), tileWidth(64), tileHeight(64),
+        numLayers(1), tilesetTexture(0), tilesPerRow(0), tilesPerColumn(0) {
+    }
+
+    ~LoadedTilemapData()
+    {
+    }
+};
+
+/**
+ * @class TilemapDataHolder
+ * @brief Component that holds tilemap data (inherits from IComponent)
+ */
+class TilemapDataHolder : public IComponent
+{
+public:
+    LoadedTilemapData* data;
+
+    TilemapDataHolder(GameObject* owner)
+        : IComponent(owner), data(nullptr) {
+    }
+
+    ~TilemapDataHolder()
+    {
+        if (data)
+        {
+            delete data;
+            data = nullptr;
+        }
+    }
+
+    // IComponent interface
+    std::string GetName() const override { return "TilemapDataHolder"; }
+
+    std::unique_ptr<IComponent> Clone(GameObject* newOwner) const override
+    {
+        auto clone = std::make_unique<TilemapDataHolder>(newOwner);
+        if (data && !data->filepath.empty())
+        {
+            clone->LoadTilemapFromFile(data->filepath);
+        }
+        return clone;
+    }
+
+    // Tilemap specific
+    std::string GetTilemapFilePath() const
+    {
+        return data ? data->filepath : "";
+    }
+
+    void LoadTilemapFromFile(const std::string& filepath);
 };
 
 extern bool isTileMapFocused;

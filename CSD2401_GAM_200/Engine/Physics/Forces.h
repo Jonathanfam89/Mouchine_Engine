@@ -1,7 +1,7 @@
 /* Start Header ************************************************************************/
 /*!
 \file       Forces.h
-\author     Khalil Belabadia [100% - 100 lines]
+\author     Khalil Belabadia [100% - 85 lines]
 \par        khalil.b@digipen.edu
 \date       November, 2, 2025
 Copyright (C) 2025 DigiPen Institute of Technology.

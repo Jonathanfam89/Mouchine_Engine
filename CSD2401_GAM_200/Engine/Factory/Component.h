@@ -1,7 +1,8 @@
 /* Start Header ************************************************************************/
 /*!
 \file       Component.h
-\author     Jonathan Fam Qian Wei [100% - 19 lines]
+\author     Jonathan Fam Qian Wei [27% - 17 lines]
+\co-author	Muhammad Ashfer [73% - 45 lines]
 \par        Fam.q@digipen.edu
 \date       October, 2, 2025
 
@@ -69,6 +70,8 @@ public:
     unsigned int GetID() const { return _id; }
     std::string GetDisplayText() const { return _displayText; }
     std::string GetExpectedPayload() const { return _expectedPayload; }
+    std::string GetReceivedData() const { return _receivedData; }
+    void ClearReceivedData() { _receivedData.clear(); }
 private:
     unsigned int _id;
     std::string _displayText;

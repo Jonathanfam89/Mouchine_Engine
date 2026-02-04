@@ -1,3 +1,16 @@
+/* Start Header************************************************************************ /
+/*!
+\file       Level1.cpp
+\author     Lee Hwee Min [100% - 32 lines]
+\par        l.hweemin@digipen.edu
+\date       November, 29, 2025
+Copyright (C) 2025 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+/* End Header **************************************************************************/
+
 #include "Level1.h"
 #include "PauseState.h"
 //#include "Level2.h"

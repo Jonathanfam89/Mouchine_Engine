@@ -18,6 +18,8 @@ Technology is prohibited.
 #include "System.h"
 #include <string>
 #include <unordered_map>
+#include <vector>
+#include <variant>
 #include <mono/jit/jit.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/debug-helpers.h>
@@ -25,6 +27,25 @@ Technology is prohibited.
 
 class GameObject;
 
+// Forward declaration
+struct ScriptInstance;
+
+enum class ScriptFieldType {
+    None,
+    Float,
+    Int,
+    Bool,
+    String,
+    Vec2,
+    Vec3,
+    Vec4
+};
+
+struct ScriptField {
+    std::string name;
+    ScriptFieldType type;
+    std::variant<float, int, bool, std::string> value;
+};
 /**
  * @brief Represents a C# script class loaded from a Mono assembly.
  */
@@ -164,4 +185,39 @@ public:
      * @brief Reloads the script assembly, enabling hot reload functionality.
      */
     void ReloadScriptAssembly();
+
+    /**
+    * @brief Creates a C# script instance and injects the owner name
+    * @param scriptClassName The name of the C# class (e.g., "SpinningSquare")
+    * @param owner The GameObject that owns this script
+    * @return MonoObject* pointer to the created instance, or nullptr on failure
+    */
+    MonoObject* CreateScriptInstance(const std::string& scriptClassName, GameObject* owner);
+
+    std::vector<ScriptField> GetPublicFields(ScriptInstance& instance);
+    
+    void SetPublicField(ScriptInstance& instance, const std::string& fieldName, const float& value);
+    void SetPublicField(ScriptInstance& instance, const std::string& fieldName, const int& value);
+    void SetPublicField(ScriptInstance& instance, const std::string& fieldName, const bool& value);
+    void SetPublicField(ScriptInstance& instance, const std::string& fieldName, const std::string& value);
+
+    /**
+     * @brief Gets the core assembly for direct class access
+     */
+    MonoAssembly* GetCoreAssembly() const { return coreAssembly; }
+
+    /**
+     * @brief Gets the core image for direct class access
+     */
+    MonoImage* GetCoreImage() const { return coreImage; }
+    
+    /**
+    * @brief Returns the script instances for a given GameObject
+    */
+    std::vector<ScriptInstance>* GetScriptInstances(GameObject* gameObject) {
+        if (gameObjectScripts.find(gameObject) != gameObjectScripts.end()) {
+            return &gameObjectScripts[gameObject];
+        }
+        return nullptr;
+    }
 };

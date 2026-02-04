@@ -20,6 +20,7 @@ Technology is prohibited.
 #include <MathLib.h>
 #include <RenderComponent.h>
 #include <typeindex>
+#include <ColliderComponent.h>
 
 // Forward declaration
 class IMessageHandler;
@@ -120,6 +121,10 @@ public:
     float scale[2];
     float rotation;
     vec4 color;
+    bool addCollider;
+    ColliderComponent::Type colType;
+    float colSize[2] = { 100.0f, 100.0f };
+    CollisionLayer colLayer;
 
     CreateObjectMessage(const std::string& objName,
         ObjectType objType,
@@ -127,16 +132,27 @@ public:
         const float position[2],
         const float scaleVal[2],
         float rot,
-        const vec4& col)
+        const vec4& col,
+        bool hasCollider = false,
+        ColliderComponent::Type cType = ColliderComponent::Type::Square,
+        float cw = 100.0f,
+        float ch = 100.0f,
+        CollisionLayer cl = CollisionLayer::Default)
+
         : Message(Id::CREATE_OBJECT),
         name(objName),
         type(objType),
         shapeType(shape),
         rotation(rot),
-        color(col)
+        color(col),
+        addCollider(hasCollider),
+        colType(cType),
+        colLayer(cl)
+
     {
-        pos[0] = position[0]; pos[1] = position[1];
+        pos[0] = position[0];   pos[1] = position[1];
         scale[0] = scaleVal[0]; scale[1] = scaleVal[1];
+        colSize[0] = cw;    colSize[1] = ch;
     }
 
 };

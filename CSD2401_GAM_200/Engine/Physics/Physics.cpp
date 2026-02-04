@@ -1,7 +1,7 @@
 /* Start Header ************************************************************************/
 /*!
 \file       Physics.cpp
-\author     Khalil Belabadia [100% - 67 lines]
+\author     Khalil Belabadia [100% - 90 lines]
 \par        khalil.b@digipen.edu
 \date       October, 2, 2025
 Copyright (C) 2025 DigiPen Institute of Technology.

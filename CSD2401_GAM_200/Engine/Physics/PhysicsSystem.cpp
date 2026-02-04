@@ -1,8 +1,8 @@
 /* Start Header ************************************************************************/
 /*!
 \file       PhysicsSystem.cpp
-\author     Khalil Belabadia [96% - 222 lines]
-            Lee Hwee Min [4% - 10 lines]
+\author     Khalil Belabadia [98% - 380 lines]
+            Lee Hwee Min [2% - 10 lines]
 \par        khalil.b@digipen.edu
 \date       October, 2, 2025
 Copyright (C) 2025 DigiPen Institute of Technology.

@@ -211,7 +211,7 @@ void AudioManager::SetCategoryVolume(const std::string& category, float volume)
     float clampedVolume = std::max(0.0f, std::min(1.0f, volume));
 
     categoryVolumes[category] = clampedVolume;
-    std::cout << "Set " << category << " volume to " << clampedVolume << std::endl;
+    // std::cout << "Set " << category << " volume to " << clampedVolume << std::endl;
 
     // If the user changes a volume while not muted, we should update our pre-mute reference.
     if (!m_isMuted) {
@@ -472,8 +472,177 @@ void AudioManager::RemoveSound(const std::string& soundName)
 /**
  * @brief Clears sound database and event mappings.
  */
-void AudioManager::Clear() 
+void AudioManager::Clear()
 {
     soundDatabase.clear();
     eventToSoundMap.clear();
+}
+
+/**
+ * @brief Starts fading out a specific category of audio.
+ */
+void AudioManager::FadeOutCategory(const std::string& category, float duration)
+{
+    auto it = categoryVolumes.find(category);
+    if (it == categoryVolumes.end())
+    {
+        std::cerr << "Category not found: " << category << std::endl;
+        return;
+    }
+
+    // Start from 1 volume
+    SetCategoryVolume(category, 1.0f);
+
+    FadeState& fadeState = categoryFadeStates[category];
+    fadeState.isFading = true;
+    fadeState.isFadeIn = false;
+    fadeState.startVolume = it->second;
+    fadeState.targetVolume = 0.0f;
+    fadeState.currentTime = 0.0f;
+    fadeState.duration = duration;
+
+    std::cout << "Starting fade out for category: " << category
+              << " from volume " << fadeState.startVolume
+              << " over " << duration << " seconds" << std::endl;
+}
+
+/**
+ * @brief Starts fading in a specific category of audio.
+ */
+void AudioManager::FadeInCategory(const std::string& category, float duration, float targetVolume)
+{
+    auto it = categoryVolumes.find(category);
+    if (it == categoryVolumes.end())
+    {
+        std::cerr << "Category not found: " << category << std::endl;
+        return;
+    }
+
+    // Start from 0 volume
+    SetCategoryVolume(category, 0.0f);
+
+    FadeState& fadeState = categoryFadeStates[category];
+    fadeState.isFading = true;
+    fadeState.isFadeIn = true;
+    fadeState.startVolume = 0.0f;
+    fadeState.targetVolume = targetVolume;
+    fadeState.currentTime = 0.0f;
+    fadeState.duration = duration;
+
+    std::cout << "Starting fade in for category: " << category
+              << " to volume " << targetVolume
+              << " over " << duration << " seconds" << std::endl;
+}
+
+/**
+ * @brief Starts fading out all audio categories.
+ */
+void AudioManager::FadeOutAll(float duration)
+{
+    for (const auto& pair : categoryVolumes)
+    {
+        FadeOutCategory(pair.first, duration);
+    }
+}
+
+/**
+ * @brief Updates the fade state (should be called every frame).
+ */
+void AudioManager::UpdateFade(float dt)
+{
+    for (auto& pair : categoryFadeStates)
+    {
+        const std::string& category = pair.first;
+        FadeState& fadeState = pair.second;
+
+        if (!fadeState.isFading)
+            continue;
+
+        fadeState.currentTime += dt;
+        float t = fadeState.currentTime / fadeState.duration;
+
+        if (t >= 1.0f)
+        {
+            // Fade complete - set to target volume
+            SetCategoryVolume(category, fadeState.targetVolume);
+            fadeState.isFading = false;
+        }
+        else
+        {
+            // Use exponential curve for fade out, linear for fade in
+            float interpolatedValue;
+            if (fadeState.isFadeIn)
+            {
+                // Linear interpolation for fade in
+                interpolatedValue = t;
+            }
+            else
+            {
+                // Exponential curve for fade out
+                interpolatedValue = t * t * t;
+            }
+
+            float newVolume = fadeState.startVolume + (fadeState.targetVolume - fadeState.startVolume) * interpolatedValue;
+            SetCategoryVolume(category, newVolume);
+            std::cout << "[Fade] " << category << " volume: " << newVolume << " (" << (fadeState.isFadeIn ? "IN" : "OUT") << ")" << std::endl;
+        }
+    }
+}
+
+/**
+ * @brief Resets all fade states and restores default category volumes.
+ *        Only resets if no fade is currently active (to preserve transitions).
+ */
+void AudioManager::ResetFadeStates()
+{
+    // Check if any fade is currently active
+    if (IsAnyFadeActive())
+    {
+        std::cout << "[AudioManager] Fade in progress - skipping reset to preserve transition" << std::endl;
+        return;
+    }
+
+    categoryFadeStates.clear();
+
+    // Restore default volumes
+    categoryVolumes["music"] = 1.0f;
+    categoryVolumes["sfx"] = 1.0f;
+    categoryVolumes["voice"] = 1.0f;
+    categoryVolumes["ambient"] = 1.0f;
+
+    // Apply to all currently playing sounds
+    for (const auto& pair : soundDatabase)
+    {
+        const SoundData& sound = pair.second;
+        float finalVolume = sound.volume;
+
+        auto categoryIt = categoryVolumes.find(sound.category);
+        if (categoryIt != categoryVolumes.end())
+        {
+            finalVolume *= categoryIt->second;
+        }
+
+        std::string channelName = sound.name + "_channel";
+        if (audioEngine)
+        {
+            audioEngine->setVolume(channelName, finalVolume);
+        }
+    }
+
+    std::cout << "[AudioManager] Fade states reset and volumes restored" << std::endl;
+}
+
+/**
+ * @brief Checks if any category is currently fading.
+ */
+bool AudioManager::IsAnyFadeActive() const
+{
+    for (const auto& pair : categoryFadeStates)
+    {
+        if (pair.second.isFading)
+        {
+            return true;
+        }
+    }
+    return false;
 }

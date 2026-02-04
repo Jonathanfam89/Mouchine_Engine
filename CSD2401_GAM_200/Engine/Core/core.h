@@ -41,6 +41,8 @@ Technology is prohibited.
 #include "MathLib.h"
 #include "Serialization.h"
 #include "logic.h"
+#include "CutsceneSystem.h"
+#include "LevelEditor.h"
 #include "MenuLogic.h"
 #include "PauseMenuLogic.h"
 #include "WinLoseLogic.h"
@@ -73,6 +75,8 @@ class PauseMenuLogicSystem;
 class WinLoseLogicSystem;
 class AudioManager;
 class GameTimerSystem;
+class CutsceneSystem;
+
 class CoreEngine : public IMessageHandler
 {
 public:
@@ -208,6 +212,15 @@ public:
     {
 
         return cameraSystem;
+    }
+
+    /**
+     * @brief Gets a pointer to the CutsceneSystem.
+     * @return A pointer to the CutsceneSystem.
+     */
+    CutsceneSystem *GetCutsceneSystem() const
+    {
+        return cutsceneSystem;
     }
 
     /**
@@ -362,14 +375,14 @@ private:
     TransformSystem *transformSystem = nullptr;
     ScriptSystem *scriptSystem = nullptr;
     CameraSystem *cameraSystem = nullptr;
+    CutsceneSystem *cutsceneSystem = nullptr;
+    LevelEditor *levelEditor = nullptr;
     MenuLogicSystem *menuLogicSystem = nullptr;
     PauseMenuLogicSystem *pauseMenuLogicSystem = nullptr;
     WinLoseLogicSystem * winLoseLogicSystem = nullptr;
     AudioManager *audioManager = nullptr;
     TimerSystem *timerSystem = nullptr;
     GameTimerSystem * gameTimerSystem = nullptr;
-
-    EventSystemRunner *eventSystemRunner = nullptr;
 
     unsigned LastTime;
     bool GameActive;

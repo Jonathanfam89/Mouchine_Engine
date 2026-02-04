@@ -17,6 +17,7 @@ Technology is prohibited.
 #include <map>
 #include <memory>
 #include <iostream>
+#include <vector>
 #include "System.h"
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -24,6 +25,7 @@ Technology is prohibited.
 #include <GL/glew.h>
 
 class AudioEngine;
+class GLSLShader;
 
 namespace FMOD {
     class Sound;
@@ -248,6 +250,28 @@ private:
     void LoadCharacters(FT_Face face);
 };
 
+/**
+ * @class ShaderResource
+ * @brief Manages shader resource loading and unloading
+ */
+class ShaderResource : public Resource {
+public:
+    ShaderResource();
+    ~ShaderResource() override;
+
+    bool Load(const std::string& filepath) override;
+    bool LoadShaderPair(const std::string& vertexPath, const std::string& fragmentPath);
+    bool LoadShaderFiles(const std::vector<std::pair<GLenum, std::string>>& shaderFiles);
+    void Unload() override;
+    bool IsLoaded() const override { return loaded; }
+
+    GLSLShader* GetShader() { return shader.get(); }
+    GLuint GetProgramHandle() const;
+
+private:
+    std::unique_ptr<GLSLShader> shader;
+};
+
 
 /**
  * @class ResourceManager
@@ -351,6 +375,13 @@ public:
      */
     void UnloadFont(const std::string& name);
 
+    ShaderResource* LoadShader(const std::string& name, const std::string& vertexPath, const std::string& fragmentPath);
+    ShaderResource* LoadShaderFiles(const std::string& name, const std::vector<std::pair<GLenum, std::string>>& shaderFiles);
+    ShaderResource* GetShader(const std::string& name);
+
+
+    void UnloadShader(const std::string& name);
+
     /**
      * @brief Unloads all resources (textures and audio)
      */
@@ -371,6 +402,8 @@ public:
      */
     void UnloadAllFonts();
 
+    void UnloadAllShaders();
+
     /**
      * @brief Gets the count of loaded textures
      * @return Number of loaded textures
@@ -389,6 +422,8 @@ public:
      */
     size_t GetFontCount() const { return fonts.size(); }
 
+    size_t GetShaderCount() const { return shaders.size(); }
+
     /**
      * @brief Prints information about all loaded resources
      */
@@ -404,6 +439,7 @@ private:
     std::map<std::string, std::unique_ptr<TextureResource>> textures;
     std::map<std::string, std::unique_ptr<AudioResource>> audioResources;
     std::map<std::string, std::unique_ptr<FontResource>> fonts;
+    std::map<std::string, std::unique_ptr<ShaderResource>> shaders;
 
     AudioEngine* audioEngine = nullptr;
     FT_Library ftLibrary = nullptr;

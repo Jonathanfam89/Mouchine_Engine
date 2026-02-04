@@ -24,7 +24,7 @@ Technology is prohibited.
 void GameTimerSystem::Initialize()
 {
     remainingTime = 30.0f;
-    lastDisplayedSeconds = -1;
+    lastDisplayedSeconds = 30;
     hasTriggeredTimeUp = false;
     UpdateText(30);
 }
@@ -119,7 +119,7 @@ void GameTimerSystem::Update(float dt)
         if (remainingTime != 30.0f || lastDisplayedSeconds != 30)
         {
             remainingTime = 30.0f;
-            lastDisplayedSeconds = -1;
+            lastDisplayedSeconds = 30;
             hasTriggeredTimeUp = false;
             UpdateText(30);
         }
@@ -146,19 +146,12 @@ void GameTimerSystem::Update(float dt)
             UpdateText(0);
             hasTriggeredTimeUp = true;
 
-            // Only trigger lose screen if NOT in main menu
-            GameObject* mainMenuCheck = factory.FindGameObject("Title");
-            bool isInMainMenu = mainMenuCheck && mainMenuCheck->IsActive();
-
-            if (!isInMainMenu)
+            // LOSE CONDITION - trigger lose screen
+            std::cout << "TIME'S UP! Triggering lose screen..." << std::endl;
+            WinLoseLogicSystem* P_winLoseLogic = CORE->GetWinLoseLogic();
+            if (P_winLoseLogic)
             {
-                // LOSE CONDITION - trigger lose screen
-                //std::cout << "TIME'S UP! Triggering lose screen..." << std::endl;
-                WinLoseLogicSystem* winLoseLogic = CORE->GetWinLoseLogic();
-                if (winLoseLogic)
-                {
-                    winLoseLogic->TriggerLose();
-                }
+                P_winLoseLogic->TriggerLose();
             }
             return;
         }
@@ -180,7 +173,7 @@ void GameTimerSystem::Update(float dt)
 void GameTimerSystem::ResetTimer()
 {
     remainingTime = 30.0f;
-    lastDisplayedSeconds = -1;
+    lastDisplayedSeconds = 30;
     hasTriggeredTimeUp = false;
     UpdateText(30);
 }

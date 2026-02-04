@@ -34,19 +34,19 @@ TextComponent::~TextComponent() {
 	fontResource = nullptr;
 }
 
-void TextComponent::LoadFont(const char* fontPath, GLuint fontSize) {
+void TextComponent::LoadFont(const char* fPath, GLuint fSize) {
 	// create unique resource name based on font path and size
-	fontResourceName = std::string(fontPath) + "_" + std::to_string(fontSize);
+	fontResourceName = std::string(fPath) + "_" + std::to_string(fSize);
 
 	// load or get existing font from resource manager
 	// Assumes ResourceManager::Instance().LoadFont() is a specialized function for FontResource
-	fontResource = ResourceManager::Instance().LoadFont(fontResourceName, fontPath, fontSize);
+	fontResource = ResourceManager::Instance().LoadFont(fontResourceName, fPath, fSize);
 
 	if (!fontResource) {
-		std::cerr << "ERROR::TextComponent: Failed to load font: " << fontPath << std::endl;
+		std::cerr << "ERROR::TextComponent: Failed to load font: " << fPath << std::endl;
 	}
 	else {
-		std::cout << "TextComponent using font: " << fontPath << " (size: " << fontSize << ")" << std::endl;
+		std::cout << "TextComponent using font: " << fPath << " (size: " << fSize << ")" << std::endl;
 	}
 }
 

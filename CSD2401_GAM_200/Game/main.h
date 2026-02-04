@@ -35,6 +35,8 @@ Technology is prohibited.
 #include "Serialization.h"
 #include "PrefabManager.h"
 #include "LevelEditor.h"
+#include "ScriptComponent.h"
+
 
 #include "GameManager.h"
 #include "Level1.h"

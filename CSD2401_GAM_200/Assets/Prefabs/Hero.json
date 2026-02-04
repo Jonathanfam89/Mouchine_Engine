@@ -1,0 +1,179 @@
+{
+    "GameObjects": [
+        {
+            "name": "Hero",
+            "localID": 3,
+            "parentID": 4294967295,
+            "active": true,
+            "TransformComponent": {
+                "pos": [
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    100.0,
+                    100.0
+                ],
+                "rotation": 0.0
+            },
+            "RenderComponent": {
+                "shapeType": "Square",
+                "texturePath": "",
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "layer": 0
+            },
+            "Spritesheet": {
+                "defaultAnimation": "",
+                "animations": [
+                    {
+                        "name": "Dash",
+                        "filepath": "../Assets/spritesheet_R.png",
+                        "rows": 13,
+                        "cols": 10,
+                        "startRow": 3,
+                        "startCol": 0,
+                        "endRow": 3,
+                        "endCol": 2,
+                        "fps": 4.0
+                    },
+                    {
+                        "name": "Falling",
+                        "filepath": "../Assets/spritesheet_L.png",
+                        "rows": 13,
+                        "cols": 10,
+                        "startRow": 10,
+                        "startCol": 0,
+                        "endRow": 10,
+                        "endCol": 1,
+                        "fps": 4.0
+                    },
+                    {
+                        "name": "Glide",
+                        "filepath": "../Assets/spritesheet_R.png",
+                        "rows": 13,
+                        "cols": 10,
+                        "startRow": 1,
+                        "startCol": 0,
+                        "endRow": 1,
+                        "endCol": 2,
+                        "fps": 8.0
+                    },
+                    {
+                        "name": "Groundpound",
+                        "filepath": "../Assets/spritesheet_R.png",
+                        "rows": 13,
+                        "cols": 10,
+                        "startRow": 9,
+                        "startCol": 3,
+                        "endRow": 9,
+                        "endCol": 4,
+                        "fps": 10.0
+                    },
+                    {
+                        "name": "Idle",
+                        "filepath": "../Assets/spritesheet_R.png",
+                        "rows": 13,
+                        "cols": 10,
+                        "startRow": 7,
+                        "startCol": 0,
+                        "endRow": 7,
+                        "endCol": 2,
+                        "fps": 4.0
+                    },
+                    {
+                        "name": "Jump",
+                        "filepath": "../Assets/spritesheet_R.png",
+                        "rows": 13,
+                        "cols": 10,
+                        "startRow": 11,
+                        "startCol": 4,
+                        "endRow": 11,
+                        "endCol": 5,
+                        "fps": 12.0
+                    },
+                    {
+                        "name": "Land",
+                        "filepath": "../Assets/spritesheet_L.png",
+                        "rows": 13,
+                        "cols": 10,
+                        "startRow": 10,
+                        "startCol": 3,
+                        "endRow": 10,
+                        "endCol": 4,
+                        "fps": 4.0
+                    },
+                    {
+                        "name": "Roll",
+                        "filepath": "../Assets/spritesheet_R.png",
+                        "rows": 13,
+                        "cols": 10,
+                        "startRow": 8,
+                        "startCol": 0,
+                        "endRow": 8,
+                        "endCol": 5,
+                        "fps": 12.0
+                    },
+                    {
+                        "name": "Run",
+                        "filepath": "../Assets/spritesheet_R.png",
+                        "rows": 13,
+                        "cols": 10,
+                        "startRow": 12,
+                        "startCol": 0,
+                        "endRow": 12,
+                        "endCol": 7,
+                        "fps": 16.0
+                    },
+                    {
+                        "name": "Wallkick",
+                        "filepath": "../Assets/spritesheet_R.png",
+                        "rows": 13,
+                        "cols": 10,
+                        "startRow": 4,
+                        "startCol": 3,
+                        "endRow": 4,
+                        "endCol": 4,
+                        "fps": 4.0
+                    },
+                    {
+                        "name": "Wallslide",
+                        "filepath": "../Assets/spritesheet_L.png",
+                        "rows": 13,
+                        "cols": 10,
+                        "startRow": 4,
+                        "startCol": 0,
+                        "endRow": 4,
+                        "endCol": 1,
+                        "fps": 4.0
+                    }
+                ]
+            },
+            "PhysicsComponent": {
+                "mass": 9.999999747378752e-05,
+                "isStatic": false,
+                "useGravity": true,
+                "isGrounded": true,
+                "velocity": [
+                    0.0,
+                    0.0
+                ]
+            },
+            "ColliderComponent": {
+                "shape": "Square",
+                "layer": "Default"
+            },
+            "ScriptComponent": {
+                "scripts": [
+                    "PlayerMovement",
+                    "PlayerMovementStats"
+                ]
+            },
+            "children": []
+        }
+    ]
+}

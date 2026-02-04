@@ -94,6 +94,35 @@
       "children": []
     },
     {
+      "name": "Logo",
+      "localID": 14,
+      "parentID": 4294967295,
+      "active": true,
+      "TransformComponent": {
+        "pos": [
+          825.0,
+          375.0
+        ],
+        "scale": [
+          325.0,
+          250.0
+        ],
+        "rotation": 0.0
+      },
+      "RenderComponent": {
+        "shapeType": "Square",
+        "texturePath": "../Assets/Sprites/Icons/Group_Logo_white.png",
+        "color": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "layer": 0
+      },
+      "children": []
+    },
+    {
       "name": "Text FPS",
       "TransformComponent": {
         "pos": [
@@ -168,7 +197,7 @@
           },
           "RenderComponent": {
             "shapeType": "Square",
-            "texturePath": "../Assets/Menu_Play.png",
+            "texturePath": "../Assets/Sprites/Icons/Menu_Play.png",
             "color": [
               1.0,
               1.0,
@@ -197,7 +226,36 @@
           },
           "RenderComponent": {
             "shapeType": "Square",
-            "texturePath": "../Assets/Menu_Settings.png",
+            "texturePath": "../Assets/Sprites/Icons/Menu_Settings.png",
+            "color": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "layer": 0
+          },
+          "children": []
+        },
+        {
+          "name": "CreditsButton",
+          "localID": 13,
+          "parentID": 3,
+          "active": true,
+          "TransformComponent": {
+            "pos": [
+              0.0,
+              -150.0
+            ],
+            "scale": [
+              300.0,
+              60.0
+            ],
+            "rotation": 0.0
+          },
+          "RenderComponent": {
+            "shapeType": "Square",
+            "texturePath": "../Assets/Sprites/Icons/Menu_credits_NEW.png",
             "color": [
               1.0,
               1.0,
@@ -216,7 +274,7 @@
           "TransformComponent": {
             "pos": [
               0.0,
-              -150.0
+              -225.0
             ],
             "scale": [
               300.0,
@@ -226,7 +284,7 @@
           },
           "RenderComponent": {
             "shapeType": "Square",
-            "texturePath": "../Assets/Menu_Quit.png",
+            "texturePath": "../Assets/Sprites/Icons/Menu_quit.png",
             "color": [
               1.0,
               1.0,
@@ -257,7 +315,7 @@
       },
       "RenderComponent": {
         "shapeType": "Square",
-        "texturePath": "../Assets/Sprites/Menu_Settings.png",
+        "texturePath": "../Assets/Sprites/Menu_settings.png",
         "color": [
           1.0,
           1.0,
@@ -421,7 +479,7 @@
           },
           "RenderComponent": {
             "shapeType": "Square",
-            "texturePath": "../Assets/Sprites/Icons/Button_Back.png",
+            "texturePath": "../Assets/Sprites/Icons/Back_Button.png",
             "color": [
               1.0,
               1.0,
@@ -443,7 +501,7 @@
         "loop": true,
         "volume": 0.5,
         "pitch": 1.0,
-        "category": "bgm_channel"
+        "category": "music"
       },
       {
         "name": "menu_click",

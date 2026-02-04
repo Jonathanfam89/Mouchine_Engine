@@ -15,6 +15,8 @@ Technology is prohibited.
 #include "MenuLogic.h"
 #include <iostream>
 
+std::string introPath = "../Assets/Cutscene_M3.mpeg";
+
 // abit overkill but if we want more screens in the menu this is better
 enum MenuScreens {
     Home = 0,       // Normal landing page
@@ -24,6 +26,13 @@ MenuScreens currScreen = MenuScreens::Home;
 
 void MenuLogicSystem::Update(float dt)
 {
+    // Update audio fade
+    AudioManager* audioManager = CORE->GetAudioManager();
+    if (audioManager)
+    {
+        audioManager->UpdateFade(dt);
+    }
+
     // if a scene change is pending, count down timer first so the click sound can be played
     if (pendingSceneChange)
     {
@@ -35,9 +44,22 @@ void MenuLogicSystem::Update(float dt)
                 if (hoveredButtonName == "PlayButton")
                 {
                     std::cout << "PlayButton Clicked!" << std::endl;
-                    std::cout << "[MenuLogic] Requesting scene load with AUTO-PLAY = TRUE" << std::endl;
-                    CORE->RequestSceneLoad("../Assets/Scenes/Scene1.json", true);
-                    std::cout << "[MenuLogic] RequestSceneLoad called" << std::endl;
+
+                    CutsceneSystem* cutscene = CORE->GetCutsceneSystem();
+                    if (!cutscene->HasFinished(introPath)) {    // FIRST CLICK: Play Cutscene
+                        if (!cutscene->IsPlaying()) {
+                            cutscene->PlayVideo(introPath);
+                            // Don't fade back in - let the fade out complete
+                            std::cout << "[MenuLogic] Playing cutscene, music remains faded out" << std::endl;
+                        }
+                    }
+                    else {                                      // SECOND CLICK: Video has finished, load the game
+                        std::cout << "[MenuLogic] Requesting scene load with AUTO-PLAY = TRUE" << std::endl;
+                        std::cout << "[MenuLogic] Music should already be fading out from earlier" << std::endl;
+                        CORE->RequestSceneLoad("../Assets/Scenes/Scene1.json", true);
+                        std::cout << "[MenuLogic] RequestSceneLoad called" << std::endl;
+                    }
+
                 }
                 else if (hoveredButtonName == "SettingsButton")
                 {
@@ -45,6 +67,12 @@ void MenuLogicSystem::Update(float dt)
 
                     currScreen = MenuScreens::Settings;
                     //CORE->RequestSceneLoad("../Assets/Scenes/Scene2.json", true);
+                }
+                else if (hoveredButtonName == "CreditsButton")
+                {
+                    std::cout << "CreditsButton Clicked!" << std::endl;
+                    // to add credits screen here
+                    //CORE->RequestSceneLoad("../Assets/Scenes/Credits.json", true);
                 }
                 else if (hoveredButtonName == "QuitButton")
                 {
@@ -57,7 +85,7 @@ void MenuLogicSystem::Update(float dt)
                 }
             }
 
-            // clear 
+            // clear
             pendingSceneChange = false;
             hoveredButtonName.clear();
         }
@@ -108,6 +136,10 @@ void MenuLogicSystem::Update(float dt)
         else if (IsMouseOver(factory.FindGameObject("SettingsButton"), mouseX, mouseY))
         {
             currentHover = "SettingsButton";
+        }
+        else if (IsMouseOver(factory.FindGameObject("CreditsButton"), mouseX, mouseY))
+        {
+            currentHover = "CreditsButton";
         }
         else if (IsMouseOver(factory.FindGameObject("QuitButton"), mouseX, mouseY))
         {
@@ -167,19 +199,28 @@ void MenuLogicSystem::Update(float dt)
         }
 
         // Start small delay before loading scene
-        if (hoveredButtonName != "SettingsButton" && hoveredButtonName != "MuteButton" && hoveredButtonName != "BackButton")
+        if (hoveredButtonName != "SettingsButton" && hoveredButtonName != "MuteButton" && hoveredButtonName != "BackButton" && hoveredButtonName != "CreditsButton")
         {
+            // Start audio fade out for scene transitions
+            if (hoveredButtonName == "PlayButton" && audioManager)
+            {
+                audioManager->FadeOutCategory("music", 1.0f);  // Fade out over 1.0 sec
+                std::cout << "[MenuLogic] Started music fade out" << std::endl;
+            }
+
             pendingSceneChange = true;
-            pendingTimer = 0.75f;                       // 400(changed to 750)ms delay to let click sound play (only not for settings)
+            pendingTimer = 2.0f;                       // Wait 3.0s so 2.5s fade completes before scene loads
         }
         else
         {
             if (hoveredButtonName == "MuteButton")
             {
-                AudioManager* audioManager = CORE->GetAudioManager();
+                //AudioManager* audioManager = CORE->GetAudioManager();
                 if (audioManager)
                 {
                     audioManager->ToggleMasterMute();
+
+
                 }
                 SetButtonTexture("MuteButton", true); // Update texture after toggling
             }
@@ -187,9 +228,15 @@ void MenuLogicSystem::Update(float dt)
             {
                 currScreen = MenuScreens::Home;
             }
-            else
+            else if (hoveredButtonName == "SettingsButton")
             {
                 currScreen = MenuScreens::Settings;
+            }
+            else if (hoveredButtonName == "CreditsButton")
+            {
+                std::cout << "CreditsButton Clicked!" << std::endl;
+                // TODO: Add credits screen logic here
+                //CORE->RequestSceneLoad("../Assets/Scenes/Credits.json", true);
             }
         }
     }
@@ -201,7 +248,7 @@ bool MenuLogicSystem::IsMouseOver(GameObject* button, double mouseX, double mous
     auto* tx = button->GetComponent<TransformComponent>();
     if (!tx) return false;
 
-    return IsAreaClicked(tx->posX, tx->posY, tx->scaleX, tx->scaleY, mouseX, mouseY);
+    return IsAreaClicked(tx->posX, tx->posY, tx->scaleX, tx->scaleY, static_cast<float>(mouseX), static_cast<float>(mouseY));
 }
 
 //  swap textures
@@ -217,13 +264,13 @@ void MenuLogicSystem::SetButtonTexture(std::string buttonName, bool isHovered)
     std::string texturePath;
 
     if (buttonName == "PlayButton") {
-        texturePath = isHovered ? "../Assets/Menu_Play_Hover.png" : "../Assets/Menu_Play.png";
+        texturePath = isHovered ? "../Assets/Sprites/Icons/Menu_play_NEW_HOVER.png" : "../Assets/Sprites/Icons/Menu_Play.png";
     }
     else if (buttonName == "SettingsButton") {
-        texturePath = isHovered ? "../Assets/Menu_Settings_Hover.png" : "../Assets/Menu_Settings.png";
+        texturePath = isHovered ? "../Assets/Sprites/Icons/Menu_settings_NEW_HOVER.png" : "../Assets/Sprites/Icons/Menu_settings.png";
     }
     else if (buttonName == "QuitButton") {
-        texturePath = isHovered ? "../Assets/Menu_Quit_Hover.png" : "../Assets/Menu_Quit.png";
+        texturePath = isHovered ? "../Assets/Sprites/Icons/Menu_quit_NEW_HOVER.png" : "../Assets/Sprites/Icons/Menu_Quit.png";
     }
     else if (buttonName == "MuteButton") {
         bool isMuted = false;
@@ -235,7 +282,10 @@ void MenuLogicSystem::SetButtonTexture(std::string buttonName, bool isHovered)
         texturePath = isMuted ? "../Assets/Sprites/Icons/Volume_Mute.png" : "../Assets/Sprites/Icons/Volume_Unmute.png";
     }
     else if (buttonName == "BackButton") {
-        texturePath = isHovered ? "../Assets/Sprites/Icons/Button_Back_Dark.png" : "../Assets/Sprites/Icons/Button_Back.png";
+        texturePath = isHovered ? "../Assets/Sprites/Icons/Back_button_dark.png" : "../Assets/Sprites/Icons/Back_button.png";
+    }
+    else if (buttonName == "CreditsButton") {
+        texturePath = isHovered ? "../Assets/Sprites/Icons/Menu_credits_NEW_HOVER.png" : "../Assets/Sprites/Icons/Menu_credits_NEW.png";
     }
   
     unsigned int newtex = GraphicsSystem::LoadTexture(texturePath.c_str());

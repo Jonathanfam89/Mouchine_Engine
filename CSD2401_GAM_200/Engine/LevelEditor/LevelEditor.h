@@ -110,6 +110,9 @@ struct LevelData
     std::vector<GameObjectData> gameObjects;
 };
 
+/**
+ * @brief Stores one undo operation for the Level Editor.
+ */
 struct EditorUndoCommand {
     enum class ActionType { ObjectTransform, ObjectCreated, ObjectDeleted };
 
@@ -337,8 +340,19 @@ public:
      */
     GameObject* DeserialiseGameObject(const GameObjectData& data);
 
+    /**
+     * @brief Record a new undo command into the Level Editor system.
+     */
     void RecordUndo(const EditorUndoCommand& cmd);
+
+    /**
+     * @brief Executes the most recent undo operation.
+     */
     void PerformUndo();
+
+    /**
+     * @brief Clears all undo operations.
+     */
     void ClearUndoStack();
 
     std::vector<EditorUndoCommand> undoStack;

@@ -22,6 +22,7 @@ Technology is prohibited.
 #include "transform.h"
 #include "physics.h"
 #include "GraphicsSystem.h"
+#include "ParticleEmitterComponent.h"
 #include "core.h"
 #include "audio.h"
 #ifdef USE_IMGUI
@@ -160,49 +161,13 @@ private:
 	std::map<int, KEY_STATE> m_keyStates;
 	std::map<int, KEY_STATE> m_mouseButtonStates;
 
-    // Movement and jump
-    double movementspeed = 300.f;
-    bool isJumping = false;
-    float jumpStartY = 0.0f;
-    float jumpMaxHeight = 5.0f; // max height relative to start
-    float jumpSpeed = 10.0f;    // units per second
-
-    // Footstep audio timing
-    float footstepTimer = 0.0f;
-    float footstepInterval = 0.4f; // time between footstep sounds
     EntityID cachedPlayerID = 0;
-
-    // ===== ABILITY SYSTEM VARIABLES =====
-    // Wall Kick
-    bool isWallKicking = false;
-    float wallKickTimer = 0.0f;
-    float wallKickCooldownTimer = 0.0f;
-    bool wallKickKeyPressed = false;
-
-    // Ground Pound
-    bool isGroundPounding = false;
-    float groundPoundPauseTimer = 0.0f;
-    bool groundPoundKeyPressed = false;
-
-    // Roll
-    bool isRolling = false;
-    float rollTimer = 0.0f;
-    bool rollKeyPressed = false;
-
-    // Glide
-    bool isGliding = false;
-    float glideCooldownTimer = 0.0f;
-    bool glideKeyPressed = false;
-
-    // Wall Slide
-    bool isWallSliding = false;
-
-    // Double Jump
-    int numberOfJumpsUsed = 0;
-    int maxJumps = 2; // Allow double jump
 
     // Facing Direction
     bool isFacingRight = true; // Track which way player is facing
+
+    //For Particle System
+    bool isDashing = false;
 };
 
 #endif

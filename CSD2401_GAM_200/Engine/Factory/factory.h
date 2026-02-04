@@ -306,9 +306,20 @@ public:
 
     GameObject* FindByName(const std::string& name);
 
+    /**
+     * @brief Reorder all current GameObjects.
+     */
     void ReorderRootObjects(const std::vector<EntityID>& order);
 
+    /**
+     * @brief Get the next smallest EntityID
+     */
     EntityID GetSmallestAvailableID() const;
+
+    /**
+     * @brief Check if gameObject is alive
+     */
+    bool IsAlive(GameObject* ptr) const;
 
 private:
     GameObjectFactory() : nextEntityID(1), cloneCounter(0) { gameObjects.reserve(1000); }           // HAVE TO PUT THIS HERE IF NOT CRASHES WHEN WE WANT TO CLONE LOL
@@ -329,3 +340,10 @@ void DemoM1_SpawnGameObjects();
          (Yes even if you chose to spawn more than 2500)
 */
 void DemoM1_DestroyGameObjects();
+
+/**
+ * @brief Handles the management of the spawning 1000 Gos
+ */
+void SpawnStressObjects();
+void SpawnTest_Update();
+void DestroyStressTestGameObjects();

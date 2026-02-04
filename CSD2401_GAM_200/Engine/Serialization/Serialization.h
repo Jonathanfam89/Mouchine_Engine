@@ -1,7 +1,7 @@
 /* Start Header ************************************************************************/
 /*!
 \file       Serialization.h
-\author     Muhammad Ashfer [100% - 27 lines]
+\author     Muhammad Ashfer [100% - 43 lines]
 \par        m.binafzalkhan@digipen.edu
 \date       October, 3, 2025
 Copyright (C) 2025 DigiPen Institute of Technology.

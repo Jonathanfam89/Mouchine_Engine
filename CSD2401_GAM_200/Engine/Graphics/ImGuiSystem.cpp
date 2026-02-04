@@ -1,9 +1,9 @@
 /* Start Header ************************************************************************/
 /*!
 \file       ImGuiSystem.cpp
-\author     Guan Shao Jun [17% - 200 lines]
-\co-author	Muhammad Ashfer [76% - 1049 lines]
-            Hwee Min [7% - 82 lines]
+\author     Guan Shao Jun [10% - 200 lines]
+\co-author	Muhammad Ashfer [87% - 1941 lines]
+            Hwee Min [3% - 82 lines]
 \par        shaojun.g@digipen.edu,
 \date       October 02 2025
 
@@ -33,6 +33,7 @@ Technology is prohibited.
 #include "physics.h"
 #include "AudioManager.h"
 #include "logic.h"
+#include "ScriptComponent.h"
 
 // Keep externs as ImGuiSystem::Update now correctly relies on these globals
 // being populated by CoreEngine *before* ImGui's display pass.
@@ -47,6 +48,7 @@ extern double g_totalLoopTime;
  * @param scale[2]	(Width, Height)
  * @param rot		Rotation of GO
  * @param color		Vec4 holding colour of GO
+ * @param collider
  */
 struct TempGOData
 {
@@ -57,6 +59,11 @@ struct TempGOData
     float scale[2]{50.f, 50.f};
     float rot{0.f}; // = transform->GetRotation();
     ImVec4 color{0.f, 0.f, 0.f, 1.f};
+
+    bool addCollider = false;
+    int colType = 0; // 0 for Square, 1 for Circle
+    float colSize[2] = { 100.0f, 100.0f };
+    int colLayer = 5; // Default index for "Default" layer
 };
 
 // GO CREATION MENU VARS
@@ -108,6 +115,10 @@ bool isViewportFocused;
 int gizmo_type = -1;
 ImVec2 viewportSize;
 ImVec2 viewportPos;
+std::unordered_set<EntityID> lockedGizmosGOs{};
+
+// Animator Preview
+bool isAnimPreviewFocused;
 
 // PROPERTIES
 char draggedSprite_str[128]{"<Drag Image Here>"};
@@ -132,6 +143,7 @@ std::string loadLayoutPath{};
 // TEXTURE IDS FOR ICONS
 GLuint icon_folder_ui;
 GLuint icon_file_ui;
+GLuint icon_sprite_ui;
 GLuint icon_plus_ui;
 GLuint icon_prefab_ui;
 GLuint icon_audio_ui;
@@ -146,6 +158,9 @@ GLuint icon_inactive_ui;
 
 // selected game object for editing
 static EntityID selectedGameObjectID = 0;
+
+// stress test 
+static bool stressTestActive = false;
 
 /**
  * @brief Ctor - Inits window variable
@@ -195,6 +210,7 @@ void ImGuiSystem::Initialize()
     // Vars for ImGui::ImageButton
     icon_folder_ui = GraphicsSystem::LoadTexture(icon_folder);
     icon_file_ui = GraphicsSystem::LoadTexture(icon_file);
+    icon_sprite_ui = GraphicsSystem::LoadTexture(icon_sprite);
     icon_plus_ui = GraphicsSystem::LoadTexture(icon_plus);
     icon_prefab_ui = GraphicsSystem::LoadTexture(icon_prefab);
     icon_audio_ui = GraphicsSystem::LoadTexture(icon_audio);
@@ -268,6 +284,7 @@ void ImGuiSystem::Update(float dt)
             // GAME VIEWPORT - Always visible (outside conditional so it shows even in play mode)
             {
                 TileMap_Render(dt);                       // Rendering first so viewport shows first by default
+                RenderAnimationPreviewer();
 
                 ImGui::SetNextWindowSize(ImVec2(800.0f, 600.0f), ImGuiCond_FirstUseEver);
                 ImGui::SetNextWindowPos(ImVec2(50.0f, 50.0f), ImGuiCond_FirstUseEver);
@@ -280,7 +297,7 @@ void ImGuiSystem::Update(float dt)
                 ImGui::Image((void *)(intptr_t)CORE->GetGraphicsSystem()->GetFrameBufferTexture(), viewportSize, ImVec2(0, 1), ImVec2(1, 0));           // Viewport 
 
                 // Render gizmos on viewport
-                if (!isTileMapFocused)
+                if (!isTileMapFocused && !isAnimPreviewFocused)
                 {
                     // RENDER SECTION
                     Viewport_RenderGizmoToolbar();
@@ -349,13 +366,11 @@ void ImGuiSystem::Update(float dt)
 
                     if (newGO)
                     {
+                        float defaultVal{ 64.f };
+                        vec2 size{ defaultVal, defaultVal };           // default
                         // Add Transform at cursor position
                         auto* transform = newGO->AddComponent<TransformComponent>();
-                        if (transform)
-                        {
-                            transform->SetPosition(viewportCursorPos.x, viewportCursorPos.y);
-                            transform->SetScale(64.0f, 64.0f); // Default size
-                        }
+                        // checks and adjustments below to let everything load before changing pos and scale
 
                         // Add Render with texture
                         auto* render = newGO->AddComponent<RenderComponent>();
@@ -374,15 +389,25 @@ void ImGuiSystem::Update(float dt)
                                     render->SetShapeType(RenderComponent::ShapeType::Square);
                                     render->SetColor(vec4(1.0f, 1.0f, 1.0f, 1.0f));
                                 }
+                                size = render->GetTextureResolution(3);
+                                if (!size.x && !size.y)                                         // If invalid value found, set back to default value of 64,64. Else keep the aspect ratio of texture
+                                    size = { defaultVal , defaultVal };
+                                //std::cout << "\nMIP LEVEL 3 res: " << size.x << ' ' << size.y << "\n";
                             }
+                        }
+
+                        if (transform)
+                        {
+                            transform->SetPosition(viewportCursorPos.x, viewportCursorPos.y);
+                            transform->SetScale(size.x, size.y); // Default size
                         }
 
                         // Add Square Collider - CORRECTED CONSTRUCTOR CALL!
                         // Constructor: ColliderComponent(owner, type, width, height, layer)
                         newGO->AddComponent<ColliderComponent>(
                             ColliderComponent::Type::Square,
-                            64.0f,
-                            64.0f,
+                            size.x,
+                            size.y,
                             CollisionLayer::Default
                         );
 
@@ -430,21 +455,26 @@ void ImGuiSystem::Update(float dt)
             // toggle off other debug/ editor stuff.
             CORE->GetGraphicsSystem()->ClearEditorSelection();
         }
-        /**
-         * @brief Game Object Creator Menu IMGui Window
-         */
-        if (ShowCreateGOMenu)
-        {
-            GOCreationMenu_Render();
-        }
 
-        /**
-         * @brief Prefab Loader Menu IMGui Window
-         */
-        if (ShowLoadPrefabMenu)
+        if (CORE->GetLevelEditor()->GetEditorMode() != EditorMode::Play)
         {
-            PrefabMenu_Render();
+            /**
+             * @brief Game Object Creator Menu IMGui Window
+             */
+            if (ShowCreateGOMenu)
+            {
+                GOCreationMenu_Render();
+            }
+
+            /**
+                * @brief Prefab Loader Menu IMGui Window
+                */
+            if (ShowLoadPrefabMenu)
+            {
+                PrefabMenu_Render();
+            }
         }
+        
         // Flag with 1 frame delay on whether something is being drag and dropped, used for spawning prefabs via DND
         Serialization::Prefab_DragAndDropped = ImGui::IsMouseDragging(ImGuiMouseButton_Left);
     }
@@ -489,6 +519,8 @@ ImVec2 CursorToWorldPos(ImVec2 vpPos, ImVec2 vpSize)
 void ImGuiSystem::Viewport_ClickToSelect()
 {
     // Loop for all GOs in scene
+    int highestLayer = std::numeric_limits<int>::min();
+    GameObject* mostFrontGO = nullptr;
     for (auto& go : GameObjectFactory::Instance().GetAllGameObjects())
     {
         if (!go->IsActive()) continue;
@@ -500,35 +532,31 @@ void ImGuiSystem::Viewport_ClickToSelect()
         transform->GetPosition(pos.x, pos.y);
         transform->GetScale(scale.x, scale.y);
 
-        if (go->GetComponent<ColliderComponent>())
+        // if GO has a collider
+        // Calculates if cursor is within area of GO
+        // Updated post M3 to fix issues with layering
+        if (viewportCursorPos.x > pos.x - scale.x / 2 && viewportCursorPos.x < pos.x + scale.x / 2 && viewportCursorPos.y > pos.y - scale.y / 2 && viewportCursorPos.y < pos.y + scale.y / 2
+            && !ImGuizmo::IsUsing())
         {
-            // if GO has a collider
-            // Calculates if cursor is within area of GO
-            if (viewportCursorPos.x > pos.x - scale.x / 2 && viewportCursorPos.x < pos.x + scale.x / 2 && viewportCursorPos.y > pos.y - scale.y / 2 && viewportCursorPos.y < pos.y + scale.y / 2)
+            int currLayer{};
+            auto* render = go->GetComponent<RenderComponent>();
+            if (render)
             {
-                if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsMouseDragging(ImGuiMouseButton_Left))            // changed back to on mouse click, since we have gizmos, wont have accidental moving anymore
-                {
-                    SetSelectedGameObject(go->GetID());                         // Set GO to be selected
-                    
-                    std::cout << "[has collider]clicked on " << go->GetName() << std::endl;
-                }
+                currLayer = render->GetLayer();
+            }
+            if (currLayer > highestLayer)
+            {
+                highestLayer = currLayer;
+                mostFrontGO = go.get();
             }
         }
-        else
-        {
-            // if GO does NOT have a collider
-            // Find general distance between object and cursor
-            float distance = static_cast<float>(std::sqrt(std::pow(viewportCursorPos.x - pos.x, 2) + std::pow(viewportCursorPos.y - pos.y, 2)));
+    }
 
-            if (distance < 50.f)                // if object is within 50 units (within general area)
-            {
-                if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsMouseDragging(ImGuiMouseButton_Left))                      // Click to select, after selecting drag to set flag to true
-                {
-                    SetSelectedGameObject(go->GetID());
-                    std::cout << "[no colider]clicked on " << go->GetName() << std::endl;
-                }
-            }
-        }
+    if (mostFrontGO && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsMouseDragging(ImGuiMouseButton_Left))            // changed back to on mouse click, since we have gizmos, wont have accidental moving anymore
+    {
+        SetSelectedGameObject(mostFrontGO->GetID());                         // Set GO to be selected
+
+        std::cout << "[has collider]clicked on " << mostFrontGO->GetName() << std::endl;
     }
 }
 
@@ -651,6 +679,26 @@ void GOCreationMenu_Render()
         {
         } // Slider for GO rot
 
+        ImGui::Separator();
+
+       // Game Object Collider
+        ImGui::Checkbox("Add Collider", &tempGO.addCollider);
+
+        if (tempGO.addCollider)
+        {
+            ImGui::Indent();
+
+            const char* colTypes[] = { "Square", "Circle" };
+            ImGui::Combo("Type", &tempGO.colType, colTypes, IM_ARRAYSIZE(colTypes));
+
+            ImGui::DragFloat2("Size", tempGO.colSize, 1.0f);
+
+            const char* layers[] = { "Player", "Ground", "Wall", "Enemy", "Platform", "Default" };
+            ImGui::Combo("Layer", &tempGO.colLayer, layers, IM_ARRAYSIZE(layers));
+
+            ImGui::Unindent();
+        }
+
         // Generate Game Object
         ImGui::Text("  ");
         if (ImGui::Button("Generate")) // Button to create new GO
@@ -708,10 +756,23 @@ void ImGuiSystem::Hierarchy_Render()
     CreateHintText("Toggle Audio Assets panel");
 
     // dear god help us all
-    if (ImGui::Button("Stress Test - 1000 GOs"))
+    if (!stressTestActive)
     {
-        M2_RenderStressTest();
+        if (ImGui::Button("Run Stress Test"))
+        {
+            stressTestActive = true;
+            SpawnStressObjects();   // your spawn function
+        }
     }
+    else
+    {
+        if (ImGui::Button("Delete Stress Test"))
+        {
+            stressTestActive = false;
+            DestroyStressTestGameObjects();
+        }
+    }
+
     // Undo Feature
     LevelEditor* editor = CORE->GetLevelEditor();
     bool canUndo = !editor->undoStack.empty();
@@ -1083,6 +1144,8 @@ void GOCreationMenu_Spawn()
     float rot = tempGO.rot;
     vec4 color = vec4(tempGO.color.x, tempGO.color.y, tempGO.color.z, 1.f);
     std::string name = tempGO.name;
+    ColliderComponent::Type cType = (tempGO.colType == 0) ? ColliderComponent::Type::Square : ColliderComponent::Type::Circle;
+    CollisionLayer cLayer = static_cast<CollisionLayer>(tempGO.colLayer);
 
     // Construct message and send
     CreateObjectMessage msg(
@@ -1090,7 +1153,11 @@ void GOCreationMenu_Spawn()
         objType,                // Shape if is Empty or Basic
         shapeType,              // ShapeType
         pos, scale, rot,        // Transform
-        color                   // Colour
+        color,               // Colour
+        tempGO.addCollider,
+        cType,
+        tempGO.colSize[0], tempGO.colSize[1],
+        cLayer
     );
 
     std::cout << "[ImGuiSystem] Sending CreateObjectMessage for " << tempGO.name << std::endl;
@@ -1369,6 +1436,13 @@ void ImGuiSystem::Viewport_ManageGizmos()
     if (selectedGameObjectID != 0 && gizmo_type != -1)
     {
         auto* go = GetSelectedGameObject();
+
+        if (lockedGizmosGOs.contains(go->GetID()))
+        {
+            // draw locked gizmo sign
+            //ImGuizmo::Enable(false);
+        }
+
         auto* transform = go->GetComponent<TransformComponent>();
         auto* camComp = CameraManager::Instance().GetActiveCamera();
         if (!camComp)
@@ -1389,7 +1463,9 @@ void ImGuiSystem::Viewport_ManageGizmos()
         ImGuizmo::SetDrawlist();                                                                                                            // draws current window
         ImGuizmo::SetRect(vpPos.x, vpPos.y, vpSize.x, vpSize.y);             // set rect to viewport
 
-        mat4 view = camComp->GetViewMatrix();
+        //mat4 view = camComp->GetViewMatrixUnshaken();
+        mat4 view = mat4::identity();
+
         //mat4 projection = camComp->GetProjectionMatrix(ImGui::GetWindowWidth(), ImGui::GetWindowHeight());                                // replaced with getVp() bc this doesnt scale with cam zoom etc
         mat4 mtx = transform->GetMatrix();
         ImGuizmo::Manipulate(value_ptr(view), value_ptr(CORE->GetGraphicsSystem()->getVp()), ImGuizmo::OPERATION(gizmo_type), ImGuizmo::WORLD, value_ptr(mtx));
@@ -1597,6 +1673,14 @@ void DirectoryNavigator::RenderImGui()
                     // do nothin for now
                 }
             }
+            // Sprite Files
+            else if (extension == ".png" || extension == ".jpg")
+            {
+                if (ImGui::ImageButton(fileName.c_str(), ImTextureID(icon_sprite_ui), icon_size, { 0, 1 }, { 1, 0 }))
+                {
+                    // do nothin for now
+                }
+            }
             // Generic file
             else
             {
@@ -1619,17 +1703,19 @@ void DirectoryNavigator::RenderImGui()
                 {
                     SendDragAndDrop(PrefabPayloadID, iter.path().stem().generic_string(), fileName);            // For prefab files
                 }
-                else if (iter.path().parent_path().filename() == "Audio" || iter.path().parent_path().filename() == "audio")
+                else if (iter.path().parent_path().filename() == "Audio" || iter.path().parent_path().filename() == "audio"
+                    || extension == ".wav" || extension == ".mp3" || extension == ".ogg" || extension == ".flac")
                 {
                     SendDragAndDrop(AudioPayloadID, iter.path().generic_string(), fileName.c_str());            // For Audio files
                 }
-                else if (iter.path().parent_path().filename() == "Sprites" || iter.path().parent_path().filename() == "Icons")
+                else if (iter.path().parent_path().filename() == "Sprites" || iter.path().parent_path().filename() == "Icons" || iter.path().parent_path().filename() == "Tiles"
+                    || extension == ".png" || extension == ".jpg")
                 {
                     SendDragAndDrop(SpritePayloadID, iter.path().generic_string(), fileName.c_str());            // For Sprites/ Spritesheets files
                 }
-                else if (iter.path().parent_path().filename() == "Tiles")
+                else if (extension == ".cs")
                 {
-                    SendDragAndDrop(TilesetPayloadID, iter.path().generic_string(), fileName.c_str());            // For Tilesets for tile editor
+                    SendDragAndDrop(ScriptPayloadID, iter.path().generic_string(), fileName.c_str());
                 }
                 else
                 {
@@ -2060,94 +2146,109 @@ void ImGuiSystem::RenderPropertyEditor()
     {
         if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
         {
-            // Record Undo Entries - Undo Transform
-            LevelEditor* editor = CORE->GetLevelEditor();
-
-            static bool editingTransform = false;
-            static json beforeJson;   // JSON before edit
-
-            // Helper lambdas (when on drag)
-            auto BeginEdit = [&](void)
-                {
-                    if (!editingTransform && ImGui::IsItemActivated())
-                    {
-                        editingTransform = true;
-                        beforeJson = Serialization::SerializeGameObject(obj)["TransformComponent"];
-                    }
-                };
-
-            auto EndEdit = [&](void)
-                {
-                    if (editingTransform && ImGui::IsItemDeactivatedAfterEdit())
-                    {
-                        editingTransform = false;
-
-                        EditorUndoCommand cmd;
-                        cmd.action = EditorUndoCommand::ActionType::ObjectTransform;
-                        cmd.entityID = obj->GetID();
-                        cmd.beforeJson = beforeJson;
-                        cmd.afterJson = Serialization::SerializeGameObject(obj)["TransformComponent"];
-
-                        editor->RecordUndo(cmd);
-                    }
-                };
-
-            // sliders for position, scale, rotation etc
-
-            static bool isTransformEnabled = transform->IsEnabled();
-            if (ImGui::Checkbox("Component Enabled ##Transform", &isTransformEnabled))
-            {
-                transform->SetEnabled(isTransformEnabled);
+            ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+            bool removed = ImGui::Button("X##RemoveTransform", ImVec2(20, 20));
+            if (removed) {
+                // commented out bc no case scenario for GO not having transform
+                //obj->RemoveComponent("TransformComponent");
             }
-
-            float pos[2] = { 0.0f, 0.0f };
-            transform->GetPosition(pos[0], pos[1]);
-            if (ImGui::DragFloat2("Position", pos, 0.5f))
+            else
             {
-                transform->SetPosition(pos[0], pos[1]);
+                static bool isTransformEnabled = transform->IsEnabled();
+                // Record Undo Entries - Undo Transform
+                LevelEditor* editor = CORE->GetLevelEditor();
+
+                static bool editingTransform = false;
+                static json beforeJson;   // JSON before edit
+
+                // Helper lambdas (when on drag)
+                auto BeginEdit = [&](void)
+                    {
+                        if (!editingTransform && ImGui::IsItemActivated())
+                        {
+                            editingTransform = true;
+                            beforeJson = Serialization::SerializeGameObject(obj)["TransformComponent"];
+                        }
+                    };
+
+                auto EndEdit = [&](void)
+                    {
+                        if (editingTransform && ImGui::IsItemDeactivatedAfterEdit())
+                        {
+                            editingTransform = false;
+
+                            EditorUndoCommand cmd;
+                            cmd.action = EditorUndoCommand::ActionType::ObjectTransform;
+                            cmd.entityID = obj->GetID();
+                            cmd.beforeJson = beforeJson;
+                            cmd.afterJson = Serialization::SerializeGameObject(obj)["TransformComponent"];
+
+                            editor->RecordUndo(cmd);
+                        }
+                    };
+
+                // sliders for position, scale, rotation etc
+
                 
-            }
-            BeginEdit();
-            EndEdit();
-
-            float scale[2] = { 1.0f, 1.0f };
-            transform->GetScale(scale[0], scale[1]);
-            if (ImGui::DragFloat2("Scale", scale, 0.5f))
-            {
-                transform->SetScale(scale[0], scale[1]);
-
-                // Sync collider
-                auto* collider = obj->GetComponent<ColliderComponent>();
-                if (collider) {
-                    collider->SetSize(scale[0], scale[1]);
-                }
-            }
-            BeginEdit();
-            EndEdit();
-
-            float rotation = transform->GetRotation();
-            if (ImGui::DragFloat("Rotation", &rotation, 0.01f))
-            {
-                if (rotation > 2 * pi || rotation < -2 * pi)
+                bool isGizmoLocked = lockedGizmosGOs.contains(obj->GetID());
+                if (ImGui::Checkbox("Lock Gizmos ##Transform", &isGizmoLocked))
                 {
-                    rotation = 0;
+                    if (isGizmoLocked)
+                        lockedGizmosGOs.insert(obj->GetID());
+                    else
+                        lockedGizmosGOs.erase(obj->GetID());
                 }
-                transform->SetRotation(rotation);
+                ImGuizmo::Enable(!isGizmoLocked);
 
-            }
-            BeginEdit();
-            EndEdit();
-
-            if (ImGui::Button("Press Here to add DND Slot"))
-            {
-                transform->AddDragDropSlot("todayisaBADday", PrefabPayloadID);
-            }
-
-            if (transform->GetPropertySlots().size())
-            {
-                for (auto& slot : transform->GetPropertySlots())
+                float pos[2] = { 0.0f, 0.0f };
+                transform->GetPosition(pos[0], pos[1]);
+                if (ImGui::DragFloat2("Position", pos, 0.5f))
                 {
-                    slot.RenderImGui();
+                    transform->SetPosition(pos[0], pos[1]);
+
+                }
+                BeginEdit();
+                EndEdit();
+
+                float scale[2] = { 1.0f, 1.0f };
+                transform->GetScale(scale[0], scale[1]);
+                if (ImGui::DragFloat2("Scale", scale, 0.5f))
+                {
+                    transform->SetScale(scale[0], scale[1]);
+
+                    // Sync collider
+                    auto* collider = obj->GetComponent<ColliderComponent>();
+                    if (collider) {
+                        collider->SetSize(scale[0], scale[1]);
+                    }
+                }
+                BeginEdit();
+                EndEdit();
+
+                float rotation = transform->GetRotation();
+                if (ImGui::DragFloat("Rotation", &rotation, 0.01f))
+                {
+                    if (rotation > 2 * pi || rotation < -2 * pi)
+                    {
+                        rotation = 0;
+                    }
+                    transform->SetRotation(rotation);
+
+                }
+                BeginEdit();
+                EndEdit();
+
+                if (ImGui::Button("Press Here to add DND Slot"))
+                {
+                    transform->AddDragDropSlot("todayisaBADday", PrefabPayloadID);
+                }
+
+                if (transform->GetPropertySlots().size())
+                {
+                    for (auto& slot : transform->GetPropertySlots())
+                    {
+                        slot.RenderImGui();
+                    }
                 }
             }
         }
@@ -2160,79 +2261,89 @@ void ImGuiSystem::RenderPropertyEditor()
     {
         if (ImGui::CollapsingHeader("Render", ImGuiTreeNodeFlags_DefaultOpen))
         {
-            static bool isRenderEnabled = render->IsEnabled();
-            if (ImGui::Checkbox("Component Enabled ##Render", &isRenderEnabled))
+            ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+            bool renderRemove = ImGui::Button("X##RemoveRender", ImVec2(20, 20));
+            if (renderRemove)
             {
-                render->SetEnabled(isRenderEnabled);
-            }
-
-            ImGui::Text("Shape Type: %s", GetShapeTypeName((int)render->GetShapeType()));
-            static bool showTextureDND = false;
-
-            // Show colour picker for GO colour (only if no texture id for custom texture/ sprite)
-            if (render->GetTextureID() == 0)
-            {
-                vec4 color = render->GetColor();
-                float colorArray[4] = { color.x, color.y, color.z, color.w };
-                if (ImGui::ColorEdit4("Color", colorArray))
-                {
-                    render->SetColor(vec4(colorArray[0], colorArray[1], colorArray[2], colorArray[3]));
-                }
-                
-                if (showTextureDND)
-                {
-                    std::string draggedSprite{};
-                    ImGui::InputText("##DragImageHere", draggedSprite_str, sizeof(draggedSprite_str));
-                    if (ImGui::IsItemFocused() && ImGui::IsKeyPressed(ImGuiKey_Enter))
-                    {
-                        draggedSprite = draggedSprite_str;
-                    }
-
-                    ReceiveDragAndDrop(SpritePayloadID, draggedSprite);
-                    if (!draggedSprite.empty())
-                    {
-                        std::cout << draggedSprite << std::endl;
-                        render->SetTexturePath(draggedSprite);
-                        GLuint newTexID =  CORE->GetGraphicsSystem()->LoadTexture(draggedSprite.c_str());
-                        if (newTexID)
-                        {
-                            render->SetColor(1.0f);                                 // removes colour and makes way for loading image
-                            render->SetTextureID(newTexID);
-                            strcpy(draggedSprite_str, "<Drag Image Here>");                   // reset
-                            std::cout << "[Properties] New Texture loaded successfully!" << std::endl;
-                        }
-                        else
-                        {
-                            std::cout << "[Properties] Failed to load texture!" << std::endl;
-                        }
-                    }
-                }
-
-                // placed below here for cleaner transition when pressing the button
-                if (!showTextureDND && ImGui::Button("Add Texture"))                        
-                {
-                    render->SetTextureID(GLuint{});
-                    showTextureDND = true;
-                }
+                obj->RemoveComponent("RenderComponent");
             }
             else
             {
-                ImGui::Text("Texture ID: %u", render->GetTextureID());
-                showTextureDND = false;
-                if (ImGui::Button("Remove Existing Texture"))
+
+                static bool isRenderEnabled = render->IsEnabled();
+                if (ImGui::Checkbox("Component Enabled ##Render", &isRenderEnabled))
                 {
-                    render->SetTextureID(GLuint{});
-                    render->SetColor({1,0,1,1});                    // set to pink to make it obvious if texture missing
+                    render->SetEnabled(isRenderEnabled);
                 }
+
+                ImGui::Text("Shape Type: %s", GetShapeTypeName((int)render->GetShapeType()));
+                static bool showTextureDND = false;
+
+                // Show colour picker for GO colour (only if no texture id for custom texture/ sprite)
+                if (render->GetTextureID() == 0)
+                {
+                    vec4 color = render->GetColor();
+                    float colorArray[4] = { color.x, color.y, color.z, color.w };
+                    if (ImGui::ColorEdit4("Color", colorArray))
+                    {
+                        render->SetColor(vec4(colorArray[0], colorArray[1], colorArray[2], colorArray[3]));
+                    }
+
+                    if (showTextureDND)
+                    {
+                        std::string draggedSprite{};
+                        ImGui::InputText("##DragImageHere", draggedSprite_str, sizeof(draggedSprite_str));
+                        if (ImGui::IsItemFocused() && ImGui::IsKeyPressed(ImGuiKey_Enter))
+                        {
+                            draggedSprite = draggedSprite_str;
+                        }
+
+                        ReceiveDragAndDrop(SpritePayloadID, draggedSprite);
+                        if (!draggedSprite.empty())
+                        {
+                            std::cout << draggedSprite << std::endl;
+                            render->SetTexturePath(draggedSprite);
+                            GLuint newTexID = CORE->GetGraphicsSystem()->LoadTexture(draggedSprite.c_str());
+                            if (newTexID)
+                            {
+                                render->SetColor(1.0f);                                 // removes colour and makes way for loading image
+                                render->SetTextureID(newTexID);
+                                strcpy(draggedSprite_str, "<Drag Image Here>");                   // reset
+                                std::cout << "[Properties] New Texture loaded successfully!" << std::endl;
+                            }
+                            else
+                            {
+                                std::cout << "[Properties] Failed to load texture!" << std::endl;
+                            }
+                        }
+                    }
+
+                    // placed below here for cleaner transition when pressing the button
+                    if (!showTextureDND && ImGui::Button("Add Texture"))
+                    {
+                        render->SetTextureID(GLuint{});
+                        showTextureDND = true;
+                    }
+                }
+                else
+                {
+                    ImGui::Text("Texture ID: %u", render->GetTextureID());
+                    showTextureDND = false;
+                    if (ImGui::Button("Remove Existing Texture"))
+                    {
+                        render->SetTextureID(GLuint{});
+                        render->SetColor({ 1,0,1,1 });                    // set to pink to make it obvious if texture missing
+                    }
+                }
+                int goRenderLayer{ render->GetLayer() };
+                ImGui::Text("Rendering Layer");
+                ImGui::SetNextItemWidth(100.0f);
+                if (ImGui::InputInt("##Rendering Layer", &goRenderLayer))
+                {
+                    render->SetLayer(goRenderLayer);
+                }
+                CreateHintText("Ascending order for topmost rendering position");
             }
-            int goRenderLayer{ render->GetLayer() };
-            ImGui::Text("Rendering Layer");
-            ImGui::SetNextItemWidth(100.0f);
-            if (ImGui::InputInt("##Rendering Layer", &goRenderLayer))
-            {
-                render->SetLayer(goRenderLayer);
-            }
-            CreateHintText("Ascending order for topmost rendering position");
         }
     }
 
@@ -2241,34 +2352,44 @@ void ImGuiSystem::RenderPropertyEditor()
     {
         if (ImGui::CollapsingHeader("Physics"))
         {
-            // Physics sliders with respective functions
-            static bool isPhysEnabled = physics->IsEnabled();
-            if (ImGui::Checkbox("Phsyics Enabled##Physics", &isPhysEnabled))
-            {
-                physics->SetEnabled(isPhysEnabled);
-            }
+            ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+            bool physicsRemove = ImGui::Button("X##RemovePhysic", ImVec2(20, 20));
 
-            float vel[2] = { 0.0f, 0.0f };
-            physics->GetVelocity(vel[0], vel[1]);
-            if (ImGui::DragFloat2("Velocity", vel, 0.1f))
+            if (physicsRemove)
             {
-                physics->SetVelocity(vel[0], vel[1]);
+                obj->RemoveComponent("PhysicsComponent");
             }
-
-            bool isStatic = physics->IsStatic();
-            if (ImGui::Checkbox("Static", &isStatic))
+            else
             {
-                physics->SetStatic(isStatic);
-            }
+                // Physics sliders with respective functions
+                static bool isPhysEnabled = physics->IsEnabled();
+                if (ImGui::Checkbox("Phsyics Enabled##Physics", &isPhysEnabled))
+                {
+                    physics->SetEnabled(isPhysEnabled);
+                }
 
-            bool hasGravity = physics->useGravity;
-            if (ImGui::Checkbox("Gravity", &hasGravity))
-            {
-                physics->SetGravity(hasGravity);
-            }
+                float vel[2] = { 0.0f, 0.0f };
+                physics->GetVelocity(vel[0], vel[1]);
+                if (ImGui::DragFloat2("Velocity", vel, 0.1f))
+                {
+                    physics->SetVelocity(vel[0], vel[1]);
+                }
 
-            ImGui::Text("Mass: %.2f", physics->GetMass());
-            ImGui::Text("Grounded: %s", physics->IsGrounded() ? "Yes" : "No");
+                bool isStatic = physics->IsStatic();
+                if (ImGui::Checkbox("Static", &isStatic))
+                {
+                    physics->SetStatic(isStatic);
+                }
+
+                bool hasGravity = physics->useGravity;
+                if (ImGui::Checkbox("Gravity", &hasGravity))
+                {
+                    physics->SetGravity(hasGravity);
+                }
+
+                ImGui::Text("Mass: %.2f", physics->GetMass());
+                ImGui::Text("Grounded: %s", physics->IsGrounded() ? "Yes" : "No");
+            }
         }
     }
 
@@ -2277,85 +2398,188 @@ void ImGuiSystem::RenderPropertyEditor()
     {
         if (ImGui::CollapsingHeader("Collider"))
         {
-            // Editable Collider Type Dropdown
-            static bool isColEnabled = collider->IsEnabled();
-            if (ImGui::Checkbox("Component Enabled##Collider", &isColEnabled))
+            ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+            bool colliderRemove = ImGui::Button("X##RemoveCollider", ImVec2(20, 20));
+            if (colliderRemove)
             {
-                collider->SetEnabled(isColEnabled);
-            }
-
-            const char* colliderTypes[] = { "Square", "Circle" };
-            int currentType = (collider->GetType() == ColliderComponent::Type::Circle) ? 1 : 0;
-
-            if (ImGui::Combo("Type", &currentType, colliderTypes, 2))
-            {
-                ColliderComponent::Type newType = (currentType == 1)
-                    ? ColliderComponent::Type::Circle
-                    : ColliderComponent::Type::Square;
-                collider->setColliShape(newType);
-                std::cout << "[Property Editor] Changed collider type to "
-                    << colliderTypes[currentType] << std::endl;
-            }
-
-            // Display dimensions
-            if (collider->GetType() == ColliderComponent::Type::Circle)
-            {
-                Circle circle = collider->GetCircle();
-                ImGui::Text("Radius: %.2f", circle.radius);
+                obj->RemoveComponent("ColliderComponent");
             }
             else
             {
-                AABB aabb = collider->GetAABB();
-                float width = aabb.max.x - aabb.min.x;
-                float height = aabb.max.y - aabb.min.y;
-                ImGui::Text("Width: %.2f", width);
-                ImGui::Text("Height: %.2f", height);
-            }
-
-            // Editable Size (In case we need it)
-            if (collider->GetType() == ColliderComponent::Type::Square)
-            {
-                AABB aabb = collider->GetAABB();
-                float width = aabb.max.x - aabb.min.x;
-                float height = aabb.max.y - aabb.min.y;
-
-                float newSize[2] = { width, height };
-                if (ImGui::DragFloat2("Size", newSize, 1.0f, 1.0f, 5000.0f))
+                // Editable Collider Type Dropdown
+                static bool isColEnabled = collider->IsEnabled();
+                if (ImGui::Checkbox("Component Enabled##Collider", &isColEnabled))
                 {
-                    collider->SetSize(newSize[0], newSize[1]);
-                    std::cout << "[Property Editor] Changed collider size to "
-                        << newSize[0] << "x" << newSize[1] << std::endl;
+                    collider->SetEnabled(isColEnabled);
                 }
-            }
-            else if (collider->GetType() == ColliderComponent::Type::Circle)
-            {
-                Circle circle = collider->GetCircle();
-                float radius = circle.radius;
 
-                if (ImGui::DragFloat("Radius", &radius, 1.0f, 1.0f, 5000.0f))
+                const char* colliderTypes[] = { "Square", "Circle" };
+                int currentType = (collider->GetType() == ColliderComponent::Type::Circle) ? 1 : 0;
+
+                if (ImGui::Combo("Type", &currentType, colliderTypes, 2))
                 {
-                    collider->SetSize(radius * 2.0f, radius * 2.0f);
-                    std::cout << "[Property Editor] Changed circle radius to "
-                        << radius << std::endl;
+                    ColliderComponent::Type newType = (currentType == 1)
+                        ? ColliderComponent::Type::Circle
+                        : ColliderComponent::Type::Square;
+                    collider->setColliShape(newType);
+                    std::cout << "[Property Editor] Changed collider type to "
+                        << colliderTypes[currentType] << std::endl;
                 }
-            }
+
+                // Display dimensions
+                if (collider->GetType() == ColliderComponent::Type::Circle)
+                {
+                    Circle circle = collider->GetCircle();
+                    ImGui::Text("Radius: %.2f", circle.radius);
+                }
+                else
+                {
+                    AABB aabb = collider->GetAABB();
+                    float width = aabb.max.x - aabb.min.x;
+                    float height = aabb.max.y - aabb.min.y;
+                    ImGui::Text("Width: %.2f", width);
+                    ImGui::Text("Height: %.2f", height);
+                }
+
+                // Editable Size (In case we need it)
+                if (collider->GetType() == ColliderComponent::Type::Square)
+                {
+                    AABB aabb = collider->GetAABB();
+                    float width = aabb.max.x - aabb.min.x;
+                    float height = aabb.max.y - aabb.min.y;
+
+                    float newSize[2] = { width, height };
+                    if (ImGui::DragFloat2("Size", newSize, 1.0f, 1.0f, 5000.0f))
+                    {
+                        collider->SetSize(newSize[0], newSize[1]);
+                        std::cout << "[Property Editor] Changed collider size to "
+                            << newSize[0] << "x" << newSize[1] << std::endl;
+                    }
+                }
+                else if (collider->GetType() == ColliderComponent::Type::Circle)
+                {
+                    Circle circle = collider->GetCircle();
+                    float radius = circle.radius;
+
+                    if (ImGui::DragFloat("Radius", &radius, 1.0f, 1.0f, 5000.0f))
+                    {
+                        collider->SetSize(radius * 2.0f, radius * 2.0f);
+                        std::cout << "[Property Editor] Changed circle radius to "
+                            << radius << std::endl;
+                    }
+                }
 
 
-            // Editable Collision Layer Dropdown
-            const char* layerNames[] = { "Player", "Ground", "Wall", "Enemy", "Platform", "Default" };
-            int currentLayer = static_cast<int>(collider->GetLayer());
+                // Editable Collision Layer Dropdown
+                const char* layerNames[] = { "Player", "Ground", "Wall", "Enemy", "Platform", "Default" };
+                int currentLayer = static_cast<int>(collider->GetLayer());
 
-            if (ImGui::Combo("Layer", &currentLayer, layerNames, 6))
-            {
-                collider->SetLayer(static_cast<CollisionLayer>(currentLayer));
-                std::cout << "[Property Editor] Changed collision layer to "
-                    << layerNames[currentLayer] << std::endl;
+                if (ImGui::Combo("Layer", &currentLayer, layerNames, 6))
+                {
+                    collider->SetLayer(static_cast<CollisionLayer>(currentLayer));
+                    std::cout << "[Property Editor] Changed collision layer to "
+                        << layerNames[currentLayer] << std::endl;
+                }
             }
         }
     }
 
-    // Add event into GameObjects
-    RenderEventComponent(obj); 
+    if (auto* events = obj->GetComponent<EventComponent>())
+    {
+        // Add event into GameObjects
+        RenderEventComponent(events, obj);
+    }
+
+// Script component
+if (auto* script = obj->GetComponent<ScriptComponent>())
+{
+    if (ImGui::CollapsingHeader("Script", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+        bool colliderRemove = ImGui::Button("X##RemoveScript", ImVec2(20, 20));
+        if (colliderRemove)
+        {
+            obj->RemoveComponent("ScriptComponent");
+        }
+        else
+        {
+            static bool isScriptEnabled = script->IsEnabled();
+            if (ImGui::Checkbox("Component Enabled ##Script", &isScriptEnabled))
+            {
+                script->SetEnabled(isScriptEnabled);
+            }
+            if (ImGui::Button("Add Script Slot"))
+            {
+                script->AddDragDropSlot("Drag Script Here", ScriptPayloadID);
+            }
+
+            if (script->GetPropertySlots().size())
+            {
+                for (auto& slot : script->GetPropertySlots())
+                {
+                    slot.RenderImGui();
+                }
+            }
+        }
+        ImGui::Text("Attached Scripts:");
+
+        auto* scriptSystem = CORE->GetScriptSystem();
+        if (scriptSystem)
+        {
+            auto* instances = scriptSystem->GetScriptInstances(obj);
+            if (instances)
+            {
+                for (auto& instance : *instances)
+                {
+                    const char* className = mono_class_get_name(instance.scriptClass->monoClass);
+                    if (ImGui::TreeNode(className))
+                    {
+                        auto fields = scriptSystem->GetPublicFields(instance);
+                        for (auto& field : fields)
+                        {
+                            if (field.type == ScriptFieldType::Float)
+                            {
+                                float val = std::get<float>(field.value);
+                                if (ImGui::DragFloat(field.name.c_str(), &val, 0.1f))
+                                {
+                                    scriptSystem->SetPublicField(instance, field.name, val);
+                                }
+                            }
+                            else if (field.type == ScriptFieldType::Int)
+                            {
+                                int val = std::get<int>(field.value);
+                                if (ImGui::DragInt(field.name.c_str(), &val))
+                                {
+                                    scriptSystem->SetPublicField(instance, field.name, val);
+                                }
+                            }
+                            else if (field.type == ScriptFieldType::Bool)
+                            {
+                                bool val = std::get<bool>(field.value);
+                                if (ImGui::Checkbox(field.name.c_str(), &val))
+                                {
+                                    scriptSystem->SetPublicField(instance, field.name, val);
+                                }
+                            }
+                            else if (field.type == ScriptFieldType::String)
+                            {
+                                std::string val = std::get<std::string>(field.value);
+                                char buffer[256];
+                                strncpy(buffer, val.c_str(), sizeof(buffer));
+                                buffer[sizeof(buffer) - 1] = 0;
+                                if (ImGui::InputText(field.name.c_str(), buffer, sizeof(buffer)))
+                                {
+                                    scriptSystem->SetPublicField(instance, field.name, std::string(buffer));
+                                }
+                            }
+                        }
+                        ImGui::TreePop();
+                    }
+                }
+            }
+        }
+    }
+}
 
     // Add Component Button
     ImVec2 space = ImGui::GetContentRegionAvail();
@@ -2401,17 +2625,9 @@ void ImGuiSystem::RenderPropertyEditor()
     ImGui::End();
 }
 
-void ImGuiSystem::RenderEventComponent(GameObject* obj)
+void ImGuiSystem::RenderEventComponent(EventComponent* ec, GameObject* obj)
 {
-    auto* ec = obj->GetComponent<EventComponent>();
-
-    // Add component button
-    if (!ec)
-    {
-        if (ImGui::Button("Add Event Component"))
-            obj->AddComponent<EventComponent>();
-        return;
-    }
+    (void)obj; // not used yet
 
     // --- Begin UI ---
     if (ImGui::CollapsingHeader("Event Component", ImGuiTreeNodeFlags_DefaultOpen))
@@ -2419,7 +2635,19 @@ void ImGuiSystem::RenderEventComponent(GameObject* obj)
         ImGui::Text("Rules: %zu", ec->rules.size());
         ImGui::Separator();
 
-        // Draw each rule
+        auto& allObjects = factory.GetAllGameObjects();
+        std::vector<const char*> objectNames;
+        std::vector<int> objectIds;
+
+        objectNames.push_back("Any GameObjects"); // Trigger by Any Objects
+        objectIds.push_back(-1);
+
+        for (auto& o : allObjects)
+        {
+            objectNames.push_back(o->GetName().c_str());
+            objectIds.push_back(o->GetID());
+        }
+
         int index = 0;
         for (auto& rule : ec->rules)
         {
@@ -2427,66 +2655,144 @@ void ImGuiSystem::RenderEventComponent(GameObject* obj)
 
             if (ImGui::TreeNodeEx("Rule", ImGuiTreeNodeFlags_DefaultOpen))
             {
-                // Event Type selection
                 static const char* eventNames[] = {
                     "None",
-                    "OnStart",
                     "OnEnable",
                     "OnDisable",
                     "OnDestroy",
-                    "OnUpdate",
-                    "OnKeyPressed",
-                    "OnKeyReleased",
-                    "OnMousePressed",
-                    "OnMouseReleased",
-                    "OnMouseOver",
                     "OnCollisionEnter",
                     "OnCollisionStay",
                     "OnCollisionExit",
-                    "OnTriggerEnter",
-                    "OnTriggerStay",
-                    "OnTriggerExit",
-                    "OnGoalReached",
-                    "OnFellOutOfMap"
                 };
 
                 int evIndex = (int)rule.eventType;
                 if (ImGui::Combo("Event", &evIndex, eventNames, IM_ARRAYSIZE(eventNames)))
                     rule.eventType = (EventType)evIndex;
 
-                // Target filter
-                char buf[64];
-                strncpy(buf, rule.targetFilter.c_str(), sizeof(buf));
-                if (ImGui::InputText("Target Filter", buf, sizeof(buf)))
-                    rule.targetFilter = buf;
+                int currentIndex = -1;
 
-                // Action selection
+                // find index of current ID
+                for (int i = 0; i < (int)objectIds.size(); i++)
+                {
+                    if (objectIds[i] == rule.targetObjectId)
+                        currentIndex = i;
+                }
+
+                if (ImGui::Combo("Trigger By", &currentIndex,
+                    objectNames.data(), (int)objectNames.size()))
+                {
+                    rule.targetObjectId = objectIds[currentIndex];
+                }
+
                 static const char* actionNames[] = {
                     "None",
-                    "Shrink",
-                    "Grow",
-                    "ScaleTo",
-                    "MoveTo",
-                    "TeleportTo",
                     "EnableObject",
                     "DisableObject",
                     "DestroyObject",
                     "PlaySound",
                     "StopSound",
-                    "LoadNextLevel",
                     "Respawn",
-                    "AddScore",
-                    "TakeDamage",
-                    "FlashColor",
                 };
 
                 int acIndex = (int)rule.action;
                 if (ImGui::Combo("Action", &acIndex, actionNames, IM_ARRAYSIZE(actionNames)))
                     rule.action = (ActionType)acIndex;
 
+                switch (rule.action)
+                {
+                case ActionType::PlaySound:
+                {
+                    auto* audioMgr = CORE->GetAudioManager();
+
+                    // Fallback: If no sounds loaded, load global audio.json right now
+                    if (audioMgr->GetSoundDatabase().empty())
+                    {
+                        std::string fallbackPath = "../Assets/Audio/audio.json";
+                        std::ifstream f(fallbackPath);
+
+                        if (f.is_open())
+                        {
+                            json audioRoot;
+                            f >> audioRoot;
+
+                            json wrapper;
+                            wrapper["AudioManager"] = audioRoot["AudioManager"];
+
+                            Serialization::DeserializeAudioManager(wrapper, audioMgr);
+                        }
+                        else
+                        {
+                            ImGui::TextColored(ImVec4(1, 0.2f, 0.2f, 1),
+                                "ERROR: Could not open audio.json fallback.");
+                            break;
+                        }
+                    }
+
+                    // After fallback, soundDatabase MUST have entries
+                    auto& soundDB = audioMgr->GetSoundDatabase();
+
+                    if (soundDB.empty())
+                    {
+                        ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1),
+                            "No sounds loaded (even after fallback).");
+                        break;
+                    }
+
+                    std::vector<const char*> names;
+                    names.reserve(soundDB.size());
+
+                    for (auto& entry : soundDB)
+                        names.push_back(entry.first.c_str());
+
+                    // current selection
+                    int idx = 0;
+                    int i = 0;
+                    for (auto& pair : soundDB)
+                    {
+                        if (pair.first == rule.stringValue)
+                        {
+                            idx = i;
+                            break;
+                        }
+                        i++;
+                    }
+
+                    if (ImGui::Combo("Sound", &idx, names.data(), (int)names.size()))
+                    {
+                        int j = 0;
+                        for (auto& pair : soundDB)
+                        {
+                            if (j == idx)
+                            {
+                                rule.stringValue = pair.first;   // ONLY save name
+                                break;
+                            }
+                            j++;
+                        }
+                    }
+                }
+                break;
+               
+                case ActionType::StopSound: {                
+
+                    ImGui::Text("Stop this GameObject Sound.");
+
+                    const std::string& cur = obj->GetCurrentlyPlayingSound();
+
+                    if (cur.empty())
+                    {
+                        ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1),
+                            "No sound currently playing.");
+                    }
+                }
+                break;
+
+                default:
+                    break;
+                }
+
                 ImGui::Spacing();
 
-                // Remove rule
                 if (ImGui::Button("Remove Rule"))
                 {
                     ec->rules.erase(ec->rules.begin() + index);
@@ -2504,129 +2810,10 @@ void ImGuiSystem::RenderEventComponent(GameObject* obj)
 
         ImGui::Separator();
 
-        // Add new rule
         if (ImGui::Button("Add Rule"))
         {
             EventRule newRule;
             ec->rules.push_back(newRule);
-        }
-    }
-}
-
-/**
- * @brief HELLO PROFS THIS IS THE STRESS TEST FUNCTION. Spawns 1000 GOs
- */
-void M2_RenderStressTest()
-{
-    // Stress Test:
-    auto& factory = GameObjectFactory::Instance();
-    auto& resourceMgr = ResourceManager::Instance();
-
-    static std::vector<GameObject*> stressObjects;
-    stressObjects.reserve(1000);
-
-    const int totalObjects = 1000;
-    const float spawnW = 32.f;
-    const float spawnH = 32.f;
-
-    // Load the texture once, reuse for all obj
-    const std::string spritePath = "../Assets/protosprite.png";
-    const std::string textureKey = "stress_shared";
-
-    TextureResource* texRes = resourceMgr.GetTexture(textureKey);
-    if (!texRes)
-    {
-        if (!resourceMgr.LoadTexture(textureKey, spritePath))
-        {
-            std::cerr << "[STRESS TEST] Failed to load shared texture at: " << spritePath << std::endl;
-            return;
-        }
-        texRes = resourceMgr.GetTexture(textureKey);
-    }
-
-    if (!texRes || !texRes->IsLoaded())
-    {
-        std::cerr << "[STRESS TEST] Texture not loaded. Aborting stress test.\n";
-        return;
-    }
-
-    GLuint sharedTexID = texRes->GetTextureID();
-
-    // --- Spawn 1000 objects ---
-    for (int i = 0; i < totalObjects; ++i)
-    {
-        std::string objName = "StressObj_" + std::to_string(i);
-        GameObject* go = factory.CreateGameObject(objName);
-        stressObjects.push_back(go);
-
-        // --- Transform: random position ---
-        if (auto* t = go->AddComponent<TransformComponent>())
-        {
-            float x = static_cast<float>(rand() % 1280) - 640;
-            float y = static_cast<float>(rand() % 720) - 360 - (i * 0.1f); // small offset to avoid stacking
-            t->SetPosition(x, y);
-            t->SetScale(spawnW, spawnH);
-        }
-
-        // --- RenderComponent (visiblility) ---
-        if (auto* render = go->AddComponent<RenderComponent>())
-        {
-            render->SetTextureID(sharedTexID);
-            render->SetTexturePath(spritePath);
-            render->SetShapeType(RenderComponent::ShapeType::Circle);
-            render->SetColor({ 1.f, 1.f, 1.f, 1.f });
-        }
-    }
-
-    std::cout << "[STRESS TEST] Spawned " << totalObjects
-        << " objects with Transform + Render.\n";
-
-    // --- Add Collider & Physics gradually to avoid frame freeze ---
-    static bool addCollidersLater = true;
-    static int colliderIndex = 0;
-    const int batchPerFrame = 50; // smaller batch = smoother
-
-    //--- Collider ---
-    if (addCollidersLater)
-    {
-        for (int i = 0; i < batchPerFrame && colliderIndex < totalObjects; ++i, ++colliderIndex)
-        {
-            GameObject* go = stressObjects[colliderIndex];
-
-            if (!go) continue;
-
-            // Collider
-            if (!go->GetComponent<ColliderComponent>())
-            {
-                go->AddComponent<ColliderComponent>(
-                    ColliderComponent::Type::Square,
-                    spawnW, spawnH,
-                    CollisionLayer::Enemy
-                );
-            }
-
-            // --- Physics: random velocity ---
-            if (auto* p = go->AddComponent<PhysicsComponent>())
-            {
-                float vx = static_cast<float>((rand() % 200) - 100);
-                float vy = static_cast<float>((rand() % 200) - 100);
-                if (vx == 0 && vy == 0)
-                    vx = (rand() % 2 == 0 ? 50.f : -50.f); // ensure nonzero
-
-                p->SetVelocity(vx, vy + 100.f); // small upward bias
-                p->SetMass(1.0f);
-                p->SetGrounded(false);
-                p->SetGravity(true);
-            }
-
-        }
-
-        if (colliderIndex >= totalObjects)
-        {
-            addCollidersLater = false;
-            colliderIndex = 0;
-            stressObjects.clear(); // clear tracking list
-            std::cout << "[STRESS TEST] All stress-test colliders added.\n";
         }
     }
 }
@@ -2698,6 +2885,51 @@ void AudioAssetsPanel_Render()
         audioMgr->StopAllSounds();
     }
     ImGui::SameLine();
+
+    // Fade controls
+    static float fadeDuration = 1.0f;
+    static int selectedCategory = 0;
+    static const char* categories[] = { "music", "sfx", "voice", "ambient" };
+    static float fadeTargetVolume = 1.0f;
+
+    ImGui::Separator();
+    ImGui::Text("Fade Controls:");
+
+    ImGui::PushItemWidth(100.0f);
+    ImGui::InputFloat("Fade Duration (s)", &fadeDuration, 0.1f, 1.0f, "%.1f");
+    if (fadeDuration < 0.1f) fadeDuration = 0.1f;
+    ImGui::PopItemWidth();
+
+    ImGui::PushItemWidth(100.0f);
+    ImGui::Combo("Category", &selectedCategory, categories, 4);
+    ImGui::PopItemWidth();
+
+    ImGui::PushItemWidth(100.0f);
+    ImGui::SliderFloat("Target Volume", &fadeTargetVolume, 0.0f, 1.0f, "%.1f");
+    ImGui::PopItemWidth();
+
+    if (ImGui::Button("Fade In"))
+    {
+        audioMgr->FadeInCategory(categories[selectedCategory], fadeDuration, fadeTargetVolume);
+        std::cout << "[Audio] Fading in " << categories[selectedCategory]
+                  << " over " << fadeDuration << "s to volume " << fadeTargetVolume << std::endl;
+    }
+    ImGui::SameLine();
+
+    if (ImGui::Button("Fade Out"))
+    {
+        audioMgr->FadeOutCategory(categories[selectedCategory], fadeDuration);
+        std::cout << "[Audio] Fading out " << categories[selectedCategory]
+                  << " over " << fadeDuration << "s" << std::endl;
+    }
+    ImGui::SameLine();
+
+    if (ImGui::Button("Fade Out All"))
+    {
+        audioMgr->FadeOutAll(fadeDuration);
+        std::cout << "[Audio] Fading out all categories over " << fadeDuration << "s" << std::endl;
+    }
+
     ImGui::Separator();
     ImGui::Text("Drop zone:");
 
@@ -2930,6 +3162,508 @@ void AudioAssetsPanel_Render()
 }
 #pragma endregion
 
+#pragma region Animation Previewer ImGui
+
+void ImGuiSystem::RenderAnimationPreviewer()
+{
+    // Draft (file) preview state
+    static std::string draftPath;
+    static GLuint draftTexID = 0;
+    static int draftRows = 1, draftCols = 1;
+
+    // Playback - linear frame index so it can clamp to a range
+    static int   draftFrameLinear = 0;
+    static float draftTimer = 0.0f;
+    static bool  isPlayingDraft = false;
+
+    // GameObject (left) preview state
+    static int   currentRowIdx = 0, currentColIdx = 0;
+    static float currentTimer = 0.0f;
+    static bool  isPlayingCurrent = false;
+
+    // Clip authoring state (saved in editor as "draft clips")
+    struct DraftClip
+    {
+        std::string name;
+        int startR = 0, startC = 0;
+        int endR = 0, endC = 0;
+        float fps = 12.0f;
+        bool loop = true;
+    };
+
+    static std::vector<DraftClip> draftClips;
+    // -1 means "<New / Unsaved>"
+    static int selectedDraftClip = -1;
+
+    // Editable inputs
+    static char  actionName[64] = "Idle";
+    static int   startR = 0, startC = 0;
+    static int   endR = 0, endC = 0;
+    static float actionFPS = 12.0f;
+    static bool  actionLoop = true;
+
+    // Get context
+    GameObject* obj = factory.GetGameObject(selectedGameObjectID);
+    Spritesheet* ss = obj ? obj->GetComponent<Spritesheet>() : nullptr;
+    bool hasExistingSS = (ss != nullptr);
+
+    ImGui::Begin("Animation Preview");
+    isAnimPreviewFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);// || ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows);
+
+    // Mode switches (From File vs From Game Object)
+    static bool fromFile = true;
+    static bool fromGO = false;
+
+    if (ImGui::Checkbox("From File", &fromFile)) {
+        if (fromFile) fromGO = false;
+    }
+    ImGui::SameLine();
+    if (ImGui::Checkbox("From Game Object", &fromGO)) {
+        if (fromGO) fromFile = false;
+    }
+
+    ImGui::Separator();
+
+    // One column for file preview, two columns when comparing with a GameObject.
+    int columnCount = (fromGO && obj) ? 2 : 1;
+    ImGui::Columns(columnCount, "PreviewSplit", true);
+
+    // LEFT COLUMN: Current GameObject preview
+    if (fromGO)
+    {
+        if (!obj)
+        {
+            ImGui::TextColored(ImVec4(1, 0, 0, 1), "PLEASE SELECT A GAMEOBJECT");
+        }
+        else
+        {
+            ImGui::TextColored(ImVec4(0.4f, 0.8f, 1.0f, 1.0f), "CURRENT GAMEOBJECT");
+
+            if (hasExistingSS)
+            {
+                // Get current grid from the object's spritesheet
+                const int goRows = std::max(1, ss->GetRows());
+                const int goCols = std::max(1, ss->GetCols());
+                float uW = 1.0f / (float)goCols;
+                float vH = 1.0f / (float)goRows;
+
+                // Sync on first view
+                if (!isPlayingCurrent && currentRowIdx == 0 && currentColIdx == 0)
+                {
+                    currentRowIdx = ss->GetCurrentRow();
+                    currentColIdx = ss->GetCurrentCol();
+                }
+
+                // Simple stepping for left preview
+                if (isPlayingCurrent)
+                {
+                    currentTimer += ImGui::GetIO().DeltaTime;
+                    if (currentTimer > 0.12f)
+                    {
+                        currentColIdx = (currentColIdx + 1) % goCols;
+                        currentTimer = 0.0f;
+                    }
+                }
+
+                // Compute UVs for current cell
+                ImVec2 uv0 = ImVec2(currentColIdx * uW, (currentRowIdx + 1) * vH);
+                ImVec2 uv1 = ImVec2((currentColIdx + 1) * uW, currentRowIdx * vH);
+
+                ImGui::Image((void*)(intptr_t)ss->GetTextureID(),
+                    ImVec2(180, 180), uv0, uv1,
+                    ImVec4(1, 1, 1, 1),
+                    ImVec4(1, 1, 1, 0.2f));
+
+                // Action dropdown
+                {
+                    const auto& reg = ss->GetAnimationRegistry();
+                    std::vector<const char*> names;
+                    names.reserve(reg.size());
+                    for (const auto& kv : reg) names.push_back(kv.first.c_str());
+
+                    if (!names.empty())
+                    {
+                        // Find current animation name inside the list
+                        int curIdx = 0;
+                        std::string curName = ss->GetCurrentAnimationName();
+                        for (int i = 0; i < (int)names.size(); ++i)
+                        {
+                            if (curName == names[i]) { curIdx = i; break; }
+                        }
+
+                        // Selecting from dropdown calls PlayAnimation
+                        if (ImGui::Combo("Action##GO", &curIdx, names.data(), (int)names.size()))
+                        {
+                            ss->PlayAnimation(names[curIdx]);
+                            currentRowIdx = ss->GetCurrentRow();
+                            currentColIdx = ss->GetCurrentCol();
+                            currentTimer = 0.0f;
+                        }
+                    }
+                    else
+                    {
+                        ImGui::TextDisabled("No actions registered.");
+                    }
+                }
+
+                if (ImGui::Button(isPlayingCurrent ? "STOP##Cur" : "PLAY##Cur", ImVec2(180, 0)))
+                    isPlayingCurrent = !isPlayingCurrent;
+            }
+            else
+            {
+                ImGui::BeginChild("NoExisting", ImVec2(180, 180), true);
+                ImGui::TextWrapped("\n\n NO EXISTING\n SPRITESHEET");
+                ImGui::EndChild();
+            }
+
+            ImGui::Text("GAMEOBJECT: %s", obj->GetName().c_str());
+            ImGui::Spacing();
+        }
+        ImGui::NextColumn();
+    }
+
+    // RIGHT COLUMN: Draft preview + authoring
+    ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.4f, 1.0f), draftTexID ? "EDIT / PREVIEW" : "DRAG SPRITE HERE");
+
+    std::string dropped;
+
+    // Helper - stop playing + reset timers
+    auto ResetDraftPlayback = [&]()
+        {
+            isPlayingDraft = false;
+            draftTimer = 0.0f;
+            draftFrameLinear = 0;
+        };
+
+    // If have a draft texture loaded, show preview + play controls
+    if (draftTexID != 0)
+    {
+        // Active playback range
+        int activeStartR = startR, activeStartC = startC;
+        int activeEndR = endR, activeEndC = endC;
+        float activeFPS = std::max(0.001f, actionFPS);
+
+        draftRows = std::max(1, draftRows);
+        draftCols = std::max(1, draftCols);
+
+        // Clamp the range within grid bounds
+        activeStartR = std::clamp(activeStartR, 0, draftRows - 1);
+        activeEndR = std::clamp(activeEndR, 0, draftRows - 1);
+        activeStartC = std::clamp(activeStartC, 0, draftCols - 1);
+        activeEndC = std::clamp(activeEndC, 0, draftCols - 1);
+
+        // Convert to linear indices
+        int startIdx = (activeStartR * draftCols) + activeStartC;
+        int endIdx = (activeEndR * draftCols) + activeEndC;
+        if (endIdx < startIdx) std::swap(startIdx, endIdx);
+
+        if (draftFrameLinear < startIdx || draftFrameLinear > endIdx)
+            draftFrameLinear = startIdx;
+
+        // Draft playback (range-based)
+        if (isPlayingDraft)
+        {
+            draftTimer += ImGui::GetIO().DeltaTime;
+            const float frameDur = 1.0f / activeFPS;
+            if (draftTimer >= frameDur)
+            {
+                draftTimer -= frameDur;
+                draftFrameLinear++;
+
+                // Loop within the chosen range
+                if (draftFrameLinear > endIdx)
+                {
+                    if (actionLoop) draftFrameLinear = startIdx;
+                    else { draftFrameLinear = endIdx; isPlayingDraft = false; }
+                }
+            }
+        }
+
+        // Convert linear index back for UV sampling
+        int showRow = draftFrameLinear / draftCols;
+        int showCol = draftFrameLinear % draftCols;
+
+        float duW = 1.0f / (float)draftCols;
+        float dvH = 1.0f / (float)draftRows;
+
+        // Draw preview
+        ImGui::BeginGroup();
+        ImGui::Image((void*)(intptr_t)draftTexID, ImVec2(180, 180),
+            ImVec2(showCol * duW, (showRow * dvH) + dvH),
+            ImVec2((showCol + 1) * duW, showRow * dvH),
+            ImVec4(1, 1, 1, 1),
+            ImVec4(1, 1, 0, 1));
+        ImGui::EndGroup();
+
+        ReceiveDragAndDrop(SpritePayloadID, dropped);
+
+        if (ImGui::Button(isPlayingDraft ? "STOP PREVIEW##Drf" : "PLAY PREVIEW##Drf", ImVec2(180, 0)))
+        {
+            isPlayingDraft = !isPlayingDraft;
+            if (isPlayingDraft) draftTimer = 0.0f;
+        }
+
+        ImGui::NewLine();
+        ImGui::Text("FILE: %s", draftPath.substr(draftPath.find_last_of("\\/") + 1).c_str());
+    }
+    else
+    {
+        ImGui::BeginChild("DropZone", ImVec2(180, 180), true);
+        ImGui::TextDisabled("\n\n   DRAG SPRITE HERE\n   TO START EDITING");
+        ImGui::EndChild();
+
+        ReceiveDragAndDrop(SpritePayloadID, dropped);
+    }
+
+    // Drag drop load
+    if (!dropped.empty() && SupportedImageFile(dropped))
+    {
+        draftPath = dropped;
+        draftTexID = GraphicsSystem::LoadTexture(dropped.c_str());
+
+        // Reset
+        draftRows = 1;
+        draftCols = 1;
+        startR = startC = endR = endC = 0;
+        actionFPS = 12.0f;
+        actionLoop = true;
+        std::strncpy(actionName, "Idle", sizeof(actionName) - 1);
+        actionName[sizeof(actionName) - 1] = '\0';
+
+        // Start in "<New / Unsaved>" mode
+        selectedDraftClip = -1;
+        ResetDraftPlayback();
+    }
+
+    // Controls
+    if (draftTexID)
+    {
+        // Grid configuration
+        ImGui::NewLine();
+        ImGui::Separator();
+        ImGui::Text("GRID CONFIGURATION:");
+        ImGui::PushItemWidth(80);
+        bool gridChanged = false;
+        if (ImGui::InputInt("ROWS", &draftRows)) { draftRows = std::max(1, draftRows); gridChanged = true; }
+        ImGui::SameLine();
+        if (ImGui::InputInt("COLS", &draftCols)) { draftCols = std::max(1, draftCols); gridChanged = true; }
+        ImGui::PopItemWidth();
+        if (gridChanged) ResetDraftPlayback();
+
+        // Draft clip dropdown
+        ImGui::NewLine();
+        ImGui::Separator();
+        ImGui::Text("DRAFT CLIPS:");
+
+        std::vector<std::string> clipLabels;
+        clipLabels.reserve(draftClips.size() + 1);
+        clipLabels.push_back("<New / Unsaved>");
+        for (auto& c : draftClips) clipLabels.push_back(c.name.empty() ? "<unnamed>" : c.name);
+
+        std::vector<const char*> clipLabelPtrs;
+        clipLabelPtrs.reserve(clipLabels.size());
+        for (auto& s : clipLabels) clipLabelPtrs.push_back(s.c_str());
+
+        // Selecting a clip loads its data into editable inputs
+        int comboIndex = selectedDraftClip + 1;
+        if (ImGui::Combo("Draft Clip", &comboIndex, clipLabelPtrs.data(), (int)clipLabelPtrs.size()))
+        {
+            selectedDraftClip = comboIndex - 1;
+            ResetDraftPlayback();
+
+            if (selectedDraftClip >= 0 && selectedDraftClip < (int)draftClips.size())
+            {
+                const auto& c = draftClips[selectedDraftClip];
+                std::strncpy(actionName, c.name.c_str(), sizeof(actionName) - 1);
+                actionName[sizeof(actionName) - 1] = '\0';
+                startR = c.startR; startC = c.startC;
+                endR = c.endR; endC = c.endC;
+                actionFPS = c.fps;
+                actionLoop = c.loop;
+            }
+            else
+            {
+                // "<New / Unsaved>" -> clear the name so user sees it's a fresh slot
+                std::strncpy(actionName, "", sizeof(actionName) - 1);
+                actionName[sizeof(actionName) - 1] = '\0';
+            }
+        }
+
+        // "New" button to return to "<New / Unsaved>" mode
+        ImGui::SameLine();
+        if (ImGui::Button("New##DraftClip"))
+        {
+            selectedDraftClip = -1;
+            ResetDraftPlayback();
+            std::strncpy(actionName, "", sizeof(actionName) - 1);
+            actionName[sizeof(actionName) - 1] = '\0';
+        }
+
+        // Define action range (row/col start and end + fps + loop)
+        ImGui::NewLine();
+        ImGui::Separator();
+        ImGui::Text("DEFINE ACTION RANGE:");
+
+        ImGui::InputText("Name", actionName, IM_ARRAYSIZE(actionName));
+        ImGui::Checkbox("Loop", &actionLoop);
+        ImGui::SameLine();
+        ImGui::PushItemWidth(120);
+        ImGui::InputFloat("FPS", &actionFPS, 0.5f, 1.0f, "%.2f");
+        ImGui::PopItemWidth();
+        actionFPS = std::max(0.001f, actionFPS);
+
+        // Clamp
+        startR = std::clamp(startR, 0, draftRows - 1);
+        endR = std::clamp(endR, 0, draftRows - 1);
+        startC = std::clamp(startC, 0, draftCols - 1);
+        endC = std::clamp(endC, 0, draftCols - 1);
+
+        if (ImGui::SliderInt("Start Row", &startR, 0, draftRows - 1)) ResetDraftPlayback();
+        if (ImGui::SliderInt("Start Col", &startC, 0, draftCols - 1)) ResetDraftPlayback();
+        if (ImGui::SliderInt("End Row", &endR, 0, draftRows - 1)) ResetDraftPlayback();
+        if (ImGui::SliderInt("End Col", &endC, 0, draftCols - 1)) ResetDraftPlayback();
+
+        auto FindClipIndexByName = [&](const std::string& name) -> int
+            {
+                for (int i = 0; i < (int)draftClips.size(); ++i)
+                    if (draftClips[i].name == name) return i;
+                return -1;
+            };
+
+        std::string nameStr(actionName);
+        bool hasName = !nameStr.empty();
+
+        if (ImGui::Button("Add / Update Clip"))
+        {
+            if (!hasName)
+            {
+                std::cerr << "[Previewer] Cannot add clip: empty name.\n";
+            }
+            else
+            {
+                int idx = FindClipIndexByName(nameStr);
+                DraftClip c;
+                c.name = nameStr;
+                c.startR = startR; c.startC = startC;
+                c.endR = endR; c.endC = endC;
+                c.fps = actionFPS;
+                c.loop = actionLoop;
+
+                if (idx >= 0)
+                {
+                    // Update existing
+                    draftClips[idx] = c;
+                    selectedDraftClip = idx;
+                }
+                else
+                {
+                    // Add new
+                    draftClips.push_back(c);
+                    selectedDraftClip = (int)draftClips.size() - 1;
+                }
+            }
+        }
+
+        // Remove the currently selected clip
+        ImGui::SameLine();
+        if (ImGui::Button("Remove Clip"))
+        {
+            if (selectedDraftClip >= 0 && selectedDraftClip < (int)draftClips.size())
+            {
+                draftClips.erase(draftClips.begin() + selectedDraftClip);
+                selectedDraftClip = -1;
+                ResetDraftPlayback();
+                std::strncpy(actionName, "", sizeof(actionName) - 1);
+                actionName[sizeof(actionName) - 1] = '\0';
+            }
+        }
+    }
+
+    // APPLY
+    if (obj && draftTexID)
+    {
+        ImGui::NewLine();
+        ImGui::Spacing();
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.6f, 0.2f, 1.0f)); // Green button for apply
+        if (ImGui::Button("APPLY TO SELECTED OBJECT", ImVec2(-1, 35)))
+        {
+            if (!draftPath.empty())
+            {
+                // Check if a RenderComponent exists
+                RenderComponent* render = obj->GetComponent<RenderComponent>();
+                if (!render)
+                {
+                    obj->AddComponent<RenderComponent>();
+                    render = obj->GetComponent<RenderComponent>();
+                }
+
+                // Check if the Spritesheet component exist
+                if (ss)
+                {
+                    ss->LoadNewSpritesheet(draftPath.c_str(), draftRows, draftCols);
+                }
+                else
+                {
+                    obj->AddComponent<Spritesheet>(draftPath.c_str(), draftRows, draftCols);
+                    ss = obj->GetComponent<Spritesheet>();
+                }
+
+                // Checking texture is visible + serializes properly
+                if (render && ss)
+                {
+                    render->SetTextureID(ss->GetTextureID());
+                    render->SetTexturePath(draftPath);
+                    render->SetColor(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+                }
+
+                // Register animations into Spritesheet component
+                if (ss)
+                {
+                    if (!draftClips.empty())
+                    {
+                        for (const auto& c : draftClips)
+                        {
+                            if (c.name.empty()) continue;
+                            ss->RegisterAnimation(c.name, draftPath, draftRows, draftCols,
+                                c.startR, c.startC, c.endR, c.endC, c.fps);
+                        }
+
+                        // Play currently selected draft clip, else play first
+                        if (selectedDraftClip >= 0 && selectedDraftClip < (int)draftClips.size())
+                            ss->PlayAnimation(draftClips[selectedDraftClip].name);
+                        else
+                            ss->PlayAnimation(draftClips.front().name);
+                    }
+                    else
+                    {
+                        // Register a single clip from current inputs
+                        std::string oneName(actionName);
+                        if (!oneName.empty())
+                        {
+                            ss->RegisterAnimation(oneName, draftPath, draftRows, draftCols,
+                                startR, startC, endR, endC, actionFPS);
+                            ss->PlayAnimation(oneName);
+                        }
+                    }
+                }
+            }
+
+            // Reset preview
+            ResetDraftPlayback();
+            currentRowIdx = 0;
+            currentColIdx = 0;
+            currentTimer = 0.0f;
+        }
+
+        ImGui::PopStyleColor();
+    }
+
+    ImGui::Columns(1);
+    ImGui::Separator();
+    ImGui::End();
+}
+#pragma endregion
+
 // Helpers
 // cover your eyes this will be hardcoded based off what we have rn
 // [WIP] Consider adding explanation text in the tuple for specific explanation.
@@ -2954,13 +3688,22 @@ void PopulateComponentList()
             if (!go->GetComponent<ColliderComponent>()) { 
                 go->AddComponent<ColliderComponent>();  std::cout << "Added Collider Component to " << go->GetName() << std::endl; } } });
 
-    AllComponents.push_back({ ComponentType::Camera, "Camera Component"    , ImTextureID(icon_active_ui), [](GameObject* go){ 
-            if (!go->GetComponent<CameraComponent>()) { 
-                go->AddComponent<CameraComponent>();    std::cout << "Added Camera Component to " << go->GetName() << std::endl; } } });
+    // Camera component doesnt work like that LMAO
+    //AllComponents.push_back({ ComponentType::Camera, "Camera Component"    , ImTextureID(icon_active_ui), [](GameObject* go){ 
+    //        if (!go->GetComponent<CameraComponent>()) { 
+    //            go->AddComponent<CameraComponent>();    std::cout << "Added Camera Component to " << go->GetName() << std::endl; } } });
 
     AllComponents.push_back({ ComponentType::Render, "Render Component"    , ImTextureID(icon_active_ui), [](GameObject* go){ 
             if (!go->GetComponent<RenderComponent>()) { 
                 go->AddComponent<RenderComponent>();    std::cout << "Added Render Component to " << go->GetName() << std::endl; } } });
+    AllComponents.push_back({ ComponentType::Event, "Event Component"    , ImTextureID(icon_active_ui), [](GameObject* go) {
+            if (!go->GetComponent<EventComponent>()) {
+                go->AddComponent<EventComponent>();    std::cout << "Added Event Component to " << go->GetName() << std::endl; } } });
+
+    AllComponents.push_back({ ComponentType::Script, "Script Component"    , ImTextureID(icon_active_ui), [](GameObject* go) {
+        if (!go->GetComponent<ScriptComponent>()) {
+            go->AddComponent<ScriptComponent>();    std::cout << "Added Script Component to " << go->GetName() << std::endl;
+} } });
 
     //AllComponents.push_back({ "Text Component"      , ImTextureID(icon_active_ui), [](GameObject* go) { go->AddComponent<TextComponent>(); } });
     //AllComponents.push_back({ "Animator Component"  , ImTextureID(icon_active_ui), [](GameObject* go) { go->AddComponent<Spritesheet>(); } });

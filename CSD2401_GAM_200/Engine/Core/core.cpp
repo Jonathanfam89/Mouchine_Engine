@@ -108,14 +108,18 @@ void CoreEngine::InitSystems()
     // 7. Camera System - Controls the cameras
     cameraSystem = AddSystem<CameraSystem>();
 
-    // 8. Level Editor - for editing levels
+    // 8. CutsceneSystem - Play/Stop videos
+    cutsceneSystem = AddSystem<CutsceneSystem>();
+
+// 9. Level Editor - for editing levels
 #ifdef USE_IMGUI
     levelEditor = AddSystem<LevelEditor>();
 #endif
-    // Connect CollisionSystem to PhysicsSystem
+
+    // 10. Connect CollisionSystem to PhysicsSystem
     collisionSystem->SetPhysicsSystem(physicsSystem);
 
-    // 10. ScriptSystem - C# Script System
+    // 11. ScriptSystem - C# Script System
     scriptSystem = AddSystem<ScriptSystem>();
 
     menuLogicSystem = AddSystem<MenuLogicSystem>();
@@ -123,8 +127,8 @@ void CoreEngine::InitSystems()
     winLoseLogicSystem = AddSystem<WinLoseLogicSystem>();
 
     timerSystem = AddSystem<TimerSystem>();
-    gameTimerSystem =AddSystem<GameTimerSystem>();
-    eventSystemRunner = AddSystem<EventSystemRunner>();
+    gameTimerSystem = AddSystem<GameTimerSystem>();
+    // eventSystem = AddSystem<EventSystem>();
 
     // Connect GraphicsSystem to LevelEditor for editor camera
 #ifdef USE_IMGUI
@@ -198,7 +202,7 @@ void CoreEngine::GameLoop()
             {
 
                 // Check what sounds are available and play the appropriate BGM
-                const auto& sounds = audioManager->GetSoundDatabase();
+                const auto &sounds = audioManager->GetSoundDatabase();
 
                 if (sounds.find("bgm") != sounds.end())
                 {
@@ -299,6 +303,8 @@ void CoreEngine::GameLoop()
             g_systemTimings[graphicsSystem->GetName()] = 0.0;
         if (debugSystem)
             g_systemTimings[debugSystem->GetName()] = 0.0;
+        if (cutsceneSystem)
+            g_systemTimings[cutsceneSystem->GetName()] = 0.0;
 #ifdef USE_IMGUI
         if (levelEditor)
             g_systemTimings[levelEditor->GetName()] = 0.0;
@@ -317,9 +323,6 @@ void CoreEngine::GameLoop()
             g_systemTimings[menuLogicSystem->GetName()] = 0.0;
         if (gameTimerSystem)
             g_systemTimings[gameTimerSystem->GetName()] = 0.0;
-
-        if (eventSystemRunner)
-            g_systemTimings[eventSystemRunner->GetName()] = 0.0;
 
         // Start ImGui frame
 #ifdef USE_IMGUI
@@ -351,7 +354,7 @@ void CoreEngine::GameLoop()
                 g_totalLoopTime += ms;
             }
 
-            //bool isPlaying = (levelEditor && levelEditor->GetEditorMode() == EditorMode::Play);
+            // bool isPlaying = (levelEditor && levelEditor->GetEditorMode() == EditorMode::Play);
             bool shouldRunPhysics = ((!stepMode) || stepOnce) && !m_gamePause;
             // Only run physics if NOT in step mode/paused, OR if stepping once
             if (shouldRunPhysics)
@@ -397,6 +400,8 @@ void CoreEngine::GameLoop()
                     g_totalLoopTime += ms;
                 }
 
+                SpawnTest_Update(); // Stress Test Update
+
                 if (scriptSystem)
                 {
                     std::chrono::high_resolution_clock::time_point sysStart = std::chrono::high_resolution_clock::now();
@@ -417,16 +422,6 @@ void CoreEngine::GameLoop()
                     g_totalLoopTime += ms;
                 }
                 stepOnce = false; // Reset after processing one frame
-            }
-
-            if (eventSystemRunner)
-            {
-                std::chrono::high_resolution_clock::time_point sysStart = std::chrono::high_resolution_clock::now();
-                eventSystemRunner->Update(static_cast<float>(fixed_dt)); // Use fixed timestep for consistency
-                std::chrono::high_resolution_clock::time_point sysEnd = std::chrono::high_resolution_clock::now();
-                double ms = std::chrono::duration<double, std::milli>(sysEnd - sysStart).count();
-                g_systemTimings[eventSystemRunner->GetName()] = ms;
-                g_totalLoopTime += ms;
             }
 
             // Pause menu must update even when game is paused to handle button clicks
@@ -450,12 +445,19 @@ void CoreEngine::GameLoop()
                 g_systemTimings[winLoseLogicSystem->GetName()] = ms;
                 g_totalLoopTime += ms;
             }
-
             // In step mode, only process ONE timestep then break
             if (stepMode)
                 break;
 
             accumulator -= fixed_dt;
+        }
+
+        EventSystem::ProcessEvents();
+
+        // Update audio fades
+        if (audioManager)
+        {
+            audioManager->UpdateFade(static_cast<float>(delta_time));
         }
 
         // VARIABLE TIMESTEP - Rendering and UI systems
@@ -504,17 +506,17 @@ void CoreEngine::GameLoop()
         if (gameTimerSystem)
         {
             std::chrono::high_resolution_clock::time_point sysStart =
-            std::chrono::high_resolution_clock::now();
-            
+                std::chrono::high_resolution_clock::now();
+
             gameTimerSystem->Update(static_cast<float>(delta_time));
-            
+
             std::chrono::high_resolution_clock::time_point sysEnd =
-            std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::now();
             double ms = std::chrono::duration<double, std::milli>(sysEnd - sysStart).count();
             g_systemTimings[gameTimerSystem->GetName()] = ms;
             g_totalLoopTime += ms;
         }
-        
+
 #ifdef USE_IMGUI
         if (imguiSystem)
         {
@@ -536,7 +538,13 @@ void CoreEngine::GameLoop()
 
         if (g_UseGameStates)
         {
-            GameManager::Instance().GameStateLoop(delta_time);
+            GameManager::Instance().GameStateLoop(static_cast<float>(delta_time));
+        }
+
+        // Update cutscene
+        if (cutsceneSystem && cutsceneSystem->IsPlaying())
+        {
+            cutsceneSystem->Update(static_cast<float>(delta_time));
         }
 
         // Swap buffers and poll events
@@ -628,7 +636,7 @@ void CoreEngine::SetGamePaused(bool paused)
 
 #ifdef USE_IMGUI
 #else
-bool CoreEngine::LoadLevelDirectly(const std::string& filepath)
+bool CoreEngine::LoadLevelDirectly(const std::string &filepath)
 {
     try
     {
@@ -648,23 +656,22 @@ bool CoreEngine::LoadLevelDirectly(const std::string& filepath)
 
         if (CORE)
         {
-            TimerSystem* ts = CORE->GetTimerSystem();
+            TimerSystem *ts = CORE->GetTimerSystem();
             if (ts)
             {
                 std::cout << "[LoadLevel] Clearing active timers...\n";
                 ts->ClearAllTimers();
             }
-            PhysicsSystem* ps = CORE->GetPhysicsSystem();
+            PhysicsSystem *ps = CORE->GetPhysicsSystem();
             if (ps)
             {
                 ps->ClearCollisionQueue();
             }
         }
 
-
         // stop/unload audio (if any)
-        auto& resourceMgr = ResourceManager::Instance();
-        AudioEngine* audio = resourceMgr.GetAudioEngine();
+        auto &resourceMgr = ResourceManager::Instance();
+        AudioEngine *audio = resourceMgr.GetAudioEngine();
 
         if (audio)
         {
@@ -678,7 +685,7 @@ bool CoreEngine::LoadLevelDirectly(const std::string& filepath)
         resourceMgr.UnloadAllAudio();
 
         // clear current level
-        GameObjectFactory& factory = GameObjectFactory::Instance();
+        GameObjectFactory &factory = GameObjectFactory::Instance();
         factory.Clear();
 
         // also clear any active camera binding
@@ -698,7 +705,7 @@ bool CoreEngine::LoadLevelDirectly(const std::string& filepath)
         if (root.contains("AudioManager") && CORE)
         {
             std::cout << "[LoadLevel] Found AudioManager section in JSON\n";
-            AudioManager* audioManager = CORE->GetAudioManager();
+            AudioManager *audioManager = CORE->GetAudioManager();
             if (audioManager)
             {
                 std::cout << "[LoadLevel] AudioManager pointer is valid\n";
@@ -727,36 +734,39 @@ bool CoreEngine::LoadLevelDirectly(const std::string& filepath)
         if (root.contains("GameObjects") && root["GameObjects"].is_array())
         {
             std::cout << "[LoadLevel] Loading game objects...\n";
-            for (const auto& objData : root["GameObjects"])
+            for (const auto &objData : root["GameObjects"])
             {
                 Serialization::DeserializeGameObject(objData);
             }
         }
         Serialization::ResolveHierarchy();
 
-
         // check if MainCamera exists, create one if not
-        GameObject* mainCam = factory.FindGameObject("MainCamera");
-        if (!mainCam) {
+        GameObject *mainCam = factory.FindGameObject("MainCamera");
+        if (!mainCam)
+        {
             std::cout << "No MainCamera found in scene, creating one...\n";
 
             // create MainCamera
             mainCam = factory.CreateGameObject("MainCamera");
             mainCam->AddComponent<TransformComponent>();
-            auto* camComp = mainCam->AddComponent<CameraComponent>();
+            auto *camComp = mainCam->AddComponent<CameraComponent>();
             camComp->SetZoom(1.0f);
             camComp->SetMode(CameraComponent::CameraMode::FIXED);
             CameraManager::Instance().SetActiveCamera(mainCam);
 
             std::cout << "MainCamera created successfully\n";
         }
-        else {
+        else
+        {
             // MainCamera exists, but check if it has a CameraComponent
-            auto* camComp = mainCam->GetComponent<CameraComponent>();
-            if (!camComp) {
+            auto *camComp = mainCam->GetComponent<CameraComponent>();
+            if (!camComp)
+            {
                 std::cout << "MainCamera exists but missing CameraComponent, adding one...\n";
 
-                if (!mainCam->GetComponent<TransformComponent>()) {
+                if (!mainCam->GetComponent<TransformComponent>())
+                {
                     mainCam->AddComponent<TransformComponent>();
                 }
                 camComp = mainCam->AddComponent<CameraComponent>();
@@ -766,7 +776,8 @@ bool CoreEngine::LoadLevelDirectly(const std::string& filepath)
 
                 std::cout << "CameraComponent added successfully\n";
             }
-            else {
+            else
+            {
                 std::cout << "MainCamera with CameraComponent found in scene\n";
             }
         }
@@ -776,7 +787,7 @@ bool CoreEngine::LoadLevelDirectly(const std::string& filepath)
 
         return true;
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         std::cerr << "Error loading level: " << e.what() << std::endl;
         return false;

@@ -247,7 +247,7 @@ namespace API
 
     void SetJumpVal(const std::string &objectName, float val)
     {
-
+        (void)val;
         auto &factory = GameObjectFactory::Instance();
 
         GameObject *obj = factory.FindGameObject(objectName);
@@ -619,7 +619,7 @@ namespace API
         GameObject *obj = factory.FindGameObject(objectName);
         if (obj)
         {
-
+                
             if (!(obj->GetComponent<RenderComponent>()))
             {
                 obj->AddComponent<RenderComponent>();
@@ -635,12 +635,20 @@ namespace API
     {
         auto &factory = GameObjectFactory::Instance();
         GameObject *obj = factory.FindGameObject(objectName);
+        auto transform = obj->GetComponent<TransformComponent>();
         if (obj)
         {
 
-            if (!obj->GetComponent<ColliderComponent>() && obj->GetComponent<TransformComponent>())
+            if (!obj->GetComponent<ColliderComponent>() && transform)
             {
                 obj->AddComponent<ColliderComponent>();
+                auto collider = obj->GetComponent<ColliderComponent>();
+                if (collider)
+                {
+                    float x{}, y{};
+                    transform->GetScale(x, y);
+                    collider->SetSize(x, y);
+                }
             }
             else if (!obj->GetComponent<TransformComponent>())
             {
@@ -1071,8 +1079,12 @@ bool Raycast(float x, float y, float dx, float dy, float distance, MonoString* s
         AudioManager* audioManager = CORE->GetAudioManager();
         if (audioManager)
         {
+            std::cout << "aaa\n\n\n";
+            audioManager->LoadSound({ "jump", "../Assets/Audio/jump.wav", false, 0.4f, 1.0f, "sfx" });
+            audioManager->LoadSound(newSound);
             audioManager->AddSound(newSound);
         }
+        else std::cout << "asdasdasasdas\n\n\n";
     }
 
     void PlaySound(const std::string soundName, const std::string channel)

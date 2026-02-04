@@ -1,3 +1,16 @@
+/* Start Header************************************************************************ /
+/*!
+\file       GameManager.h
+\author     Lee Hwee Min [100% - 32 lines]
+\par        l.hweemin@digipen.edu
+\date       November, 29, 2025
+Copyright (C) 2025 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*/
+/* End Header **************************************************************************/
+
 #pragma once
 #include <stack>
 #include <memory>
@@ -5,7 +18,9 @@
 
 extern bool g_UseGameStates;
 
-// Base class for all game states
+/*
+ * @Brief Base class for all game states
+ */
 class GameState {
 public:
 	virtual ~GameState() {}
@@ -20,7 +35,10 @@ public:
 	virtual void Unload() {}
 };
 
-// Push/pop state system
+
+/*
+ * @Brief A stack - based state machine ( Push/pop state system)
+ */
 class GameManager {
 public:
 	static GameManager& Instance();

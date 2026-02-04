@@ -17,9 +17,9 @@ Technology is prohibited.
 #include "ScriptAPI.h"
 #include <iostream>
 #include <filesystem>
+#include <mono/metadata/attrdefs.h>
 
 // Internal call functions - these will be called from C#
-
 // === Debug ===
 static void Internal_Log(MonoString *message)
 {
@@ -186,12 +186,29 @@ static void Internal_SetGravity(MonoString *objectName, bool enabled)
 }
 
 
-static vec2 Internal_GetVelocity(MonoString* objectName)
+static void Internal_GetVelocity(MonoString* objectName, float* x, float* y)
 {
+    if (!objectName)
+    {
+        std::cerr << "[ScriptSystem] ERROR: GetVelocity called with null objectName\n";
+        *x = 0.0f;
+        *y = 0.0f;
+        return;
+    }
+
     char* name = mono_string_to_utf8(objectName);
+    if (!name)
+    {
+        std::cerr << "[ScriptSystem] ERROR: mono_string_to_utf8 returned null\n";
+        *x = 0.0f;
+        *y = 0.0f;
+        return;
+    }
+
     vec2 result = API::GetVelocity(name);
+    *x = result.x;
+    *y = result.y;
     mono_free(name);
-    return result;
 }
 
 static void Internal_SetMass(MonoString* objectName, float mass)
@@ -551,14 +568,14 @@ static int Internal_RandomRange(int min, int max) {
     return API::RandomNumberGen(max, min); // Note: API args are (max, min)
 }
 static float Internal_GetDelta_Time() {
-    return API::GetDelta_Time();
+    return static_cast<float>(API::GetDelta_Time());
 }
 static float Internal_GetFixed_Delta_Time()
 {
-    return API::GetFixedDelta_time();
+    return static_cast<float>(API::GetFixedDelta_time());
 }
 static float Internal_GetFramesPerSecond() {
-    return API::GetFramePerSecond();
+    return static_cast<float>(API::GetFramePerSecond());
 }
 
 
@@ -609,6 +626,83 @@ static float Internal_GetMouseWorldY()
     return API::GetMouseWorldY();
 }
 
+MonoObject* ScriptSystem::CreateScriptInstance(const std::string& scriptClassName, GameObject* owner)
+{
+    if (!coreAssembly || !coreImage)
+    {
+        std::cerr << "[ScriptSystem] ERROR: Assembly not loaded!\n";
+        return nullptr;
+    }
+
+    if (!owner)
+    {
+        std::cerr << "[ScriptSystem] ERROR: Owner GameObject is null!\n";
+        return nullptr;
+    }
+
+    std::cout << "[ScriptSystem] Creating instance of " << scriptClassName
+        << " for " << owner->GetName() << "\n";
+
+    // Find or cache the MonoClass
+    if (scriptClasses.find(scriptClassName) == scriptClasses.end())
+    {
+        std::cout << "[ScriptSystem] Class not cached, loading: " << scriptClassName << "\n";
+
+        MonoClass* monoClass = mono_class_from_name(coreImage, "CSharpScript", scriptClassName.c_str());
+
+        if (!monoClass)
+        {
+            std::cerr << "[ScriptSystem] ERROR: Could not find class 'CSharpScript."
+                << scriptClassName << "' in assembly!\n";
+            return nullptr;
+        }
+
+        // Cache the class
+        ScriptClass sc;
+        sc.monoClass = monoClass;
+        sc.onStart = mono_class_get_method_from_name(monoClass, "OnStart", 0);
+        sc.onUpdate = mono_class_get_method_from_name(monoClass, "OnUpdate", 1);
+        sc.onDestroy = mono_class_get_method_from_name(monoClass, "OnDestroy", 0);
+
+        scriptClasses[scriptClassName] = sc;
+
+        std::cout << "[ScriptSystem] Cached class: " << scriptClassName << "\n";
+    }
+
+    // Get the cached class
+    ScriptClass& scriptClass = scriptClasses[scriptClassName];
+
+    // Create instance
+    MonoObject* instance = InstantiateClass(scriptClass.monoClass);
+
+    if (!instance)
+    {
+        std::cerr << "[ScriptSystem] ERROR: Failed to instantiate " << scriptClassName << "\n";
+        return nullptr;
+    }
+
+    std::cout << "[ScriptSystem] Successfully instantiated " << scriptClassName << "\n";
+
+    // Inject OwnerName
+    MonoClass* instanceClass = mono_object_get_class(instance);
+    MonoClassField* ownerNameField = mono_class_get_field_from_name(instanceClass, "OwnerName");
+
+    if (ownerNameField)
+    {
+        std::string ownerName = owner->GetName();
+        MonoString* monoName = mono_string_new(mono_domain_get(), ownerName.c_str());
+        mono_field_set_value(instance, ownerNameField, monoName);
+
+        std::cout << "[ScriptSystem] Injected OwnerName: " << ownerName << "\n";
+    }
+    else
+    {
+        std::cerr << "[ScriptSystem] WARNING: Could not find 'OwnerName' field in "
+            << scriptClassName << ". Does it inherit from GameScript?\n";
+    }
+
+    return instance;
+}
 
 ScriptSystem::~ScriptSystem()
 {
@@ -626,25 +720,36 @@ void ScriptSystem::Initialize()
     rootDomain = mono_jit_init("GameEngineRuntime");
     if (!rootDomain)
     {
-        std::cerr << "Failed to initialize Mono JIT!" << std::endl;
+        std::cerr << "[ScriptSystem] FATAL: Failed to initialize Mono JIT!" << std::endl;
         return;
     }
+
+    std::cout << "[ScriptSystem] Root domain created successfully\n";
 
     // Create app domain for script reloading
     char domainName[] = "GameScriptDomain";
     appDomain = mono_domain_create_appdomain(domainName, nullptr);
-    mono_domain_set(appDomain, true);
 
-    // Register internal calls (C++ functions callable from C#)
+    if (!appDomain)
+    {
+        std::cerr << "[ScriptSystem] FATAL: Failed to create app domain!\n";
+        return;
+    }
+
+    mono_domain_set(appDomain, true);
+    std::cout << "[ScriptSystem] App domain created and set successfully\n";
+
+    // Register internal calls
     RegisterInternalCalls();
+    std::cout << "[ScriptSystem] Internal calls registered\n";
 
     // Load core assembly
     if (!LoadScriptAssembly("./Scripts/GameScripts.dll"))
     {
-        std::cerr << "Warning: Could not load GameScripts.dll" << std::endl;
+        std::cerr << "[ScriptSystem] ERROR: Could not load GameScripts.dll\n";
     }
 
-    std::cout << "Scripting System initialized successfully" << std::endl;
+    std::cout << "[ScriptSystem] Scripting System initialized successfully" << std::endl;
 }
 
 void ScriptSystem::Shutdown()
@@ -710,7 +815,7 @@ void ScriptSystem::RegisterInternalCalls()
     mono_add_internal_call("CSharpScript.Physics::SetJumpValue", (void *)Internal_SetJumpValue);
     mono_add_internal_call("CSharpScript.Physics::SetGravity", (void *)Internal_SetGravity);
     mono_add_internal_call("CSharpScript.Physics::SetStatic", (void *)Internal_SetStatic);
-    mono_add_internal_call("CSharpScript.Physics::GetVelocity", (void*)Internal_GetVelocity);
+    mono_add_internal_call("CSharpScript.Physics::GetVelocity_Internal", (void*)Internal_GetVelocity);
     mono_add_internal_call("CSharpScript.Physics::SetMass", (void*)Internal_SetMass);
     mono_add_internal_call("CSharpScript.Physics::SetFriction", (void*)Internal_SetFriction);
 
@@ -817,6 +922,55 @@ MonoAssembly *ScriptSystem::LoadAssembly(const std::string &filepath)
     return assembly;
 }
 
+bool ScriptSystem::LoadScriptAssembly(const std::string& filepath)
+{
+    std::cout << "[ScriptSystem] Loading assembly from: " << filepath << std::endl;
+
+    if (!std::filesystem::exists(filepath))
+    {
+        std::cerr << "[ScriptSystem] ERROR: Assembly file does not exist: " << filepath << std::endl;
+        return false;
+    }
+
+    coreAssembly = LoadAssembly(filepath);
+    if (!coreAssembly)
+    {
+        std::cerr << "[ScriptSystem] ERROR: Failed to load assembly\n";
+        return false;
+    }
+
+    coreImage = mono_assembly_get_image(coreAssembly);
+
+    if (!coreImage)
+    {
+        std::cerr << "[ScriptSystem] ERROR: Failed to get image from assembly\n";
+        return false;
+    }
+
+    std::cout << "[ScriptSystem] Loaded script assembly: " << filepath << std::endl;
+
+    // List all classes in the assembly for debugging (Alternative method)
+    std::cout << "[ScriptSystem] Scanning for classes in 'CSharpScript' namespace...\n";
+
+    // Try to find some common classes to verify the assembly loaded correctly
+    const char* testClasses[] = {
+        "GameScript",
+        "SpinningSquare",
+        "TestGameObject",
+        "TestGameObjects2"
+    };
+
+    for (const char* className : testClasses)
+    {
+        MonoClass* testClass = mono_class_from_name(coreImage, "CSharpScript", className);
+        if (testClass)
+        {
+            std::cout << "  Found: CSharpScript." << className << std::endl;
+        }
+    }
+
+    return true;
+}
 MonoClass *ScriptSystem::GetClassInAssembly(MonoAssembly *assembly, const char *namespaceName, const char *className)
 {
     MonoImage *image = mono_assembly_get_image(assembly);
@@ -846,55 +1000,78 @@ MonoObject *ScriptSystem::InstantiateClass(MonoClass *monoClass)
     return instance;
 }
 
-bool ScriptSystem::LoadScriptAssembly(const std::string &filepath)
-{
-    coreAssembly = LoadAssembly(filepath);
-    if (!coreAssembly)
-    {
-        return false;
-    }
-
-    coreImage = mono_assembly_get_image(coreAssembly);
-    std::cout << "Loaded script assembly: " << filepath << std::endl;
-
-    return true;
-}
-
-bool ScriptSystem::AttachScript(GameObject *gameObject, const std::string &scriptClassName)
+bool ScriptSystem::AttachScript(GameObject* gameObject, const std::string& scriptClassName)
 {
     if (!gameObject || !coreAssembly)
     {
+        std::cerr << "[ScriptSystem] AttachScript failed: null gameObject or coreAssembly\n";
         return false;
     }
 
-    // Check if class is already cached
+    std::cout << "[ScriptSystem] Attempting to attach '" << scriptClassName << "' to '"
+        << gameObject->GetName() << "'\n";
+
+    // CRITICAL: Check if the script class exists, if not, try to load it
     if (scriptClasses.find(scriptClassName) == scriptClasses.end())
     {
-        // Load the class
-        MonoClass *monoClass = GetClassInAssembly(coreAssembly, "GameScripts", scriptClassName.c_str());
+        std::cout << "[ScriptSystem] Script class not cached, attempting to load: "
+            << scriptClassName << std::endl;
+
+        // Try to find and cache the class
+        MonoClass* monoClass = GetClassInAssembly(coreAssembly, "CSharpScript", scriptClassName.c_str());
+
         if (!monoClass)
         {
+            std::cerr << "[ScriptSystem] ERROR: Could not find class '" << scriptClassName
+                << "' in namespace 'CSharpScript'\n";
             return false;
         }
 
-        // Cache the class and its methods
+        // Cache it
         ScriptClass scriptClass;
         scriptClass.monoClass = monoClass;
-        scriptClass.constructor = mono_class_get_method_from_name(monoClass, ".ctor", 0);
         scriptClass.onStart = mono_class_get_method_from_name(monoClass, "OnStart", 0);
         scriptClass.onUpdate = mono_class_get_method_from_name(monoClass, "OnUpdate", 1);
         scriptClass.onDestroy = mono_class_get_method_from_name(monoClass, "OnDestroy", 0);
 
         scriptClasses[scriptClassName] = scriptClass;
+
+        std::cout << "[ScriptSystem] Successfully cached class: " << scriptClassName << std::endl;
+        std::cout << "  OnStart: " << (scriptClass.onStart ? "Found" : "Not Found") << std::endl;
+        std::cout << "  OnUpdate: " << (scriptClass.onUpdate ? "Found" : "Not Found") << std::endl;
+        std::cout << "  OnDestroy: " << (scriptClass.onDestroy ? "Found" : "Not Found") << std::endl;
     }
 
+    // Get cached script class
+    ScriptClass& scriptClass = scriptClasses[scriptClassName];
+
     // Create instance
-    ScriptClass &scriptClass = scriptClasses[scriptClassName];
-    MonoObject *instance = InstantiateClass(scriptClass.monoClass);
+    MonoObject* instance = InstantiateClass(scriptClass.monoClass);
 
     if (!instance)
     {
+        std::cerr << "[ScriptSystem] ERROR: Failed to instantiate " << scriptClassName << std::endl;
         return false;
+    }
+
+    std::cout << "[ScriptSystem] Successfully instantiated " << scriptClassName << std::endl;
+
+    // Inject OwnerName
+    MonoClass* instanceClass = mono_object_get_class(instance);
+    MonoClassField* ownerNameField = mono_class_get_field_from_name(instanceClass, "OwnerName");
+
+    if (ownerNameField)
+    {
+        std::string goName = gameObject->GetName();
+        MonoString* monoName = mono_string_new(appDomain, goName.c_str());
+        mono_field_set_value(instance, ownerNameField, monoName);
+
+        std::cout << "[ScriptSystem] Injected OwnerName: " << goName << std::endl;
+    }
+    else
+    {
+        std::cerr << "[ScriptSystem] WARNING: Could not find 'OwnerName' field in "
+            << scriptClassName << std::endl;
     }
 
     // Create script instance and add to GameObject
@@ -905,11 +1082,11 @@ bool ScriptSystem::AttachScript(GameObject *gameObject, const std::string &scrip
 
     gameObjectScripts[gameObject].push_back(scriptInstance);
 
-    std::cout << "Attached script " << scriptClassName << " to GameObject" << std::endl;
+    std::cout << "[ScriptSystem] Successfully attached " << scriptClassName
+        << " to " << gameObject->GetName() << std::endl;
 
     return true;
 }
-
 void ScriptSystem::RemoveScript(GameObject *gameObject, const std::string &scriptClassName)
 {
     auto it = gameObjectScripts.find(gameObject);
@@ -946,9 +1123,50 @@ void ScriptSystem::CallOnStart(GameObject *gameObject)
 
     for (auto &scriptInstance : it->second)
     {
-        if (scriptInstance.scriptClass->onStart)
+        // Validate all pointers before calling mono_runtime_invoke
+        if (!scriptInstance.scriptClass)
         {
-            mono_runtime_invoke(scriptInstance.scriptClass->onStart, scriptInstance.instance, nullptr, nullptr);
+            std::cerr << "[ScriptSystem] ERROR: scriptClass is null for " << gameObject->GetName() << std::endl;
+            continue;
+        }
+
+        if (!scriptInstance.instance)
+        {
+            std::cerr << "[ScriptSystem] ERROR: script instance is null for " << gameObject->GetName() << std::endl;
+            continue;
+        }
+
+        if (!scriptInstance.scriptClass->onStart)
+        {
+            // OnStart method not found or doesn't exist - skip silently
+            continue;
+        }
+
+        MonoObject* exception = nullptr;
+        mono_runtime_invoke(scriptInstance.scriptClass->onStart, scriptInstance.instance, nullptr, &exception);
+
+        if (exception)
+        {
+            MonoClass* exceptionClass = mono_object_get_class(exception);
+            const char* exceptionName = mono_class_get_name(exceptionClass);
+
+            MonoProperty* messageProp = mono_class_get_property_from_name(exceptionClass, "Message");
+            if (messageProp)
+            {
+                MonoMethod* getter = mono_property_get_get_method(messageProp);
+                MonoString* messageStr = (MonoString*)mono_runtime_invoke(getter, exception, nullptr, nullptr);
+                char* message = mono_string_to_utf8(messageStr);
+
+                std::cerr << "[ScriptSystem] Exception in OnStart for " << gameObject->GetName()
+                          << ": " << exceptionName << " - " << message << std::endl;
+
+                mono_free(message);
+            }
+            else
+            {
+                std::cerr << "[ScriptSystem] Exception in OnStart for " << gameObject->GetName()
+                          << ": " << exceptionName << std::endl;
+            }
         }
     }
 }
@@ -966,9 +1184,50 @@ void ScriptSystem::CallOnUpdate(GameObject *gameObject, float deltaTime)
 
     for (auto &scriptInstance : it->second)
     {
-        if (scriptInstance.scriptClass->onUpdate)
+        // Validate all pointers before calling mono_runtime_invoke
+        if (!scriptInstance.scriptClass)
         {
-            mono_runtime_invoke(scriptInstance.scriptClass->onUpdate, scriptInstance.instance, args, nullptr);
+            std::cerr << "[ScriptSystem] ERROR: scriptClass is null for " << gameObject->GetName() << std::endl;
+            continue;
+        }
+
+        if (!scriptInstance.instance)
+        {
+            std::cerr << "[ScriptSystem] ERROR: script instance is null for " << gameObject->GetName() << std::endl;
+            continue;
+        }
+
+        if (!scriptInstance.scriptClass->onUpdate)
+        {
+            // OnUpdate method not found or doesn't exist - this is normal, skip silently
+            continue;
+        }
+
+        MonoObject* exception = nullptr;
+        mono_runtime_invoke(scriptInstance.scriptClass->onUpdate, scriptInstance.instance, args, &exception);
+
+        if (exception)
+        {
+            MonoClass* exceptionClass = mono_object_get_class(exception);
+            const char* exceptionName = mono_class_get_name(exceptionClass);
+
+            MonoProperty* messageProp = mono_class_get_property_from_name(exceptionClass, "Message");
+            if (messageProp)
+            {
+                MonoMethod* getter = mono_property_get_get_method(messageProp);
+                MonoString* messageStr = (MonoString*)mono_runtime_invoke(getter, exception, nullptr, nullptr);
+                char* message = mono_string_to_utf8(messageStr);
+
+                std::cerr << "[ScriptSystem] Exception in OnUpdate for " << gameObject->GetName()
+                          << ": " << exceptionName << " - " << message << std::endl;
+
+                mono_free(message);
+            }
+            else
+            {
+                std::cerr << "[ScriptSystem] Exception in OnUpdate for " << gameObject->GetName()
+                          << ": " << exceptionName << std::endl;
+            }
         }
     }
 }
@@ -983,9 +1242,50 @@ void ScriptSystem::CallOnDestroy(GameObject *gameObject)
 
     for (auto &scriptInstance : it->second)
     {
-        if (scriptInstance.scriptClass->onDestroy)
+        // Validate all pointers before calling mono_runtime_invoke
+        if (!scriptInstance.scriptClass)
         {
-            mono_runtime_invoke(scriptInstance.scriptClass->onDestroy, scriptInstance.instance, nullptr, nullptr);
+            std::cerr << "[ScriptSystem] ERROR: scriptClass is null for " << gameObject->GetName() << std::endl;
+            continue;
+        }
+
+        if (!scriptInstance.instance)
+        {
+            std::cerr << "[ScriptSystem] ERROR: script instance is null for " << gameObject->GetName() << std::endl;
+            continue;
+        }
+
+        if (!scriptInstance.scriptClass->onDestroy)
+        {
+            // OnDestroy method not found or doesn't exist - skip silently
+            continue;
+        }
+
+        MonoObject* exception = nullptr;
+        mono_runtime_invoke(scriptInstance.scriptClass->onDestroy, scriptInstance.instance, nullptr, &exception);
+
+        if (exception)
+        {
+            MonoClass* exceptionClass = mono_object_get_class(exception);
+            const char* exceptionName = mono_class_get_name(exceptionClass);
+
+            MonoProperty* messageProp = mono_class_get_property_from_name(exceptionClass, "Message");
+            if (messageProp)
+            {
+                MonoMethod* getter = mono_property_get_get_method(messageProp);
+                MonoString* messageStr = (MonoString*)mono_runtime_invoke(getter, exception, nullptr, nullptr);
+                char* message = mono_string_to_utf8(messageStr);
+
+                std::cerr << "[ScriptSystem] Exception in OnDestroy for " << gameObject->GetName()
+                          << ": " << exceptionName << " - " << message << std::endl;
+
+                mono_free(message);
+            }
+            else
+            {
+                std::cerr << "[ScriptSystem] Exception in OnDestroy for " << gameObject->GetName()
+                          << ": " << exceptionName << std::endl;
+            }
         }
     }
 }
@@ -1033,4 +1333,85 @@ void ScriptSystem::ReloadScriptAssembly()
     LoadScriptAssembly("./Scripts/GameScripts.dll");
 
     std::cout << "Script assembly reloaded" << std::endl;
+}
+
+std::vector<ScriptField> ScriptSystem::GetPublicFields(ScriptInstance& instance) {
+    std::vector<ScriptField> fields;
+    MonoClass* klass = instance.scriptClass->monoClass;
+    void* iter = nullptr;
+    while (MonoClassField* field = mono_class_get_fields(klass, &iter)) {
+        if (mono_field_get_flags(field) & MONO_FIELD_ATTR_PUBLIC) {
+            ScriptField scriptField;
+            scriptField.name = mono_field_get_name(field);
+
+            MonoType* type = mono_field_get_type(field);
+            int monoType = mono_type_get_type(type);
+
+            MonoObject* value = mono_field_get_value_object(rootDomain, field, instance.instance);
+            if (!value) continue; // Skip if value is null
+
+            char* str = mono_string_to_utf8(mono_object_to_string(value, nullptr));
+
+            switch (monoType) {
+            case MONO_TYPE_R4:
+                scriptField.type = ScriptFieldType::Float;
+                scriptField.value = *(float*)mono_object_unbox(value);
+                break;
+            case MONO_TYPE_I4:
+                scriptField.type = ScriptFieldType::Int;
+                scriptField.value = *(int*)mono_object_unbox(value);
+                break;
+            case MONO_TYPE_BOOLEAN:
+                scriptField.type = ScriptFieldType::Bool;
+                scriptField.value = *(bool*)mono_object_unbox(value);
+                break;
+            case MONO_TYPE_STRING:
+                scriptField.type = ScriptFieldType::String;
+                scriptField.value = mono_string_to_utf8((MonoString*)value);
+                break;
+            default:
+                scriptField.type = ScriptFieldType::None;
+                break;
+            }
+
+            if (scriptField.type != ScriptFieldType::None) {
+                fields.push_back(scriptField);
+            }
+            mono_free(str);
+        }
+    }
+    return fields;
+}
+
+void ScriptSystem::SetPublicField(ScriptInstance& instance, const std::string& fieldName, const float& value) {
+    MonoClass* klass = instance.scriptClass->monoClass;
+    MonoClassField* field = mono_class_get_field_from_name(klass, fieldName.c_str());
+    if (field) {
+        mono_field_set_value(instance.instance, field, (void*)&value);
+    }
+}
+
+void ScriptSystem::SetPublicField(ScriptInstance& instance, const std::string& fieldName, const int& value) {
+    MonoClass* klass = instance.scriptClass->monoClass;
+    MonoClassField* field = mono_class_get_field_from_name(klass, fieldName.c_str());
+    if (field) {
+        mono_field_set_value(instance.instance, field, (void*)&value);
+    }
+}
+
+void ScriptSystem::SetPublicField(ScriptInstance& instance, const std::string& fieldName, const bool& value) {
+    MonoClass* klass = instance.scriptClass->monoClass;
+    MonoClassField* field = mono_class_get_field_from_name(klass, fieldName.c_str());
+    if (field) {
+        mono_field_set_value(instance.instance, field, (void*)&value);
+    }
+}
+
+void ScriptSystem::SetPublicField(ScriptInstance& instance, const std::string& fieldName, const std::string& value) {
+    MonoClass* klass = instance.scriptClass->monoClass;
+    MonoClassField* field = mono_class_get_field_from_name(klass, fieldName.c_str());
+    if (field) {
+        MonoString* monoStr = mono_string_new(appDomain, value.c_str());
+        mono_field_set_value(instance.instance, field, monoStr);
+    }
 }

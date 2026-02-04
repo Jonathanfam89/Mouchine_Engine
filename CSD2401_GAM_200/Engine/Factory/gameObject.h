@@ -44,6 +44,9 @@ Technology is prohibited.
 
 #pragma once
 #include "Component.h"
+#include "GameManager.h"
+#include "MathLib.h"
+
 #include <vector>
 #include <memory>
 #include <typeindex>
@@ -52,6 +55,10 @@ Technology is prohibited.
 
 using EntityID = std::uint32_t;
 enum class EventType;
+struct EventRule;
+
+class EventSystem;
+class EventComponent;
 
 class GameObject {
 public:
@@ -151,6 +158,8 @@ public:
             components.erase(it);
         }
     }
+
+    void RemoveComponent(const std::string& name);
 
     /**
      * @brief Adds a pre-existing component to the GameObject, taking ownership.
@@ -266,9 +275,33 @@ public:
 
     std::vector<GameObject*> GetAllChildren() const;
 
+    /**
+     * @brief Reordering of children - undo
+     */
     void ReorderChildren(const std::vector<EntityID>& order);
 
+    /**
+     * @brief Execute a gameplay action defined by an EventRule.
+     */
+    void ExecuteAction(const EventRule& rule, GameObject* other);
+
+    /**
+     * @brief Called by the EventSystem when this GameObject receives an event.
+     */
     virtual void OnEventTriggered(EventType event, GameObject* other);
+
+    /**
+     * @brief Get and Set Current Sound
+     */
+    const std::string& GetCurrentlyPlayingSound() const { return m_currentlyPlayingSound; }
+    void SetCurrentlyPlayingSound(const std::string& s) { m_currentlyPlayingSound = s; }
+    void ClearCurrentlyPlayingSound() { m_currentlyPlayingSound.clear(); }
+
+    /**
+     * @brief Get Original Postion of gameObject
+     */
+    vec2 originalPos{ 0, 0 };
+    bool originalSaved = false;
 
 private:
     EntityID entityID;
@@ -277,6 +310,8 @@ private:
     GameObject* parent;
     std::vector<GameObject*> children;                  
     std::unordered_map<std::type_index, std::unique_ptr<IComponent>> components;
+
+    std::string m_currentlyPlayingSound;
 };
 
 void GetFamilyTree(GameObject* parent, std::vector<EntityID>& familyTree);

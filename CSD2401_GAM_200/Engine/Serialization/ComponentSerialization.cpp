@@ -1,7 +1,7 @@
 /* Start Header************************************************************************ /
 /*!
 \file       ComponentSerialization.cpp
-\author     Lee Hwee Min [100% - 245 lines]
+\author     Lee Hwee Min [100% - 427 lines]
 \par        l.hweemin@digipen.edu
 \date       November, 2, 2025
 Copyright (C) 2025 DigiPen Institute of Technology.
@@ -14,6 +14,8 @@ Technology is prohibited.
 #include "ComponentSerialization.h"
 #include "Animator.hpp"
 #include "logic.h"
+#include "TilemapEditor.h"
+#include "ScriptComponent.h"
 
 std::unordered_map<GLuint, std::string> s_TexturePathByID;
 std::unordered_map<std::string, GLuint> s_IDByTexturePath;
@@ -131,9 +133,14 @@ void ComponentSerialization::SerializePhysics(json &j, PhysicsComponent *p)
  */
 void ComponentSerialization::SerializeCollider(json &j, ColliderComponent *c)
 {
+    vec2 size = c->GetSize();
+
     j["ColliderComponent"] = {
         {"shape", EnumConverters::ToString(c->GetType())},
-        {"layer", EnumConverters::ToString(c->GetLayer())}};
+        {"layer", EnumConverters::ToString(c->GetLayer())},
+        { "size", { size.x, size.y }} 
+    };
+
 }
 
 /**
@@ -191,13 +198,30 @@ void ComponentSerialization::SerializeEvent(json &j, EventComponent *ec)
     {
         json r;
         r["eventType"] = EventTypeToString(rule.eventType);
-        r["targetFilter"] = rule.targetFilter;
+        r["targetObjectId"] = rule.targetObjectId;
         r["action"] = ActionTypeToString(rule.action);
 
         rulesJson.push_back(r);
     }
 
     j["EventComponent"] = rulesJson;
+}
+
+/**
+ * @brief Serializes the ScriptComponent into JSON.
+ * @param j JSON object to write into.
+ * @param sc Pointer to the ScriptComponent.
+ */
+void ComponentSerialization::SerializeScript(json &j, ScriptComponent *sc)
+{
+    if (!sc) return;
+
+    json scriptsArray = json::array();
+    for (const auto& pair : sc->GetScripts())
+    {
+        scriptsArray.push_back(pair.second);
+    }
+    j["ScriptComponent"] = { {"scripts", scriptsArray} };
 }
 
 // ------------------- Deserialize -------------------
@@ -217,6 +241,13 @@ void ComponentSerialization::DeserializeTransform(const json &j, GameObject *go)
 #ifdef USE_IMGUI
     float jsonX = t["pos"][0];
     float jsonY = t["pos"][1];
+
+    if (tc && !go->originalSaved)
+    {
+        go->originalPos.x = jsonX;
+        go->originalPos.y = jsonY;
+        go->originalSaved = true;
+    }
 
     if (Serialization::Prefab_DragAndDropped)
     {
@@ -471,17 +502,29 @@ void ComponentSerialization::DeserializeCollider(const json &j, GameObject *go)
     CollisionLayer layer = EnumConverters::ToCollisionLayer(c.value("layer", "Default"));
 
     float width, height;
-    if (j.contains("TransformComponent"))
+    // read collider size directly
+    if (c.contains("size") && c["size"].is_array() && c["size"].size() >= 2)
     {
-        const auto &t = j["TransformComponent"];
-        if (t.contains("scale") && t["scale"].size() >= 2)
+        width = c["size"][0].get<float>();
+        height = c["size"][1].get<float>();
+    }
+
+    // backup: older saves only had transform scale
+    else if (j.contains("TransformComponent"))
+    {
+        const auto& t = j["TransformComponent"];
+        if (t.contains("scale") && t["scale"].is_array() && t["scale"].size() >= 2)
         {
             width = t["scale"][0].get<float>();
             height = t["scale"][1].get<float>();
         }
     }
 
-    auto *collider = go->AddComponent<ColliderComponent>(type, width, height, layer);
+    // Safety: circles usually treat width as diameter
+    if (type == ColliderComponent::Type::Circle && height <= 0.0f)
+        height = width;
+
+    go->AddComponent<ColliderComponent>(type, width, height, layer);
 }
 
 /**
@@ -582,10 +625,57 @@ void ComponentSerialization::DeserializeEvent(const json &j, GameObject *go)
     {
         EventRule rule;
         rule.eventType = StringToEventType(item.value("eventType", "None"));
-        rule.targetFilter = item.value("targetFilter", "");
+        rule.targetObjectId = item.value("targetFilter", -1);
         rule.action = StringToActionType(item.value("action", "None"));
 
         ec->rules.push_back(rule);
+    }
+}
+
+/**
+ * @brief Serializes the TilemapDataHolder into JSON.
+ */
+void ComponentSerialization::SerializeTilemap(json& j, TilemapDataHolder* tilemap)
+{
+    j["TilemapDataHolder"] = {
+        {"filepath", tilemap->GetTilemapFilePath()}
+    };
+}
+
+/**
+ * @brief Deserializes the TilemapDataHolder from JSON.
+ */
+void ComponentSerialization::DeserializeTilemap(const json& j, GameObject* go)
+{
+    if (!j.contains("TilemapDataHolder"))
+        return;
+
+    auto* tilemap = go->AddComponent<TilemapDataHolder>();
+
+    std::string filepath = j["TilemapDataHolder"]["filepath"];
+    if (!filepath.empty())
+    {
+        tilemap->LoadTilemapFromFile(filepath);
+    }
+}
+ /*
+ * @brief Deserializes the ScriptComponent from JSON.
+ * @param j JSON object to read from.
+ * @param go Pointer to the GameObject.
+ */
+void ComponentSerialization::DeserializeScript(const json &j, GameObject *go)
+{
+    if (!j.contains("ScriptComponent")) return;
+
+    const auto& scData = j["ScriptComponent"];
+    auto* sc = go->AddComponent<ScriptComponent>();
+
+    if (scData.contains("scripts"))
+    {
+        for (const auto& scriptName : scData["scripts"])
+        {
+            sc->AddScript(scriptName.get<std::string>());
+        }
     }
 }
 
@@ -597,21 +687,25 @@ void ComponentSerialization::DeserializeEvent(const json &j, GameObject *go)
  */
 void ComponentSerialization::SerializeAllComponents(GameObject *go, json &j)
 {
-    if (const auto *t = go->GetComponent<TransformComponent>())
+    if (const auto *t = go->GetComponent<TransformComponent>()) 
         SerializeTransform(j, t);
-    if (auto *r = go->GetComponent<RenderComponent>())
+    if (auto *r = go->GetComponent<RenderComponent>()) 
         SerializeRender(j, r);
-    if (auto *s = go->GetComponent<Spritesheet>())
+    if (auto *s = go->GetComponent<Spritesheet>()) 
         SerializeSpritesheet(j, s);
-    if (auto *p = go->GetComponent<PhysicsComponent>())
+    if (auto *p = go->GetComponent<PhysicsComponent>()) 
         SerializePhysics(j, p);
-    if (auto *c = go->GetComponent<ColliderComponent>())
+    if (auto *c = go->GetComponent<ColliderComponent>()) 
         SerializeCollider(j, c);
-    if (auto *tc = go->GetComponent<TextComponent>())
+    if (auto *tc = go->GetComponent<TextComponent>()) 
         SerializeText(j, tc);
     // if (auto* cam = go->GetComponent<CameraComponent>())  SerializeCamera(j, cam);
-    if (auto *t = go->GetComponent<EventComponent>())
+    if (auto *t = go->GetComponent<EventComponent>()) 
         SerializeEvent(j, t);
+    if (auto* tilemap = go->GetComponent<TilemapDataHolder>())
+        SerializeTilemap(j, tilemap);
+    if (auto *sc = go->GetComponent<ScriptComponent>()) 
+        SerializeScript(j, sc);
 }
 
 /**
@@ -629,4 +723,6 @@ void ComponentSerialization::DeserializeAllComponents(GameObject *go, const json
     DeserializeText(j, go);
     // DeserializeCamera(j, go);
     DeserializeEvent(j, go);
+    DeserializeTilemap(j, go);
+    DeserializeScript(j, go);
 }

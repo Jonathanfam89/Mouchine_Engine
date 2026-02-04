@@ -105,14 +105,14 @@ public:
     /**
      * @brief Sets the volume of a specific sound.
      * @param soundName Name of the sound.
-     * @param volume New volume (0.0–1.0).
+     * @param volume New volume (0.0ï¿½1.0).
      */
     void SetSoundVolume(const std::string& soundName, float volume);
 
     /**
      * @brief Sets the volume of a sound category.
      * @param category Category name (music, sfx, etc.)
-     * @param volume New volume (0.0–1.0).
+     * @param volume New volume (0.0ï¿½1.0).
      */
     void SetCategoryVolume(const std::string& category, float volume);
 
@@ -218,4 +218,62 @@ public:
      * @brief Clears all sound data and event mappings.
      */
     void Clear();
+
+    /**
+     * @brief Starts fading out a specific category of audio.
+     * @param category The category to fade out (e.g., "music", "sfx").
+     * @param duration The duration of the fade in seconds.
+     */
+    void FadeOutCategory(const std::string& category, float duration);
+
+    /**
+     * @brief Starts fading in a specific category of audio.
+     * @param category The category to fade in (e.g., "music", "sfx").
+     * @param duration The duration of the fade in seconds.
+     * @param targetVolume The target volume to fade to (default 1.0).
+     */
+    void FadeInCategory(const std::string& category, float duration, float targetVolume = 1.0f);
+
+    /**
+     * @brief Starts fading out all audio categories.
+     * @param duration The duration of the fade in seconds.
+     */
+    void FadeOutAll(float duration);
+
+    /**
+     * @brief Updates the fade state (should be called every frame).
+     * @param dt Delta time in seconds.
+     */
+    void UpdateFade(float dt);
+
+    /**
+     * @brief Resets all fade states and restores default category volumes.
+     */
+    void ResetFadeStates();
+
+    /**
+     * @brief Fade state tracking structure (public for UI access).
+     */
+    struct FadeState {
+        bool isFading = false;
+        bool isFadeIn = false;  // true for fade in, false for fade out
+        float startVolume = 1.0f;
+        float targetVolume = 1.0f;
+        float currentTime = 0.0f;
+        float duration = 1.0f;
+    };
+
+    /**
+     * @brief Gets the fade states for all categories (for UI display).
+     */
+    const std::map<std::string, FadeState>& GetFadeStates() const { return categoryFadeStates; }
+
+    /**
+     * @brief Checks if any category is currently fading.
+     * @return True if any fade is in progress.
+     */
+    bool IsAnyFadeActive() const;
+
+private:
+    std::map<std::string, FadeState> categoryFadeStates;
 };

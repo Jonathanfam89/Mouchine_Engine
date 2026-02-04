@@ -163,7 +163,8 @@ bool AudioEngine::playSound(const std::string& name, const std::string& channelN
 	}
 
 	FMOD::Channel* channel = nullptr;
-	FMOD_RESULT result = system->playSound(soundIt->second, nullptr, false, &channel);
+	// Start paused to true to prevent initial volume click
+	FMOD_RESULT result = system->playSound(soundIt->second, nullptr, true, &channel);
 	if (result != FMOD_OK) {
 		checkError(result, "Sound playing: " + name);
 		return false;
@@ -171,6 +172,12 @@ bool AudioEngine::playSound(const std::string& name, const std::string& channelN
 
 	if (!channelName.empty()) {
 		channels[channelName] = channel;
+	}
+
+	// Set initial volume to 0 before unpausing to prevent click
+	if (channel) {
+		channel->setVolume(0.0f);
+		channel->setPaused(false);  // Now unpause with volume at 0
 	}
 
 	std::cout << "Sound playing: " << name << "\n" << std::endl;
