@@ -376,7 +376,6 @@ private:
     ScriptSystem *scriptSystem = nullptr;
     CameraSystem *cameraSystem = nullptr;
     CutsceneSystem *cutsceneSystem = nullptr;
-    LevelEditor *levelEditor = nullptr;
     MenuLogicSystem *menuLogicSystem = nullptr;
     PauseMenuLogicSystem *pauseMenuLogicSystem = nullptr;
     WinLoseLogicSystem * winLoseLogicSystem = nullptr;

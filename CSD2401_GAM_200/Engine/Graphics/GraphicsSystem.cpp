@@ -466,10 +466,13 @@ void GraphicsSystem::Update(float)
     }
     else
     {
+#endif
         // GAME MODE: Use the primary game camera
         vp = CameraManager::Instance().GetViewProjectMatrix(renderWidth, renderHeight);
         vec2 camPos = CameraManager::Instance().GetCameraPosition();
+#ifdef USE_IMGUI
     }
+#endif
 
     // === Camera Bounds Debug Drawing ===
     // === Camera Bounds Debug Drawing ===

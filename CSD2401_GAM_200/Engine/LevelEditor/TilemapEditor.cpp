@@ -10,7 +10,6 @@ without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 */
 /* End Header **************************************************************************/
-#ifdef USE_IMGUI
 #include "TilemapEditor.h"
 #include "ResourceManager.h"
 #include <fstream>
@@ -535,6 +534,7 @@ void TilemapEditor::RenderTilemapCanvas()
 /**
  * @brief Render tileset palette panel
  */
+#ifdef USE_IMGUI
 void TilemapEditor::RenderTilesetPanel()
 {
     if (ImGui::CollapsingHeader("Tileset Palette", ImGuiTreeNodeFlags_DefaultOpen))
@@ -827,7 +827,7 @@ void TilemapEditor::RenderLayersPanel()
         ImGui::TextColored(ImVec4(0.5f, 0.8f, 0.5f, 1.0f), "Active: %s", layerNames[currentLayer].c_str());
     }
 }
-
+#endif
 /**
  * @brief Create a new tilemap
  */
@@ -1636,4 +1636,3 @@ void TilemapEditor::PerformUndo()
             std::cout << "[TilemapEditor] Redo performed" << std::endl;
         }
         
-        #endif
