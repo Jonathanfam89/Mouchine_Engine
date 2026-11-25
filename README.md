@@ -87,7 +87,7 @@ run.bat
 
 ```bat
 cd CSD2401_GAM_200
-cmake -S . -B Build -G "Visual Studio 17 2022" -A x64 -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+cmake -S . -B Build -G "Visual Studio 18 2026" -A x64 -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 cmake --build Build --config Debug --parallel
 ```
 
